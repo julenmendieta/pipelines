@@ -1,6 +1,7 @@
 def factorial(n):return reduce(lambda x,y:x*y,[1]+range(1,n+1))
 
 
+# Old function to normalise by frecuencies
 def newNorm(hic_data, viewPoint, regionStartBin, regionEndBin, locusCh, tsvFile, 
             resol, method='', zeroPercent=False, mininter=0, keep=False, 
             returnNconcat=False):
@@ -428,34 +429,125 @@ def newNorm(hic_data, viewPoint, regionStartBin, regionEndBin, locusCh, tsvFile,
     return norm_data, concatemersBin
 
 
-def plotMatrixProfile(matrix, inRed, ms=3, axe=None, fig=None, title=None):
-    if axe == None:
-        for ni, i in enumerate(matrix):
-            if ni not in inRed:
-                plt.plot(range(len(i)), [j for j in i], 'o', ms=ms, color='black')
-
-        for ni in inRed:
-            plt.plot(range(len(i)), [j for j in matrix[ni]], 'o', ms=ms, color='red')
-        if title != None:
-            plt.title(title, size=20)
-    else:
-        for ni, i in enumerate(matrix):
-            if ni not in inRed:
-                axe.plot(range(len(i)), [j for j in i], 'o', ms=ms, color='black')
-
-        for ni in inRed:
-            axe.plot(range(len(i)), [j for j in matrix[ni]], 'o', ms=ms, color='red')
-    if fig != None:
-        fig.show()
+# Look for all the combinations of multiContacts from 0
+#to given value
+def lookCombiDefinedRange(findMulti, concatTemp, multiGroups):
+    # Get all groups of multiContacts
+    for sg in range(3, findMulti + 1):
+        # create groups of sg multicontacts
+        groups = itertools.combinations(sorted(concatTemp), sg)
+        # Iterate over each group
+        for gr in groups:
+            multiGroups[sg][gr] += 1
         
+    return multiGroups
 
+
+# Look for all the combinations of multiContacts for given value
+def lookCombiDefined(findMulti, concatTemp, multiGroups):
+    # create groups of sg multicontacts
+    groups = itertools.combinations(sorted(concatTemp), findMulti)
+    # Iterate over each group
+    for gr in groups:
+        multiGroups[findMulti][gr] += 1
+        
+    return multiGroups
+
+# Look for all posible combinations of multiContacts in
+#a concatemer
+def lookCombiAll(findMulti, concatTemp, multiGroups):
+    # Get all groups of multiContacts
+    for sg in range(3, len(concatTemp) + 1):
+        # create groups of sg multicontacts
+        groups = itertools.combinations(sorted(concatTemp), sg)
+        # Iterate over each group
+        for gr in groups:
+            multiGroups[sg][gr] += 1
+        
+    return multiGroups
+
+# Obtain multiContacts from file
+def goThroughConcatemerFile(hic_data, line, multiGroups, concatemers,
+                                findMulti, resol, nConcat=0,
+                                concatTemp=set(), prev='',
+                           lookComb=lookCombiDefined):
+    '''
+    :param lookCombiDefined lookComb: Wether you want to retrieve just
+        the specified multicontactacts in findMulti (lookCombiDefined),
+        all the multicontacts in the range from 3 to findMulti 
+        (lookCombiDefinedRange), or all the existing ones (lookCombiAll)
+    '''
+    line = line.split()
+    # If we are in a new concatemer or first one 
+    prev_ = line[0].split('#',1)[0]
+    if prev != prev_:
+        # You can iterate over an empty set if
+        #in first fragment
+        for k in concatTemp:
+            concatemers[k] += 1
+
+        # Look for all combinations of multiContacts
+        #if no one specified
+        multiGroups = lookComb(findMulti, concatTemp, multiGroups)
+        
+        # Reset variable
+        concatTemp = set()
+        prev = prev_
+
+        # New concatemer seen
+        nConcat += 1
+
+
+    # store each apparition of a fragment in a concatemer
+    #we store the bin of the mapping start position
+    # Since its a set, will store aparitions just once
+    concatTemp.add((int(line[2]) / resol) + hic_data.section_pos[line[1]][0])
+    concatTemp.add((int(line[8]) / resol) + hic_data.section_pos[line[7]][0])
+
+    return multiGroups, concatemers, nConcat, concatTemp, prev
+
+# Obtain multiContacts from file just in a pairwise manner
+def goThroughConcatemerFilePairwise(hic_data, line, concatemers,
+                                resol, nConcat=0,
+                                concatTemp=set(), prev=''):
+    '''
+    :param lookCombiDefined lookComb: Wether you want to retrieve just
+        the specified multicontactacts in findMulti (lookCombiDefined),
+        all the multicontacts in the range from 3 to findMulti 
+        (lookCombiDefinedRange), or all the existing ones (lookCombiAll)
+    '''
+    line = line.split()
+    # If we are in a new concatemer or first one 
+    prev_ = line[0].split('#',1)[0]
+    if prev != prev_:
+        # You can iterate over an empty set if
+        #in first fragment
+        for k in concatTemp:
+            concatemers[k] += 1
+
+        # Reset variable
+        concatTemp = set()
+        prev = prev_
+
+        # New concatemer seen
+        nConcat += 1
+
+
+    # store each apparition of a fragment in a concatemer
+    #we store the bin of the mapping start position
+    # Since its a set, will store aparitions just once
+    concatTemp.add((int(line[2]) / resol) + hic_data.section_pos[line[1]][0])
+    concatTemp.add((int(line[8]) / resol) + hic_data.section_pos[line[7]][0])
+
+    return concatemers, nConcat, concatTemp, prev
 
 
     
-##########################3
+
+# Open tsv and obtain multiContact frecuencies
 def getMultiAndConcatemersPerBin(hic_data, tsvFile, resol, locusCh=False,
                                  regRange=False, returnNconcat = False,
-                                findMulti=False):
+                                findMulti=False, lookComb=lookCombiDefined):
     '''
     Function to get the number of concatemers were a bin of interest is 
         appearing and the multi contact groups (is bin based, so all 
@@ -467,108 +559,60 @@ def getMultiAndConcatemersPerBin(hic_data, tsvFile, resol, locusCh=False,
         
     :param False findMulti: Integer if you want to look just for multi
         contacts with that amount o members
+    :param lookCombiDefined lookComb: Wether you want to retrieve just
+        the specified multicontactacts in findMulti (lookCombiDefined),
+        all the multicontacts in the range from 3 to findMulti 
+        (lookCombiDefinedRange), or all the existing ones (lookCombiAll)
     '''
+    # Prepare multi contact retrieving stratey
+    if findMulti == False:
+        lookComb=lookCombiAll
+        
+        # Variable to store multiContact groups
+        multiGroups = {}
+        # asume maximum of 20 multiContacts to avoid if statments
+        for sg in range(3, 21):
+            multiGroups[sg] = defaultdict(int)
+        
+    else:
+        multiGroups = {findMulti:defaultdict(int)}
+        
+ 
     # variable to store id
     prev = ''
-    concatemers = {}
-    chrom = ['chr%s' %c for c in range(1, 26)]
-    for cr in chrom:
-        concatemers[cr] = defaultdict(int)
+    concatemers = defaultdict(int)
+
     # Use set to remove duplicates or fragments from same bin in a concatemer
     concatTemp = set()
     nConcat = 0
 
-    # Variable to store multiContact groups
-    multiGroups = {}
-    # asume maximum of 20 multiContacts to avoid if statments
-    for sg in range(3, 21):
-        multiGroups[sg] = defaultdict(int)
+    
 
     with open(tsvFile, 'r') as f:
-        for line in f:
-            # Skip header
+        # Skip initial comments that starts with #
+        while True:
+            line = f.readline()
+            # break while statement if it is not a comment line
+            # i.e. does not startwith #
             if not line.startswith('#'):
-                line = line.split()
-                # If we are in a new concatemer or first one 
-                if prev != line[0].split('#',1)[0]:
-                    # You can iterate over an empty set if
-                    #in first fragment
-                    for k in concatTemp:
-                        concatemers['chr%s' %k[0]][k[1]] += 1
-                    
-                    # Look for al combinations of multiContacts
-                    #if no one specified
-                    if findMulti == False:
-                        # Get all groups of multiContacts
-                        for sg in range(3, len(concatTemp) + 1):
-                            # create groups of sg multicontacts
-                            groups = list(itertools.combinations(concatTemp, sg))
-                            # Iterate over each group
-                            for gr in groups:
-                                # sort elements and Build key for group
-                                key = tuple(sorted(g[1] for g in gr))
-                                #for step in range(sg):
-                                #    key += '%s_' %(grs[step][1])
-                                # remove last _
-                                #key = key[:-1]
-                                # store
-                                multiGroups[sg][key] += 1
-                                
-                    # If interested in a specific number of multiContacts
-                    else:
-                        # Get all groups of multiContacts
-                        for sg in range(3, findMulti + 1):
-                            # create groups of sg multicontacts
-                            groups = list(itertools.combinations(concatTemp, sg))
-                            # Iterate over each group
-                            for gr in groups:
-                                # sort elements and Build key for group
-                                key = tuple(sorted(g[1] for g in gr))
-                                #for step in range(sg):
-                                #    key += '%s_' %(grs[step][1])
-                                # remove last _
-                                #key = key[:-1]
-                                # store
-                                multiGroups[sg][key] += 1
-
-                    # Reset variable
-                    concatTemp = set()
-                    prev = line[0].split('#',1)[0]
-
-                    # store this fragment
-                    # Is not necesary since in all cases this fragments
-                    #should appear later in the concatemer, but just in case
-                    concatTemp.add((int(line[1][3:]), (int(line[2]) / resol) + hic_data.section_pos[line[1]][0]))
-                    concatTemp.add((int(line[7][3:]),(int(line[8]) / resol) + hic_data.section_pos[line[7]][0]))
-
-                    # New concatemer seen
-                    nConcat += 1
-
-                # If same concatemer, keep storing different fragments
-                else:
-                    # store each apparition of a fragment in a concatemer
-                    #we store the bin of the mapping start position
-                    # Since its a set, will store aparitions just once
-                    concatTemp.add((int(line[1][3:]), (int(line[2]) / resol) + hic_data.section_pos[line[1]][0]))
-                    concatTemp.add((int(line[7][3:]),(int(line[8]) / resol) + hic_data.section_pos[line[7]][0]))
+                break
+        # Run current line (first one)
+        multiGroups, concatemers, nConcat, concatTemp, prev = goThroughConcatemerFile(hic_data, line, multiGroups, concatemers,
+                                findMulti, resol, nConcat=0,
+                                concatTemp=set(), prev='', lookComb=lookComb)
+        # Go for next lines
+        for line in f:
+            multiGroups, concatemers, nConcat, concatTemp, prev = goThroughConcatemerFile(hic_data, line, multiGroups, concatemers,
+                                findMulti, resol, nConcat=nConcat,
+                                concatTemp=concatTemp, prev=prev, lookComb=lookComb)
 
     # Add last concatemer of file
     for k in concatTemp:
-        concatemers['chr%s' %k[0]][k[1]] += 1
-    # Get all groups of multiContacts
-    for sg in range(3, len(concatTemp) + 1):
-        # create groups of sg multicontacts
-        groups = list(itertools.combinations(concatTemp, sg))
-        # Iterate over each group
-        for gr in groups:
-            # sort elements and Build key for group
-            key = tuple(sorted(g[1] for g in gr))
-            #for step in range(sg):
-            #    key += '%s_' %(grs[step][1])
-            # remove last _
-            #key = key[:-1]
-            # store
-            multiGroups[sg][key] += 1
+        concatemers[k] += 1
+    multiGroups = lookComb(findMulti, concatTemp, multiGroups)
+
+    
+        
 
     # Get genomic coordinates for region of interest
     if locusCh == True:
@@ -577,7 +621,7 @@ def getMultiAndConcatemersPerBin(hic_data, tsvFile, resol, locusCh=False,
 
         ## modify if we want data from all genome
         # Get all the fragments that start inside this coordinates
-        keys = [k for k in sorted(concatemers[locusCh].keys()) if (regionStart <= 
+        keys = [k for k in concatemers.keys() if (regionStart <= 
                                                             k <= 
                                                             regionEnd)]
         regConcatemers = defaultdict(int)
@@ -586,11 +630,8 @@ def getMultiAndConcatemersPerBin(hic_data, tsvFile, resol, locusCh=False,
             
     # Or not
     else:
-        regConcatemers = defaultdict(int)
-        for locusCh in concatemers.keys():
-            keys = sorted(concatemers[locusCh].keys())
-            for k in keys:
-                regConcatemers[k] += concatemers[locusCh][k]
+        regConcatemers = concatemers
+
                 
 
     ##
@@ -607,7 +648,9 @@ def getMultiAndConcatemersPerBin(hic_data, tsvFile, resol, locusCh=False,
     
     
 
+    
 
+# Open tsv and obtain multiContact frecuencies in a pairwise manner
 def getConcatemersPerBin(hic_data, tsvFile, resol, locusCh=False,
                          regRange = False, returnNconcat = False):
     '''
@@ -620,81 +663,60 @@ def getConcatemersPerBin(hic_data, tsvFile, resol, locusCh=False,
     '''
     # variable to store id
     prev = ''
-    concatemers = {}
-    chrom = ['chr%s' %c for c in range(1, 26)]
-    for cr in chrom:
-        concatemers[cr] = defaultdict(int)
+    concatemers = defaultdict(int)
+    
     concatTemp = set()
     nConcat = 0
 
     with open(tsvFile, 'r') as f:
-        for line in f:
-            # Skip header
+        # Skip initial comments that starts with #
+        while True:
+            line = f.readline()
+            # break while statement if it is not a comment line
+            # i.e. does not startwith #
             if not line.startswith('#'):
-                line = line.split('\t')
-                # If we are in a new concatemer or first one 
-                if prev != line[0].split('#',1)[0]:
-                    # You can iterate over an empty set if
-                    #in first fragment
-                    for k in concatTemp:
-                        concatemers[k[0]][k[1]] += 1
-                    # Reset variable
-                    concatTemp = set()
-                    prev = line[0].split('#',1)[0]
-                    
-                    # store this fragment
-                    # Is not necesary since in all cases this fragments
-                    #should appear later in the concatemer, but just in case
-                    concatTemp.add((line[1], (int(line[2]) / resol) + hic_data.section_pos[line[1]][0]))
-                    concatTemp.add((line[7],(int(line[8]) / resol) + hic_data.section_pos[line[7]][0]))
-                
-                    # New concatemer seen
-                    nConcat += 1
-                
-                # If same concatemer, keep storing different fragments
-                else:
-                    # store each apparition of a fragment in a concatemer
-                    #we store the bin of the mapping start position
-                    # Since its a set, will store aparitions just once
-                    concatTemp.add((line[1], (int(line[2]) / resol) + hic_data.section_pos[line[1]][0]))
-                    concatTemp.add((line[7],(int(line[8]) / resol) + hic_data.section_pos[line[7]][0]))
+                break
+        # Run current line (first one)
+        concatemers, nConcat, concatTemp, prev = goThroughConcatemerFilePairwise(hic_data, line, concatemers,
+                                resol, nConcat=0,
+                                concatTemp=set(), prev='')
+        
+        # Go for next lines
+        for line in f:
+            concatemers, nConcat, concatTemp, prev = goThroughConcatemerFilePairwise(hic_data, line, concatemers,
+                                resol, nConcat=nConcat,
+                                concatTemp=concatTemp, prev=prev)
 
     # Add last concatemer of file
     for k in concatTemp:
-        concatemers[k[0]][k[1]] += 1
+        concatemers[k] += 1
 
 
-    # Get genomic coordinates for region of interest
+     # Get genomic coordinates for region of interest
     if locusCh == True:
         regionStart = min(regRange)
         regionEnd = max(regRange) 
 
+        ## modify if we want data from all genome
         # Get all the fragments that start inside this coordinates
-        keys = [k for k in sorted(concatemers[locusCh].keys()) if (regionStart <= 
+        keys = [k for k in concatemers.keys() if (regionStart <= 
                                                             k <= 
                                                             regionEnd)]
         regConcatemers = defaultdict(int)
         for k in keys:
             regConcatemers[k] += concatemers[locusCh][k]
-    
+            
+    # Or not
     else:
-        # Get all the fragments 
-        regConcatemers = defaultdict(int)
-        for locusCh in concatemers.keys():
-            keys = sorted(concatemers[locusCh].keys())
-            for k in keys:
-                regConcatemers[k] += concatemers[locusCh][k]
+        regConcatemers = concatemers
             
 
     if returnNconcat == False:
         return regConcatemers
     else:
         return regConcatemers, nConcat
-    
-    
-    
 
-## Prepare randomised shufling of multicontacts                                                           returnNconcat=True)
+# Prepare randomised shufling of multicontacts
 def randomiseMultiGroups(multiGroups, multiLevel):
     # we get all keys from the multiGroups
     groups = []
@@ -720,6 +742,7 @@ def randomiseMultiGroups(multiGroups, multiLevel):
 
     return groups
 
+# Function to normalise by frecuencies
 def MultiNorm(hic_data, regionStartBin, regionEndBin, tsvFile, resol, locusCh=False,
               method='', multiLevel=2, zeroPercent=False, mininter=0, keep=False, 
               returnNconcat=False, random=False, multResult=100):
@@ -936,4 +959,8 @@ for pairwise interactions. Wont randomise'
         return norm_data, concatemersBin
     else:
         return norm_data, concatemersBin, nConcat
+
+
+    
+    
 
