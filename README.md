@@ -1,2 +1,2 @@
 # PhD
-All the scripts mad during the PhD
+All the scripts writen during the PhD
