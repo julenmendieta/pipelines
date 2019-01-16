@@ -1,3 +1,7 @@
+from collections import defaultdict
+from pytadbit                     import HiC_data
+import itertools
+
 def factorial(n):return reduce(lambda x,y:x*y,[1]+range(1,n+1))
 
 
@@ -509,12 +513,20 @@ def goThroughConcatemerFile(hic_data, line, multiGroups, concatemers,
 # Obtain multiContacts from file just in a pairwise manner
 def goThroughConcatemerFilePairwise(hic_data, line, concatemers,
                                 resol, nConcat=0,
-                                concatTemp=set(), prev=''):
+                                concatTemp=set(), prev='',
+                                frag1Pos=2, frag2Pos=8,
+                                chrom1Pos = 1, chrom2Pos=7):
     '''
     :param lookCombiDefined lookComb: Wether you want to retrieve just
         the specified multicontactacts in findMulti (lookCombiDefined),
         all the multicontacts in the range from 3 to findMulti 
         (lookCombiDefinedRange), or all the existing ones (lookCombiAll)
+    :param 2 frag1Pos: Index indicating in wich column of the tsv file are
+        located the genomic coordinates of the first fragment in the 
+        interaction
+    :param 8 frag2Pos: Index indicating in wich column of the tsv file are
+        located the genomic coordinates of the second fragment in the 
+        interaction
     '''
     line = line.split()
     # If we are in a new concatemer or first one 
@@ -536,11 +548,10 @@ def goThroughConcatemerFilePairwise(hic_data, line, concatemers,
     # store each apparition of a fragment in a concatemer
     #we store the bin of the mapping start position
     # Since its a set, will store aparitions just once
-    concatTemp.add((int(line[2]) / resol) + hic_data.section_pos[line[1]][0])
-    concatTemp.add((int(line[8]) / resol) + hic_data.section_pos[line[7]][0])
+    concatTemp.add((int(line[frag1Pos]) / resol) + hic_data.section_pos[line[chrom1Pos]][0])
+    concatTemp.add((int(line[frag2Pos]) / resol) + hic_data.section_pos[line[chrom2Pos]][0])
 
     return concatemers, nConcat, concatTemp, prev
-
 
     
 
