@@ -1,3 +1,9 @@
+import mpl_toolkits.mplot3d as plt3d
+from mpl_toolkits.mplot3d import Axes3D
+from matplotlib import pyplot as plt
+import matplotlib.backends.backend_pdf
+import matplotlib.cm as cm
+
 def plot3Dmatrix(longi, focusMultiGroups2, regionStartBin, filterPerc=False, title='',
                  saveFig=False, rangeVal=[False, False], toZscore=False, line=False):
     
