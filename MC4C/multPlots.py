@@ -211,7 +211,7 @@ def plot3Dmatrix(longi, focusMultiGroups2, regionStartBin, filterPerc=False, tit
             line_.set_linestyle('--')
             ax.add_line(line_)
 
-            # from begining to diagonal
+            # from beginning to diagonal
             xs = (0, li)
             ys = (li, li)
             zs = (li, li)
