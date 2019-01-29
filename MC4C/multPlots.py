@@ -1,5 +1,5 @@
 def plot3Dmatrix(longi, focusMultiGroups2, regionStartBin, filterPerc=False, title='',
-                 saveFig=False, rangeVal=[False, False], toZscore=False):
+                 saveFig=False, rangeVal=[False, False], toZscore=False, line=False):
     
     '''
     Function to plot in a 3D cube al 3-wise interactions in the genome. Just one 6th of
@@ -17,7 +17,7 @@ def plot3Dmatrix(longi, focusMultiGroups2, regionStartBin, filterPerc=False, tit
         pdf.close() to save the file
     :param [False, False] rangeVal: Set minimum and maximum values for the colorMap
     :param False toZscore: Transform values to ZScore
-    
+    :param False line: List with locations to be marked as a line
     '''
 
     # Store maxVal and minVal
@@ -192,6 +192,15 @@ def plot3Dmatrix(longi, focusMultiGroups2, regionStartBin, filterPerc=False, tit
     # set title
     fig.suptitle(title)
 
+    # Add lines to positions of interest
+    for li in line:
+        xs = (li, li)
+        ys = (li, longi)
+        zs = (li, longi)
+        line_ = plt3d.art3d.Line3D(xs, ys, zs)
+        line_.set_color('red')
+        line.set_linestyle('--')
+        ax.add_line(line_)
 
     if saveFig == True:
         pdf.savefig(fig , bbox_inches='tight')
