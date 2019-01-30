@@ -1,3 +1,8 @@
+import numpy as np
+import copy
+
+
+
 # Plot HiC matrix in a way we can store it in subplots
 def plotHiC(matrix1, bad_color=None, axe=None, transform=np.log2, 
             rescale_zeros=True, title = None, **kwargs):
@@ -33,21 +38,15 @@ def plotHiC(matrix1, bad_color=None, axe=None, transform=np.log2,
         plt.imshow(matrix, interpolation='None', origin='lower', **kwargs)
 
         plt.xlim(0 - 0.5, len(matrix[0]) - 0.5)
-        if triangular:
-            plt.ylim(0, len(matrix))
-        else:
-            plt.ylim(-0.5, len(matrix) - 0.5)
+        plt.ylim(-0.5, len(matrix) - 0.5)
         
         if title != None:
-            plt.title(flag1)
+            plt.title(title)
     else:
         axe.imshow(matrix, interpolation='None', origin='lower', **kwargs)
 
         axe.set_xlim(0 - 0.5, len(matrix[0]) - 0.5)
-        if triangular:
-            axe.set_ylim(0, len(matrix))
-        else:
-            axe.set_ylim(-0.5, len(matrix) - 0.5)
+        axe.set_ylim(-0.5, len(matrix) - 0.5)
 
         if title != None:
-            axe.set_title(flag1)
+            axe.set_title(title)
