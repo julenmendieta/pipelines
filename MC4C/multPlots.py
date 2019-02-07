@@ -3,9 +3,12 @@ from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import pyplot as plt
 import matplotlib.backends.backend_pdf
 import matplotlib.cm as cm
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+
 
 def plot3Dmatrix(longi, focusMultiGroups2, regionStartBin, filterPerc=False, title='',
-                 saveFig=False, rangeVal=[False, False], toZscore=False, line=False):
+                 saveFig=False, rangeVal=[False, False], toZscore=False, track=False,
+                trackAlpha=0.2):
     
     '''
     Function to plot in a 3D cube al 3-wise interactions in the genome. Just one 6th of
@@ -23,8 +26,11 @@ def plot3Dmatrix(longi, focusMultiGroups2, regionStartBin, filterPerc=False, tit
         pdf.close() to save the file
     :param [False, False] rangeVal: Set minimum and maximum values for the colorMap
     :param False toZscore: Transform values to ZScore
-    :param False line: List with (location, color) lists to be marked as a line. Location
-        should be writen in bin position integers. E.j. [(23, 'red'), (45, 'blue')]
+    :param False track: List with (location, color) lists to be marked as a plane. Location
+        should be writen in bin position integers. E.j. [(23, 'red'), (45, 'blue')]. Used to
+        check the 3-wise interactions in relation with a bin of interest
+    :param 0.2 trackAlpha: floating value indicating alpha applyed to track
+    
     '''
 
     # Store maxVal and minVal
@@ -200,25 +206,43 @@ def plot3Dmatrix(longi, focusMultiGroups2, regionStartBin, filterPerc=False, tit
     fig.suptitle(title)
 
     # Add lines to positions of interest
-    if line != False:
-        for li, color in line:
-            # From diagonal to end
-            xs = (li, li)
-            ys = (li, longi)
-            zs = (li, longi)
-            line_ = plt3d.art3d.Line3D(xs, ys, zs)
-            line_.set_color(color)
-            line_.set_linestyle('--')
-            ax.add_line(line_)
+    if track != False:
+        for tr, color in track:
+            # Add small triangle
+            verts = [np.array([0,0,tr]), np.array([0,tr,tr]), 
+                     np.array([tr,tr,tr])]
+            collection = Poly3DCollection([verts], alpha=trackAlpha, linewidths=1,
+                                         edgecolors='grey')
+            collection.set_facecolor(color)
+            ax.add_collection3d(collection)
 
-            # from beginning to diagonal
-            xs = (0, li)
-            ys = (li, li)
-            zs = (li, li)
-            line_ = plt3d.art3d.Line3D(xs, ys, zs)
-            line_.set_color(color)
-            line_.set_linestyle('--')
-            ax.add_line(line_)
+            # Add big triangle
+            verts = [np.array([tr,tr,tr]), np.array([tr,tr,longi]), 
+                     np.array([tr,longi,longi])]
+            collection = Poly3DCollection([verts], alpha=trackAlpha, linewidths=1,
+                                         edgecolors='grey')
+            collection.set_facecolor(color)
+            ax.add_collection3d(collection)
+
+            # Add rectangle
+            verts = [np.array([0,tr,tr]), np.array([tr,tr,tr]), np.array([tr,tr,longi]), 
+                     np.array([0,tr,longi])]
+            collection = Poly3DCollection([verts], alpha=trackAlpha, linewidths=1,
+                                         edgecolors='grey')
+            collection.set_facecolor(color)
+            ax.add_collection3d(collection)
+
+                        
+            # Fill all y and x postion for all z positions
+            #for i in range(0, li):
+            #    xs = (li, li)
+            #    ys = (li, longi)
+            #    zs = (i, longi)
+            #    for a in itertools.permutations([xs, ys, zs], 3):
+            #        line_ = plt3d.art3d.Line3D(xs, ys, zs)
+            #        line_.set_color(color)
+            #        line_.set_linestyle('--')
+            #        ax.add_line(line_)
 
     if saveFig == True:
         pdf.savefig(fig , bbox_inches='tight')
