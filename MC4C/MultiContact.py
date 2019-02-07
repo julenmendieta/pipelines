@@ -758,6 +758,10 @@ def MultiNorm(hic_data, regionStartBin, regionEndBin, tsvFile, resol, locusCh=Fa
               method='', multiLevel=2, zeroPercent=False, mininter=0, keep=False, 
               returnNconcat=False, random=False, multResult=100):
     '''
+    :param regionStartBin: integer indicating the bin FROM wich we will store 
+        normalised data in the new hic_data object
+    :param regionEndBin: integer indicating the bin TO wich (itself included)
+        we will store normalised data in the new hic_data object
     :param False keep: if you have a list of bin coordinates that should be the only 
         ones to be kept. e.j. [(1,3), (235,76), ...]
     :param 2 multiLevel: To normalise taking into account n-wise interactions
