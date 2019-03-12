@@ -5,6 +5,8 @@ loadMatrixFile = '/scratch/julen/PCHiC_assesment/modelling/matrixList.txt'
 n_cpus = 8
 totalProcesors = 32
 
+maxJobs = (totalProcesors / n_cpus) - 1
+
 # Get matrices from file
 matPaths= []
 with open(loadMatrixFile,'r') as f:
@@ -39,11 +41,11 @@ def worker2(queue):
         return item
 
 # Create pool object
-the_pool = multiprocessing.Pool(4, worker2,(the_queue,))
+the_pool = multiprocessing.Pool(maxJobs, worker2,(the_queue,))
 #                            don't forget the coma here  ^
 
 # run jobs
 for co in commands:
-    print 'python %s' %co
-    #item = the_queue.put('python %s' %co)
+    #print 'python %s' %co
+    item = the_queue.put('python %s' %co)
             
