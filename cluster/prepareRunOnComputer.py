@@ -1,5 +1,7 @@
 import multiprocessing 
 import os
+from time import sleep
+
 
 loadMatrixFile = '/scratch/julen/PCHiC_assesment/modelling/matrixList.txt'
 n_cpus = 8
@@ -48,4 +50,8 @@ the_pool = multiprocessing.Pool(maxJobs, worker2,(the_queue,))
 for co in commands:
     #print 'python %s' %co
     item = the_queue.put('python %s' %co)
-            
+   
+# Wail till all jobs have finished
+waiting = the_queue.qsize()
+while waiting > 0:
+    sleep(5)
