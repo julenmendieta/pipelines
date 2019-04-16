@@ -982,5 +982,119 @@ for pairwise interactions. Wont randomise'
 
 
     
+def multiReNorm(data):
+    '''
+    Function to normalise for viewPoint the multi contact data
+    '''
+
+    # Create variable to store output
+    data2 = {}
+
+    # get appearances of each position
+    interSums = defaultdict(int)
+    for da in data:
+        for d in da:
+            interSums[d] += data[da]
+
+    # Normalise
+    for da in data.keys():
+        # sum all appearances of fragments in the multicontact group
+        divisor = sum(interSums[da[nd]] for nd in range(len(da)))
+
+        # look for appearances of more than one member of the multiContact            
+        divisor -= sum(data[da2] * (sum(1 for d in da if d in da2) - 1) 
+                       for da2 in data 
+                       # These concatemers with more than one member were counted more than once
+                        # sum(1 for d in da if d in da2) - 1 indicates how many extra times were counted 
+                       if sum(1 for d in da if d in da2) >= 2)
+
+        data2[da] = data[da] / float(divisor)
+
+
+    return data2
+
+
+# Outborder areas are counted as zeros
+def median_filter_dict(data, filter_size, start=False, end=False):
+    '''
+    Function to apply median filter to a matrix of any number of
+        dimension. Is prepared for genome interaction data, where 
+        interaction between A and B and B and A are the same, so
+        just interactions where A<B are mantained and processed.
+        Areas outside the matrix or in A>B are treated as zeros.
+        Matrix is introduced as a dictionary
+    
+    :param data0: dictionary with data to be median filtered
+    :param filter_size: n x n dimensiones of the submatrix size to
+        apply median filtering. MUST be odd
+    '''
+    if start == False:
+        start = np.amin(data.keys())
+    if end == False:
+        end = np.amax(data.keys())
+        
+    # Be sure that filter_size is odd
+    if filter_size % 2 == 0:
+        print 'WARNING: set filter_size as odd number'
+    # Obtain number of dimensions in our dataset
+    keylen = len(data.keys()[0])
+    
+    # Create variable to store output
+    data2 = {}
+    # Integer with number of bins up and down from each filtered submatrix
+    indexer = filter_size // 2
+    # Create list of coordinates for the position coordinates (away
+    #from filtered bin) to be check given filter_size
+    focusRng = range(-indexer, filter_size-indexer)
+    window = list(itertools.product(focusRng,repeat=keylen))
+    
+    # Half bins to be check (integer)
+    index = len(window) // 2
+    for k in data:
+        data2[k] = sorted(
+            ## If out of borders in y or x axis
+            0 if (
+                # If any coordinate before begining point
+                min(k[nkl]+a[nkl] for nkl in range(keylen)) < start
+                # If any coordinate duplicated
+                #we will always use the sorted order fo each N-wise combination
+                or [k[nkl]+a[nkl] for nkl in range(keylen)] != sorted(k[nkl]+a[nkl] for nkl in range(keylen))
+                # At end
+                or sum(end < (k[nkl]+a[nkl]) for nkl in range(keylen)) > 0
+            ## If inside borders (beware of empty cells)
+            # max between 0 and None to obtain 0
+            ) else max(data.get(tuple(k[nkl]+a[nkl] for nkl in range(keylen))), 0)
+            for a in window
+        # Take median value
+        )[index]
+    return data2
     
 
+def reNorm(matrix, minFull = 0):
+    '''
+    Funtion to normalise pairwarise contact matrices in order to remove
+        the view-point bias.
+    :param matrix: list o list with the 2D interaction data
+    :param 0 minFull: Minimum number o cells that must have data in a
+        matrix row in order to take it into account (otherwise is turned
+        to all zeros)
+    '''
+    matrix2 = [[0 for i in range(len(matrix))] for ii in range(len(matrix))]
+    for i in range(len(matrix)):
+        isum = sum(matrix[i])
+        for j in range(len(matrix)):
+            jsum = sum(matrix[j])
+            
+            divi = isum + jsum
+            if divi == 0:
+                divi = 1
+
+            matrix2[i][j] = matrix[i][j] / float(divi - matrix[i][j])
+
+    # Remove ares with low data
+    for i in range(len(matrix)):
+        full = sum(1 for j in range(len(matrix)) if matrix2[i][j] != 0)
+        if full < minFull:
+            for j in range(len(matrix)):
+                matrix2[i][j] = 0
+    return matrix2
