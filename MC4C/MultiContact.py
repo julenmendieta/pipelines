@@ -955,12 +955,17 @@ for pairwise interactions. Wont randomise'
                 focusMultiGroups = {}
                 # Normalise
                 for k in keys:
-                    #for nm in range(multiLevel):
-                    #    if concatemersBin[k[nm]] <= 2:
-                    #        print k[nm], concatemersBin[k[nm]]  
-                    divider = sum(concatemersBin[k[nm]] for nm in range(multiLevel)) - multiGroups[multiLevel][k]
+                    # first get presence of all fragments 
+                    divider = sum(concatemersBin[k[nm]] for nm in range(multiLevel))
+                    # then remove duplicated ones
+                    # look for appearances of more than one member of the multiContact            
+                    divider -= sum(multiGroups[multiLevel][k2] * (sum(1 for kk in k if kk in k2) - 1) 
+                                   for k2 in keys 
+                                   # These concatemers with more than one member were counted more than once
+                                    # sum(1 for d in da if d in da2) - 1 indicates how many extra times were counted 
+                                   if sum(1 for kk in k if kk in k2) >= 2)
                     if divider < 0:
-                        divider, [concatemersBin[k[nm]] for nm in range(multiLevel)], multiGroups[multiLevel][k]
+                        print divider, [concatemersBin[k[nm]] for nm in range(multiLevel)], multiGroups[multiLevel][k]
 
                     focusMultiGroups[k] = (multiGroups[multiLevel][k] / float(divider)) * multResult
                 norm_data = focusMultiGroups
