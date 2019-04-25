@@ -637,7 +637,7 @@ def getMultiAndConcatemersPerBin(hic_data, tsvFile, resol, locusCh=False,
                                                             regionEnd)]
         regConcatemers = defaultdict(int)
         for k in keys:
-            regConcatemers[k] += concatemers[locusCh][k]
+            regConcatemers[k] += concatemers[k]
             
     # Or not
     else:
@@ -715,7 +715,7 @@ def getConcatemersPerBin(hic_data, tsvFile, resol, locusCh=False,
                                                             regionEnd)]
         regConcatemers = defaultdict(int)
         for k in keys:
-            regConcatemers[k] += concatemers[locusCh][k]
+            regConcatemers[k] += concatemers[k]
             
     # Or not
     else:
