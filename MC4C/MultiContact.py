@@ -1098,3 +1098,37 @@ def reNorm(matrix, minFull = 0):
             for j in range(len(matrix)):
                 matrix2[i][j] = 0
     return matrix2
+
+
+
+def multiReNorm(data):
+    '''
+    Function to normalise for viewPoint the multi contact data
+    :param data: dictionary with multiContact values
+    '''
+
+    # Create variable to store output
+    data2 = {}
+
+    # get appearances of each position
+    interSums = defaultdict(int)
+    for da in data:
+        for d in da:
+            interSums[d] += data[da]
+
+    # Normalise
+    for da in data.keys():
+        # sum all appearances of fragments in the multicontact group
+        divisor = sum(interSums[da[nd]] for nd in range(len(da)))
+
+        # look for appearances of more than one member of the multiContact            
+        divisor -= sum(data[da2] * (sum(1 for d in da if d in da2) - 1) 
+                       for da2 in data 
+                       # These concatemers with more than one member were counted more than once
+                        # sum(1 for d in da if d in da2) - 1 indicates how many extra times were counted 
+                       if sum(1 for d in da if d in da2) >= 2)
+
+        data2[da] = data[da] / float(divisor)
+
+
+    return data2
