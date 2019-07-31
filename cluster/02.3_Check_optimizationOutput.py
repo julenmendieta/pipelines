@@ -163,11 +163,12 @@ for ma in matPaths:
 #]
 
 # Show distribution by distance cutoffs
+topd = {}
 if show_dcut == True:
     topCor = {}
     for path in paths:
         
-        id1 = path.split('/')[-2]
+        id1 = '%s_%s' %(path.split('/')[-3], path.split('/')[-2])
         # Get parameters resume
         files = []
         for o in os.listdir(path):
@@ -232,11 +233,31 @@ if show_dcut == True:
             plt.xlabel('Distance cutoffs')
             plt.ylabel('Correlation')
             #plt.show()
-            plt.ioff()
+            plt.ylim(0.1, 1)
+            
+            # add dcutoff with top correlation to list
+            maxd = [0,0]
+            for dc in dcuts:
+                if max(dcuts[dc]) > maxd[1]:
+                    maxd = [dc, max(dcuts[dc])]
+            if maxd[0] not in topd:
+                topd[maxd[0]] = 1
+            else:
+                topd[maxd[0]] += 1
 
+            # add line in top correlation
+            posi = None
+            for nal, al in enumerate(sorted(dcuts.keys())):
+                if al == maxd[0]:
+                    posi = nal
+            plt.axvline(posi, color='blue', linestyle='--')
+
+            plt.ioff()
         else:
             print 'No files in %s' %id1
 
+    for dc in topd:
+        print '%s\t%s' %(dc, topd[dc])
     plt.show()
 
 
@@ -244,8 +265,7 @@ if show_dcut == True:
 # Next we should check in the selected dcutoff which is the best maxdist
 if dcut != False:
     for path in paths:
-
-        id1 = path.split('/')[-2]
+        id1 = '%s_%s' %(path.split('/')[-3], path.split('/')[-2])
         # Get parameters resume
         files = []
         for o in os.listdir(path):
