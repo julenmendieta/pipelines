@@ -1,7 +1,7 @@
 import numpy as np
 import copy
 from matplotlib import pyplot as plt
-
+import matplotlib.patches as patch
 
 # Plot HiC matrix in a way we can store it in subplots
 def plotHiC(matrix1, bad_color=None, axe=None, transform=np.log2, 
@@ -149,7 +149,7 @@ def GetXY_smooth4(fileINname,diff=0):
 # Plot stats for one model object
 def plotearStats(indir, clust, marksAll, marksBar, regionStart, regionEnd, resol, rotation=90,
                  title='', titleSize = 20, figsize = (20, 10), diff=0, propor=[4], radius="?",
-                 fromOri = 0, fromEnd = 0, savefig = True):
+                 fromOri = 0, fromEnd = 0):
     fontSize = 15
     # propor is the proportion of size for normal plots against grey bar info plots
     # marksAll is to add the marks in all the plots, and MarksBar is to add marks just in the
@@ -270,9 +270,8 @@ def plotearStats(indir, clust, marksAll, marksBar, regionStart, regionEnd, resol
 
     plt.xlim(np.min(xa) + fromOri, np.max(xa) - fromEnd)
 
-    if savefig == True:
-        pdf.savefig( f )
     plt.show()
+    return f
 
 
 # Example of call
@@ -332,7 +331,7 @@ def plotearStats(indir, clust, marksAll, marksBar, regionStart, regionEnd, resol
 # Plot compared stats plot
 def plotearStatsCompare(values, indir, clust, marksAll, marksBar, regionStart, regionEnd, resol, rotation=90,
                  title='', titleSize = 20, figsize = (20, 10), diff=0, propor=[4], radius="?",
-                 fromOri = 0, fromEnd = 0, savefig = True, ylim1 = (-30, 30), ylim2 = (-4, 4)):
+                 fromOri = 0, fromEnd = 0, ylim1 = (-30, 30), ylim2 = (-4, 4)):
     fontSize = 15
     # propor is the proportion of size for normal plots against grey bar info plots
     # marksAll is to add the marks in all the plots, and MarksBar is to add marks just in the
@@ -458,10 +457,8 @@ def plotearStatsCompare(values, indir, clust, marksAll, marksBar, regionStart, r
 
     plt.xlim(np.min(xa) + fromOri, np.max(xa) - fromEnd)
 
-    if savefig == True:
-        pdf.savefig( f )
-
     plt.show()
+    return f
 
 # Example of call
 # pdf = matplotlib.backends.backend_pdf.PdfPages(outpath + 'statsMultiplotsCellComparison.pdf')
@@ -560,7 +557,7 @@ def convertRGB(value):
     return [i/255.0 for i in value]
 def plotearStatsBoth(indirs, clust, marksAll, marksBar, regionStart, regionEnd, resol, rotation=90,
                  title='', titleSize = 20, figsize = (20, 10), diff=0, propor=[4], radius="?",
-                 fromOri = 0, fromEnd = 0, savefig = True):
+                 fromOri = 0, fromEnd = 0):
     fontSize = 15
     # propor is the proportion of size for normal plots against grey bar info plots
     # marksAll is to add the marks in all the plots, and MarksBar is to add marks just in the
@@ -652,9 +649,13 @@ def plotearStatsBoth(indirs, clust, marksAll, marksBar, regionStart, regionEnd, 
     # we want reference genome positions and enough labels to see start and end
     mini = 10
     # get the number of divisions where labels would be equally spread
-    start, end = allAxis[-3].get_xlim()
+    start = 0
+    end = ((regionEnd - regionStart) / resol) + 1
+    plt.xlim(start, end)
+    #start, end = allAxis[-3].get_xlim()
+    #print start, end
     binrange = range(int(start), int(end) + 1)
-    posrange = range(regionStart, regionEnd + resol, 5000)
+    posrange = range(regionStart, regionEnd + resol, resol)
     #for i in range(8, 22):
     #    divisor1 = len(binrange) / float(i)
     #    if mini >= divisor1/int(divisor1):
@@ -685,9 +686,8 @@ def plotearStatsBoth(indirs, clust, marksAll, marksBar, regionStart, regionEnd, 
 
     plt.xlim(np.min(xa) + fromOri, np.max(xa) - fromEnd)
 
-    if savefig == True:
-        pdf.savefig( f )
     plt.show()
+    return f
 
 
 # Example of run
