@@ -4,46 +4,50 @@ from copy import deepcopy
 from pytadbit.modelling.structuralmodels import StructuralModels
 from warnings import warn
 import sys
+import subprocess
 
-def _extend_models(self, models, keep=0):
-        """
-        add new models to structural models
-        """
+def _extend_models(models0, models, keep=0):
+    """
+    add new models to structural models
+    """
 
-	new_models = {}
-        #nall  = len(self) + len(self._bad_models)
-        #self.define_best_models(nall)
-        ids = set(self[m]['rand_init'] for m in range(len(self)))
-	# create variable for models with same seed
-        skip = []
-        if len(models) == 0:
-            print '##### No models in one case!!!! #####'
-        for m in range(len(models)):
-	    # we create the list here to retrieve error if there are no models
-            #new_models = {}
-	    if models[m]['rand_init'] in ids:
-                warn('WARNING: found model with same random seed number, '
-                     'SKIPPPING')
-                skip.append(m)
-		print 'skipped'
-        inter = [mo for mo in self] + [me for i, me in enumerate(models) if i not in skip ]
-        for i, m in enumerate(sorted(inter,
-                                     key=lambda x: x['objfun'])):
-            new_models[i] = m
-        # combine all models
-        self = StructuralModels(
-            nloci=self.nloci, models=new_models, bad_models=self._bad_models,
-            resolution=self.resolution, original_data=self._original_data,
-            clusters=self.clusters, config=self._config, zscores=self._zscores,
-            zeros=self._zeros, restraints=self._restraints,
-            description=self.description)
-	# Add new indexes
-        for i, m in enumerate(self):
-            m['index'] = i
-        # keep the same number of best models
-        if keep != 0:
-            self.define_best_models(keep)
-        return self
+    new_models = {}
+    #nall  = len(models0) + len(models0._bad_models)
+    #models0.define_best_models(nall)
+    ids = set(models0[m]['rand_init'] for m in range(len(models0)))
+    # create variable for models with same seed
+    skip = []
+    if len(models) == 0:
+        print '##### No models in one case!!!! #####'
+    # check for duplicated rand_init ids
+    for m in range(len(models)):
+        # we create the list here to retrieve error if there are no models
+        # new_models = {}
+        if models[m]['rand_init'] in ids:
+            warn('WARNING: found model with same random seed number, '
+                    'SKIPPPING')
+            ## WITH LAMMPS WE HAVE ANOTHER PARAMETER FOR RANDOM INIT SO NO 
+            #SENSE ON REMOVING IN HERE
+            skip.append(m)
+            print 'Model skipped due to same rand_init'
+    inter = [mo for mo in models0] + [me for i, me in 
+                                        enumerate(models) if i not in skip]
+    for i, m in enumerate(sorted(inter, key=lambda x: x['objfun'])):
+        new_models[i] = m
+    # combine all models
+    models0 = StructuralModels(
+        nloci=models0.nloci, models=new_models, bad_models=models0._bad_models,
+        resolution=models0.resolution, original_data=models0._original_data,
+        clusters=models0.clusters, config=models0._config, zscores=models0._zscores,
+        zeros=models0._zeros, restraints=models0._restraints,
+        description=models0.description)
+    # Add new indexes
+    for i, m in enumerate(models0):
+        m['index'] = i
+    # keep the same number of best models
+    if keep != 0:
+        models0.define_best_models(keep)
+    return models0
 
 ##################################################
 if len(sys.argv) == 0:
@@ -63,8 +67,18 @@ else:
                 if fi1.startswith('reg'):
                     fi = fi1
         #fi = '_'.join(fi.split('_')[0].split('Scaled01'))
-	flag = '%s_%s' %(fi.split('Scaled01')[0], fi.split('Scaled01')[1].split('_')[0])
-        #flag = '%s_%s' %(pathIn.split('/')[-5], fi)
+        #flag = '%s_%s' %(fi.split('Scaled01')[0], fi.split('Scaled01')[1].split('_')[0])
+        # If we dont have expeirment name in file name
+        try:
+            flag = '%s_%s_%s' %(pathIn.split('/')[-4], 
+                        fi.split('_')[0], 
+                        fi.split('_')[1].split('Scaled01')[1])
+        # If we do have it
+        except:
+            flag = '%s_%s_%s' %(pathIn.split('/')[-4],
+                                            fi.split('_')[0],
+                                            fi.split('_')[2].split('Scaled01')[1])
+            #flag = '%s_%s' %(pathIn.split('/')[-5], fi)
     else:
         flag = sys.argv[2]
 
@@ -72,17 +86,53 @@ print flag
 # First store all models in one list
 files = os.listdir(pathIn)
 modelos = []
+fileNames = []
 for fi in files:
     if fi[-6:] == 'models':
         a = load_structuralmodels(pathIn + fi)
+        fileNames.append(fi)
         modelos.append(a)
 
-# then merge them
-mods1 = modelos[0]
-for i, mods2 in enumerate([m for m in modelos[1:]]):
-    #mods1 = _extend_models(mods1, mods2, i + 2)
-    mods1 = _extend_models(mods1, mods2)
+## then merge them
+# check that first model has data
+full = False
+stop = False
+i0 = 0
+while full == False and stop == False:
+    mods1 = modelos[i0]
+    if len(mods1) == 0:
+        print '##### No models in one case!!!! #####'
+        print fileNames[i0]
+        i0 += 1
+    else:
+        full = True
+    # if reach end of models and all have no data
+    if i0 >= len(modelos):
+        stop = True
+# if we have data
+if full == True:
+    # can be that just have one model
+    if i0 == len(modelos) - 1:
+        mods1 = modelos[i0]
+    # if we have more than one
+    else:
+        for i, mods2 in enumerate([m for m in modelos[i0 + 1:]]):
+            #mods1 = _extend_models(mods1, mods2, i + 2)
+            mods1 = _extend_models(mods1, mods2)
+            if len(mods2) == 0:
+                print fileNames[i+ i0 + 1]
 
 print len(mods1)
 mods1.save_models(pathOut+'%s.modelsAll'%(flag))
 
+# remove all files that are in the merge
+clean = True
+if clean == True:
+    for fi in files:
+        if fi[-6:] == 'models':
+            p = subprocess.Popen(['rm', '%s%s' %(pathIn, fi)],
+                                             stdout=subprocess.PIPE, 
+                                             stderr=subprocess.PIPE)
+            out, err = p.communicate()
+            if len(err) != 0:
+                print fi, err
