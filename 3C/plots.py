@@ -233,9 +233,13 @@ def plotearStats(indir, clust, marksAll, marksBar, regionStart, regionEnd, resol
     # we want reference genome positions and enough labels to see start and end
     mini = 10
     # get the number of divisions where labels would be equally spread
-    start, end = allAxis[-3].get_xlim()
+    start = 0
+    end = ((regionEnd - regionStart) / resol) + 1
+    plt.xlim(start, end)
+    #start, end = allAxis[-3].get_xlim()
+    #print start, end
     binrange = range(int(start), int(end) + 1)
-    posrange = range(regionStart, regionEnd + resol, 5000)
+    posrange = range(regionStart, regionEnd + resol, resol)
     #for i in range(8, 22):
     #    divisor1 = len(binrange) / float(i)
     #    if mini >= divisor1/int(divisor1):
@@ -406,9 +410,13 @@ def plotearStatsCompare(values, indir, clust, marksAll, marksBar, regionStart, r
     # we want reference genome positions and enough labels to see start and end
     mini = 10
     # get the number of divisions where labels would be equally spread
-    start, end = allAxis[-3].get_xlim()
+    start = 0
+    end = ((regionEnd - regionStart) / resol) + 1
+    plt.xlim(start, end)
+    #start, end = allAxis[-3].get_xlim()
+    #print start, end
     binrange = range(int(start), int(end) + 1)
-    posrange = range(regionStart, regionEnd + resol, 5000)
+    posrange = range(regionStart, regionEnd + resol, resol)
     #for i in range(8, 22):
     #    divisor1 = len(binrange) / float(i)
     #    if mini >= divisor1/int(divisor1):
