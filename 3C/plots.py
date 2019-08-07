@@ -2,6 +2,8 @@ import numpy as np
 import copy
 from matplotlib import pyplot as plt
 import matplotlib.patches as patch
+from matplotlib.colors import LinearSegmentedColormap
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 # Plot HiC matrix in a way we can store it in subplots
 def plotHiC(matrix1, bad_color=None, axe=None, transform=np.log2, 
