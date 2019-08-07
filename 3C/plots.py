@@ -751,3 +751,153 @@ def plotearStatsBoth(indirs, clust, marksAll, marksBar, regionStart, regionEnd, 
 # pdf.close()
 
 
+## Function to plot differential contact matrices with marqued points of interest
+def plotDiffMtrx(mtComp, colorate=[], arrows=[], title='',
+                 vRange = [-0.3, 0.3],
+                 whiteLim=0.3,
+                figsize=(10,10), titleAdj=1):
+
+    '''
+    Function to plot an interaction matrix (normaly used for differential ones)
+        while showing some positions of interest
+    :param mtComp: Interaction matrix in format of list of lists
+    :param [] colorate: List with nested lists with position indexes to color the side bars.
+        Coloring orther is blue, orange, green, red, purple, brown, pink, grey, greenish,
+        lightblue, +white
+    :param [] arrows: List with position indexes to add arrows in the sides of the matrix
+    :param '' title: String with plot title
+    :param [-0.3, 0.3] vRange: minimum and maximum values for the main plot colorbar
+    :param 0.3 whiteLim: value till which we color in white the matrix values
+    '''
+    ## Prepare color map for side bars
+    barCmap = plt.cm.get_cmap('tab10')
+    colors = barCmap(np.arange(barCmap.N))
+    colors = colors.tolist()
+    colors.append([1, 1, 1, 1])
+    barCmap = LinearSegmentedColormap.from_list('mycmap', colors)
+    whitePos = len(colors)
+    # Order od tab10 colors is:
+    # blue, orange, green, red, purple, brown, pink, grey, greenish,
+    #lightblue, +white
+
+    ## Prepare colorbar for matrix
+    cmap=plt.get_cmap('bwr')
+    # get positions to turn white
+    posi = int(round(cmap.N * whiteLim / 2))
+    # get color change position
+    midPos = cmap.N / 2
+    # obtain color list
+    ccolors = cmap(np.arange(cmap.N))
+    ccolors = ccolors.tolist()
+
+    # make range to select colors from beggining
+    rangebeg = midPos / float(midPos - posi)
+    rangebeg = [int(a) for a in np.arange(0, midPos, rangebeg)]
+
+    # make range to select colors from end
+    rangeend = midPos / float(midPos - posi)
+    rangeend = [int(a) for a in np.arange(midPos, cmap.N, rangeend)]
+
+    # join with whites in the middle
+    colors =  [ccolors[c] for c in rangebeg] + [[1, 1, 1, 1]] * posi + [[1, 1, 1, 1]] * posi + \
+    [ccolors[c] for c in rangeend]
+
+    # create colormap
+    cmap = LinearSegmentedColormap.from_list('mycmap', colors)
+
+    ## Prepare sidebars content
+    if len(colorate) <= len(colors) and len(colorate) != 0:
+        # now we create a vector of mtComp size and add values to color
+        binVector = [0] * len(mtComp)
+        for b in range(len(binVector)):
+            # go through each list in colorate in order
+            added = False
+            for nbb, bb in enumerate(colorate):
+                if b in bb:
+                    binVector[b] = nbb
+                    added=True
+            # if no mark in there leave white
+            if added == False:
+                binVector[b] = whitePos
+
+    else:
+        print 'To many things to colorate, not enough colors'
+
+    # Add arrows
+    arrowVect = [float('nan')] * len(mtComp)
+    for a in arrows:
+        arrowVect[a] = 1
+
+    # create space for all plots
+    fig, ax = plt.subplots(1,1, figsize=figsize)
+
+
+    ### Main matrix plot
+    mat = ax.imshow(mtComp, interpolation='nearest', origin='lower', vmin= vRange[0], vmax=vRange[1],
+                    cmap=cmap, )
+
+
+    ### Down right (colorbar)
+    divider = make_axes_locatable(ax)
+    cax1 = divider.append_axes("right", size="5%", pad=0.05)
+    plt.colorbar(mat, cax=cax1)
+
+    ### Color marks in the upper part
+    barwide = max(2, len(mtComp) * 0.02)
+    if len(colorate) != 0:
+        ax2 = divider.append_axes("top", size="5%", pad=0.05)
+        # turn it into a matrix
+        mtBinVect = []
+        for i in range(len(binVector)):
+            mtBinVect.append(binVector)
+        ax2.imshow(mtBinVect, interpolation='nearest', origin='lower',
+                   extent=[0,len(binVector),0,barwide], cmap=barCmap,
+                  vmin=0, vmax=whitePos)
+        ax2.get_yaxis().set_visible(False)
+        ax2.get_xaxis().set_visible(False)
+        ax2.set_xlim(0, len(binVector))
+
+    ### Arrows in the upper part
+    ax3 = divider.append_axes("top", size="5%", pad=0.05)
+    ax3.get_yaxis().set_visible(False)
+    ax3.get_xaxis().set_visible(False)
+    arrow = u'$\u2193$'
+    ax3.plot(range(len(binVector)), arrowVect, linestyle='none', marker=arrow, markersize=20)
+    ax3.set_xlim(0, len(binVector))
+
+    ax3.axis('off')
+
+
+    ### Color marks in the left part
+    if len(colorate) != 0:
+        ax4 = divider.append_axes("left", size="5%", pad=0.05)
+        ax4.set_xticklabels([])
+        ax4.imshow(np.matrix.transpose(np.array(mtBinVect)), interpolation='nearest',
+                   origin='lower', extent=[0,barwide,0, len(binVector)], cmap=barCmap,
+                  vmin=0, vmax=whitePos)
+        ax4.get_xaxis().set_visible(False)
+        ax4.set_ylim(0, len(binVector))
+
+        # If there is color marks we hide y tics from main plot
+        ax.set_yticklabels([])
+
+
+    ### Arrows in the left part
+    ax5 = divider.append_axes("left", size="5%", pad=0.05)
+    ax5.set_xlim(0, len(binVector))
+    #ax6.get_yaxis().set_visible(False)
+    ax5.get_xaxis().set_visible(False)
+    arrow = u'$\u2192$'
+    ax5.plot(arrowVect, range(len(binVector)), linestyle='none', marker=arrow, markersize=20)
+    ax5.set_ylim(0, len(binVector))
+    ax5.set_xlim(-5, 8)
+    ax5.axis('off')
+
+
+
+    fig.suptitle(title,size=18)
+    fig.subplots_adjust(top=titleAdj)
+
+    plt.show()
+
+    return fig
