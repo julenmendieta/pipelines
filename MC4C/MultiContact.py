@@ -897,20 +897,20 @@ for pairwise interactions. Wont randomise'
 
                         else:
                             # get divider
-                            if concatemersBin[bin1] == 0:
-                                if concatemersBin[bin2] == 0:
-                                    divider = 1
-                                else:
-                                    divider = concatemersBin[bin2]
-                            elif concatemersBin[bin2] == 0:
-                                divider = concatemersBin[bin1]
-                            else:
-                                divider = concatemersBin[bin1] + concatemersBin[bin2] - hic_data[bin1, bin2]
+                            #if concatemersBin[bin1] == 0:
+                            #    if concatemersBin[bin2] == 0:
+                            #        divider = 1
+                            #    else:
+                            #        divider = concatemersBin[bin2]
+                            #elif concatemersBin[bin2] == 0:
+                            #    divider = concatemersBin[bin1]
+                            #else:
+                            divider = concatemersBin[bin1] + concatemersBin[bin2] - hic_data[bin1, bin2]
 
                             #divider = float(concatemersBin[bin1] + concatemersBin[bin2])
 
-                            if divider == 0:
-                                divider = 1
+                            #if divider == 0:
+                            #    divider = 1
                             # if both are zero 
                             norm_data[bin1, bin2] = (hic_data[bin1, bin2] / float(divider)) * multResult
                             norm_data[bin2, bin1] = norm_data[bin1, bin2]
@@ -922,21 +922,22 @@ for pairwise interactions. Wont randomise'
                         (ke[0] not in regRange or ke[1] not in regRange)):
                         pass  # Leave it as zero
                     else:
+                        if not hic_data[ke[0], ke[1]] <= mininter:
                         # get divider
-                        if concatemersBin[ke[0]] == 0:
-                            if concatemersBin[ke[1]] == 0:
-                                divider = 1
-                            else:
-                                divider = concatemersBin[ke[1]]
-                        elif concatemersBin[ke[1]] == 0:
-                            divider = concatemersBin[ke[0]]
-                        else:
+                        #if concatemersBin[ke[0]] == 0:
+                        #    if concatemersBin[ke[1]] == 0:
+                        #        divider = 1
+                        #    else:
+                        #        divider = concatemersBin[ke[1]]
+                        #elif concatemersBin[ke[1]] == 0:
+                        #    divider = concatemersBin[ke[0]]
+                        #else:
                             divider = concatemersBin[ke[0]] + concatemersBin[ke[1]] - hic_data[ke[0], ke[1]]
 
                         #divider = float(concatemersBin[bin1] + concatemersBin[bin2])
 
-                        if divider == 0:
-                            divider = 1
+                        #if divider == 0:
+                        #    divider = 1
                         # if both are zero 
                         norm_data[ke[0], ke[1]] = hic_data[ke[0], ke[1]] / float(divider)
                         norm_data[ke[1], ke[0]] = norm_data[ke[0], ke[1]]
