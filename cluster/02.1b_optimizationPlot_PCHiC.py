@@ -6,6 +6,10 @@ import argparse
 import numpy as np
 import matplotlib.pyplot as plt
 import sys
+# CRG
+sys.path.append('/users/mmarti/jmendieta/codigo')
+sys.path.append('/users/mmarti/jmendieta/programas/PhD/3C')
+# CNAG
 sys.path.append('/home/devel/jmendietaesteban/PCHIC/codigo')
 sys.path.append('/home/devel/jmendietaesteban/programas/PhD/3C')
 import handy3C
@@ -53,7 +57,14 @@ else:
 
 
 exp = test_chr.experiments[0]
-PCHiC.PCHiC_filtering(exp)
+
+# If HiC data
+if 'OneD' in matrixPath:
+        exp.filter_columns(silent=False,draw_hist=False)
+# If pcHiC or virtual pcHiC
+else:
+        PCHiC.PCHiC_filtering(exp)
+
 
 for opt in optFpath:
 	print opt
@@ -65,7 +76,7 @@ for opt in optFpath:
 	# Ya que estamos mostramos los modelos
 	dic = optim.get_best_parameters_dict()
 	file1 = 'opt_LF' + str(dic['lowfreq']) + 'UF' + str(dic['upfreq']) + 'C2Mdis' + str(int(dic['maxdist'])) + '.txt'
-	print file1
+	#print file1
 	if dic['scale'] == 0.01:
 		files2 = glob.glob('*Mdis100.txt')
 	elif dic['scale'] == 0.005:

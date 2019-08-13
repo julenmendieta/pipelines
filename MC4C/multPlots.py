@@ -8,7 +8,7 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 def plot3Dmatrix(longi, focusMultiGroups2, regionStartBin, filterPerc=False, title='',
                  saveFig=False, rangeVal=[False, False], toZscore=False, track=False,
-                trackAlpha=0.2):
+                trackAlpha=0.2, elevAzim=[None, None], fig=False, show=True):
     
     '''
     Function to plot in a 3D cube al 3-wise interactions in the genome. Just one 6th of
@@ -30,7 +30,9 @@ def plot3Dmatrix(longi, focusMultiGroups2, regionStartBin, filterPerc=False, tit
         should be writen in bin position integers. E.j. [(23, 'red'), (45, 'blue')]. Used to
         check the 3-wise interactions in relation with a bin of interest
     :param 0.2 trackAlpha: floating value indicating alpha applyed to track
-    
+    :param [False, False] elevAzim: elevation and azimut for the orientation of the 3D plot
+    :param False fig: plt.figure() object
+    :param True show: Whether to show or not the plot by plt.show()
     '''
 
     # Store maxVal and minVal
@@ -102,27 +104,37 @@ def plot3Dmatrix(longi, focusMultiGroups2, regionStartBin, filterPerc=False, tit
 
     #Sp[:,3] = 100*Sp[:,3]
 
-    fig = plt.figure(figsize=(12,10))
+    if fig == False:
+        fig = plt.figure(figsize=(12,10))
+        
     ax = fig.add_subplot(111, projection='3d')
 
     #colors = cm.hsv(the_fourth_dimension/max(the_fourth_dimension))
 
 
 
-    # Sotre varaibles
+    # Store variables
     xs = Sp[:,0]
     ys = Sp[:,1]
     zs = Sp[:,2]
     xyz = Sp[:,3]
 
+    ## colorbar
     # Set range for colors in cmap
     colmap = cm.ScalarMappable(cmap=cm.viridis)
     colmap.set_array(xyz)
+    
+    # check if there are negative numbers (important for the vlim
+    #and cmap). cmap values will be set to the real minimum, but the 
+    #coloring and alpha will be made just with adjusted positive numbers
+    negative = False
+    if np.nanmin(xyz) < 0:
+        negative = True
 
     if maxVal == False:
         if minVal == False:
             maxVal = np.nanmax(xyz)
-            if toZscore == False:
+            if negative == False:
                 colmap.set_clim(0, maxVal)
             else:
                 minVal1 = np.nanmin(xyz)
@@ -133,7 +145,7 @@ def plot3Dmatrix(longi, focusMultiGroups2, regionStartBin, filterPerc=False, tit
                 maxValZS = maxVal + minVal
         else:
             maxVal = np.nanmax(xyz)
-            if toZscore == False:
+            if negative == False:
                 colmap.set_clim(minVal, maxVal)
             else:
                 colmap.set_clim(minVal, maxVal)
@@ -142,7 +154,7 @@ def plot3Dmatrix(longi, focusMultiGroups2, regionStartBin, filterPerc=False, tit
                 maxValZS = maxVal + minVal
     else:
         if minVal == False:
-            if toZscore == False:
+            if negative == False:
                 colmap.set_clim(0, maxVal)
             else:
                 minVal1 = np.nanmin(xyz)
@@ -152,7 +164,7 @@ def plot3Dmatrix(longi, focusMultiGroups2, regionStartBin, filterPerc=False, tit
                 minValR = abs(np.nanmin(xyz))
                 maxValZS = maxVal + minValR
         else:
-            if toZscore == False:
+            if negative == False:
                 colmap.set_clim(minVal, maxVal)
             else:
                 # Need to deal with negative numbers for alpha
@@ -192,7 +204,8 @@ def plot3Dmatrix(longi, focusMultiGroups2, regionStartBin, filterPerc=False, tit
     #cax = divider.append_axes("right", size="5%", pad=0.05)
     #cb = plt.colorbar(colmap, cax=cax)
 
-    cb = plt.colorbar(colmap,fraction=0.046, pad=0.04)
+    
+    cb = plt.colorbar(colmap,fraction=0.046, pad=0.04, ax=ax)
 
     ax.set_xlabel('x')
     ax.set_ylabel('y')
@@ -243,9 +256,21 @@ def plot3Dmatrix(longi, focusMultiGroups2, regionStartBin, filterPerc=False, tit
             #        line_.set_color(color)
             #        line_.set_linestyle('--')
             #        ax.add_line(line_)
+            
+    # orient the 3D matrix
+    # Set the elevation and azimuth of the axes
+    #'elev' stores the elevation angle in the z plane.
+    #'azim' stores the azimuth angle in the x,y plane.
+    elev = elevAzim[0]
+    azim = elevAzim[1]
+    ax.view_init(elev, azim)
 
     if saveFig == True:
         pdf.savefig(fig , bbox_inches='tight')
 
-    plt.show()
+    if show == True:
+        plt.show()
+    #else:
+    #    return colmap, ax
+        
     

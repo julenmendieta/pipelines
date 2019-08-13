@@ -64,34 +64,44 @@ for x in range(1, njobs + 1):
 	cmd+= '-u %s '%uperfreq
 	cmd+= '-lf %s '%(lammpsOut + '_' + str(x))
 	cmd+= '-p %s '%matPath
-	cmd+= '-t %s '%jobTime
+	#cmd+= '-t %s '%jobTime # will add it in the arraMod.jobs so we can update it later
 	cmd+= '\n'
 	fout.write(cmd)
 fout.close()
 
 
+# asses priority in case of CRG cluster
+if len(jobTime.split('-')) > 1:
+        prior = 'long-sl7,mem_256,mem_512'
+else:
+        if int(jobTime.split(':')[0]) <= 6:
+                prior = 'short-sl7,long-sl7,mem_256,mem_512,guest'
 
 ## Create the file to launch the array (sbatch file)
 fout=open('%s/arrayModjobs.cmd'%(path),'w')
 cmd=''
 cmd+='''#!/bin/bash
 
-#SBATCH --job-name=%s
-#SBATCH --output=%s/%%A_submatrix_%%a.out
-#SBATCH --error=%s/%%A_submatrix_%%a.err
-#SBATCH --array=1-%s%%300
-#SBATCH --time=%s
-#SBATCH --qos=normal
-#SBATCH --ntasks=1
-#SBATCH --cpus-per-task=1
+#$ -N %s
+#$ -o %s/$JOB_NAME_$JOB_ID_$TASK_ID.out
+#$ -e %s/$JOB_NAME_$JOB_ID_$TASK_ID.err
+#$ -t 1-%s
+#$ -l h_rt=%s,virtual_free=16G
+#$ -q %s
+#$ -pe smp 1
 
 module purge
+module load GCC/5.3.0
 
 # File were we have located our array commands
 file=%s
 
 # Get each command from the file and run them with python
-orden=`sed "${SLURM_ARRAY_TASK_ID}q;d" $file`
-python $orden''' %(flag, path, path, njobs, jobTime, runfile)
+orden=`sed "${SGE_TASK_ID}q;d" $file`
+# will add the command for the temporal folder
+orden=`echo $orden -tp $TMPDIR -t %s`
+
+python $orden''' %(flag, path, path, njobs, jobTime, prior, runfile,
+        jobTime)
 
 fout.write(cmd)
