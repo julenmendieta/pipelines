@@ -81,7 +81,7 @@ cmd+='''#!/bin/bash
 #SBATCH --error=%s/%%A_submatrix_%%a.err
 #SBATCH --array=1-%s%%300
 #SBATCH --time=%s
-#SBATCH --qos=4dgenome
+#SBATCH --qos=lowprio
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
 

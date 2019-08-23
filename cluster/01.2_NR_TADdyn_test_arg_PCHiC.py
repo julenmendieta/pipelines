@@ -143,7 +143,7 @@ optimizer.run_grid_search(n_cpus=min(nmodels, 8), lowfreq_range=[float(lowfreq)]
                           upfreq_range=[float(uperfreq)],
                           maxdist_range=[float(maxdist)],
                           dcutoff_range=dcutoff_range2,
-                          scale_range=[0.01][:], verbose=3,
+                          scale_range=[0.01][:], verbose=True,
                           timeout_job=time2,
 			  #savedata=path+'opt_LF%sUF%sMdis%s_%sbp.models'%(str(lowfreq),str(uperfreq),str(maxdist), str(res)),
 			  cleanup=True)
