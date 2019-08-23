@@ -126,7 +126,7 @@ print len(mods1)
 mods1.save_models(pathOut+'%s.modelsAll'%(flag))
 
 # remove all files that are in the merge
-clean = True
+clean = False
 if clean == True:
     for fi in files:
         if fi[-6:] == 'models':

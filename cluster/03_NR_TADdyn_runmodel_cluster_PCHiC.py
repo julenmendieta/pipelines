@@ -128,7 +128,7 @@ else:
 models = exp.model_region(start=1,end=exp.size, n_models=1, n_keep=1, n_cpus=1, config=optpar,verbose=True, tool='lammps', 
 	tmp_folder=lammpsOut, timeout_job=time2,
     cleanup=True, initial_conformation='random', 
-    start_seed=random.choice(range(10000)),
+    start_seed=random.choice(range(1000000)),
     hide_log=True) #, connectivity='FENE')
 # Clustering of models
 
