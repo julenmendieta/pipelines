@@ -1,4 +1,6 @@
 import pandas as pd
+from collections import defaultdict
+import numpy as np
 
 
 #  Get a list of list from an interaction index file
