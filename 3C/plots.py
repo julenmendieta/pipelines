@@ -903,3 +903,186 @@ def plotDiffMtrx(mtComp, colorate=[], arrows=[], title='',
     plt.show()
 
     return fig
+
+
+
+def aracnoPlot(groupDegree, edgeList, focus, percentaje, tags=[], xAxis=False, saveFig=False, 
+               outPath=False, filterDgrRatio=False, pdf=False):
+    '''
+    Function to plot neigbourh interactions surrounding a bin of interest
+    :param groupDegree: Dictionary with the cumulated degree of all the members in each group
+        first key for group ID, and inside 'degree' for degree and 'members' for group members
+    :param edgeList: list with all pairwise interactions
+    :param focus: focus bin or bins range (last unit wont be used)
+    :param percentaje: percentyle value above which we count the interactions (for each 
+        interactions from the viewpoint bin towards the others)
+    :param [] tags: tags fro title and file. First one is chromosome number and next one whatever 
+        you want
+    :param False xAxis: range to change deafult xAxis limits
+    :param False saveFig: True if you want to store the plot in a PDF
+    :param False outPath: False if you have already open a matplotlib.backends.backend_pdf.PdfPages
+        instance, or a real PATH if you want the function to open it and close for you
+    :param False filterDgrRatio: If integer, it sets the minimum degree ratio 
+        (number of bins in group/cumulated degree) to take into account a group
+    
+    '''
+    if len(tags) > 1:
+        chrom = tags[0]
+        tag = tags[1]
+    # Open PDf if asked
+    if saveFig == True:
+        if outPath != False:
+            if filterDgrRatio == False:
+                pdf = matplotlib.backends.backend_pdf.PdfPages(outPath + \
+                                                               'AracnoPlot_%s_chr%s_%s-%s.pdf' %(tag,
+                                                                                                chrom, 
+                                                                                                focus[0], 
+                                                                                                focus[1]))
+            else:
+                pdf = matplotlib.backends.backend_pdf.PdfPages(outPath + \
+                                                               'AracnoPlot_%s_chr%s_%s-%s_Flt%s.pdf' %(tag,
+                                                                                                chrom, 
+                                                                                                focus[0], 
+                                                                                                focus[1],
+                                                                                                filterDgrRatio))
+
+    ## Plot
+    fg, ax = plt.subplots(1, 1, figsize=(20, 8))
+    plotHigh = 100
+    stop = False  # stop if after filtering there is no data
+
+    # If we are not going to filter
+    if filterDgrRatio == False:
+        # First add grey ellipses
+        for k in edgeList:
+            x1 = k[0]
+            x2 = k[1]
+            #thick = highPeaks[e[0]][e[1]] / emaxi
+            if not (x1 in focus):
+                pac = mpatches.Ellipse([(x2+x1)/2.0, 0], x2-x1, plotHigh*2, angle=0, fill=False, color='black', alpha=0.8)
+                ax.add_patch(pac)
+
+        # Then red ones
+        for k in edgeList:
+            x1 = k[0]
+            x2 = k[1]
+            #thick = highPeaks[e[0]][e[1]] / emaxi
+            if (x1 in focus):
+                pac = mpatches.Ellipse([(x2+x1)/2.0, 0], x2-x1, plotHigh*2, angle=0, fill=False, color='red')
+            ax.add_patch(pac)
+
+    # If we asked for a filtering
+    else:
+        # Get nodes to filter
+        removed = []
+        for gr in sorted(groupDegree.keys()):
+            if groupDegree[gr]['degree']/float(len(groupDegree[gr]['members'])) < filterDgrRatio:
+                removed += groupDegree[gr]['members']
+                del groupDegree[gr]
+
+        # get edges to filter
+        todel = []
+        for ned, ed in enumerate(edgeList):
+            if ed[0] in removed or ed[1] in removed:
+                todel.append(ned)    
+
+        # Filter edges
+        for i in range(len(todel) - 1, -1, -1):
+            del edgeList[todel[i]]
+               
+        # if everything was filtered
+        if len(edgeList) == 0:
+            stop = True
+            
+        else:
+            for k in edgeList:
+                x1 = k[0]
+                x2 = k[1]
+
+
+                # Apply the filtering
+                #thick = highPeaks[e[0]][e[1]] / emaxi
+                if not (x1 in focus):
+                    pac = mpatches.Ellipse([(x2+x1)/2.0, 0], x2-x1, plotHigh*2, 
+                                           angle=0, fill=False, color='black', alpha=0.8)
+                    ax.add_patch(pac)
+
+            # Then red ones
+            for k in edgeList:
+                x1 = k[0]
+                x2 = k[1]
+                # Apply the filtering
+                #thick = highPeaks[e[0]][e[1]] / emaxi
+                if (x1 in focus):
+                    pac = mpatches.Ellipse([(x2+x1)/2.0, 0], x2-x1, plotHigh*2, 
+                                           angle=0, fill=False, color='red')
+                ax.add_patch(pac)
+
+    if stop == False:
+        # get value ranges
+        if xAxis == False:
+            mini = min(min(ed) for ed in edgeList)
+            maxi = max(max(ed) for ed in edgeList)
+        else:
+            mini = xAxis[0]
+            maxi = xAxis[1]
+        # set plot limits
+        plt.xlim(mini, maxi)
+        plt.ylim(0, plotHigh + plotHigh*0.1)
+
+        # remove all axis data but down
+        plt.tick_params(axis='both', left='off', top='off', right='off', bottom='on', labelleft='off', 
+                        labeltop='off', labelright='off', labelbottom='on')
+        ax.spines['right'].set_visible(False)
+        ax.spines['top'].set_visible(False)
+        ax.spines['left'].set_visible(False)
+
+        # Will prepare degree data to be added in the plot
+        # Find the mean
+        for gd in groupDegree:
+            # dont add the filtered groups
+            mean = np.mean(groupDegree[gd]['members'])
+            # Add text
+            ypos = plotHigh + plotHigh*0.05
+            plt.text(mean, ypos, groupDegree[gd]['degree'], horizontalalignment='center',
+                    size=20)
+            # Add lines delimitating each group
+            # get smallest member
+            minMemb = min(groupDegree[gd]['members'])
+            maxMemb = max(groupDegree[gd]['members'])
+
+            # Select altitude of the bracket
+            up = ypos - plotHigh*0.05
+            h=plotHigh*0.05
+            # plot it
+            plt.plot([minMemb , minMemb, maxMemb, maxMemb], [up, up+h, up+h, up], 
+                                     lw=1.5, color='grey')
+
+        # Dont allow exponential notation
+        ax.get_xaxis().get_major_formatter().set_useOffset(False)
+    
+    else:
+        plt.text(0.5, 0.5, 'Everything was filtered', horizontalalignment='center',
+                        size=20)
+        plt.xlim(0,1)
+        plt.ylim(0,1)
+            
+            
+    # Title and axis data
+    if filterDgrRatio == False:
+        plt.title('Filtered interactions of bins interacting with our focus bin/bins \
+(thress %s) in %s\nred=interaction between bin and focus not filtered, \
+grey=interction filtered' %(percentaje, tag))
+    else:
+        plt.title('Filtered interactions of bins interacting with our focus bin/bins \
+(thress %s, flt %s) in %s\nred=interaction between bin and focus not filtered, \
+grey=interction filtered' %(percentaje, filterDgrRatio, tag))
+    plt.xlabel('Bin number in chromosome %s' %chrom)
+    plt.show()
+
+    # Store file
+    if saveFig == True:
+        pdf.savefig(fg , bbox_inches='tight')
+        if outPath != False:
+            pdf.close()
+            
