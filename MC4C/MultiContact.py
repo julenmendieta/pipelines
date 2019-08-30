@@ -432,7 +432,67 @@ def newNorm(hic_data, viewPoint, regionStartBin, regionEndBin, locusCh, tsvFile,
             
     return norm_data, concatemersBin
 
+def checkOverlapCount(cr1, p1, p2, split_by_bin, resolution, dict_sec):
+    '''
+    Function to get fragment bin location of all the bins included in a fragment
+     and having more than split_by_bin nucleotides inside a bin. Function is called
+     in load_hic_data_from_reads when split_by_bin > 1 and != False
+    '''
+    interacting = []
+    # if first fragments passes thresshold of minimum allowed bp till bin change
+    if (((p1/resolution) + 1) * resolution) - p1 >= split_by_bin:
+        try:
+            interacting.append(dict_sec[(cr1, p1 / resolution)])
+        except:
+            interacting.append(p1 / resolution)
+            
+    # same for second and fragment (we add all posible bins between extremes)
+    if p2 - ((p2/resolution) * resolution) >= split_by_bin:
+        try:
+            interacting += range(dict_sec[(cr1, p1 / resolution)] + 1, dict_sec[(cr1, p2 / resolution)] + 1)
+        except:
+            interacting += range((p1 / resolution) + 1, (p2 / resolution) + 1)
+            
+    # Just in case there is a middle fragment and the last one didnt pass the thresshold
+    else:
+        try:
+            interacting += range(dict_sec[(cr1, p1 / resolution)] + 1, dict_sec[(cr1, p2 / resolution)])
+        except:
+            interacting += range((p1 / resolution) + 1, (p2 / resolution))
+            
+    return interacting
 
+def checkOverlapPerc(cr1, p1, p2, split_by_bin, resolution, dict_sec):
+    '''
+    Function to get fragment bin location of all the bins included in a fragment
+     and having a proportion greater or equal to split_by_bin inside a bin. 
+     Function is called in load_hic_data_from_reads when split_by_bin <= 1 and
+     != False
+    '''
+    interacting = []
+    # if first fragments passes thresshold of minimum allowed bp till bin change
+    if ((((p1/resolution) + 1) * resolution) - p1) / float(resolution) >= split_by_bin:
+        try:
+            interacting.append(dict_sec[(cr1, p1 / resolution)])
+        except:
+            interacting.append(p1 / resolution)
+    # same for second fragment
+    if (p2 - ((p2/resolution) * resolution)) / float(resolution) >= split_by_bin:
+        try:
+            interacting += range(dict_sec[(cr1, p1 / resolution)] + 1, dict_sec[(cr1, p2 / resolution)] + 1)
+        except:
+            interacting += range((p1 / resolution) + 1, (p2 / resolution) + 1)
+            
+    # Just in case there is a middle fragment and the last one didnt pass the thresshold
+    else:
+        try:
+            interacting += range(dict_sec[(cr1, p1 / resolution)] + 1, dict_sec[(cr1, p2 / resolution)])
+        except:
+            interacting += range((p1 / resolution) + 1, (p2 / resolution))
+    
+    return interacting
+
+    
 # Look for all the combinations of multiContacts from 0
 #to given value
 def lookCombiDefinedRange(findMulti, concatTemp, multiGroups):
@@ -473,8 +533,14 @@ def lookCombiAll(findMulti, concatTemp, multiGroups):
 # Obtain multiContacts from file
 def goThroughConcatemerFile(hic_data, line, multiGroups, concatemers,
                                 findMulti, resol, nConcat=0,
-                                concatTemp=set(), prev='',
-                           lookComb=lookCombiDefined):
+                                concatTemp=[], prev='',
+                                lookComb=lookCombiDefined,
+                                frag1Pos=2, lenFrag1Pos=4,
+                                frag2Pos=8, lenFrag2Pos=10,
+                                chrom1Pos = 1, chrom2Pos=7,
+                                RE1Pos=[5,6], RE2Pos=[11,12],
+                                split_by_bin=False, seen=[],
+                                checkOverlap = checkOverlapCount):
     '''
     :param lookCombiDefined lookComb: Wether you want to retrieve just
         the specified multicontactacts in findMulti (lookCombiDefined),
@@ -495,38 +561,101 @@ def goThroughConcatemerFile(hic_data, line, multiGroups, concatemers,
         multiGroups = lookComb(findMulti, concatTemp, multiGroups)
         
         # Reset variable
-        concatTemp = set()
+        concatTemp = []
         prev = prev_
 
         # New concatemer seen
         nConcat += 1
+        
+        # reset list of seen RFs
+        seen = []
+        
 
 
     # store each apparition of a fragment in a concatemer
-    #we store the bin of the mapping start position
-    # Since its a set, will store aparitions just once
-    concatTemp.add((int(line[2]) / resol) + hic_data.section_pos[line[1]][0])
-    concatTemp.add((int(line[8]) / resol) + hic_data.section_pos[line[7]][0])
+    RE11 = line[RE1Pos[0]]
+    RE12 = line[RE1Pos[1]]
+    
+    RE21 = line[RE2Pos[0]]
+    RE22 = line[RE2Pos[1]]
+    if split_by_bin == False:
+        #we store the bin of the mapping start position
+        if (RE11, RE12) not in seen:
+            concatTemp.append((int(line[frag1Pos]) / resol) + hic_data.section_pos[line[chrom1Pos]][0])
+            seen += [(RE11, RE12)]
+            
+        if (RE21, RE22) not in seen:
+            concatTemp.append((int(line[frag2Pos]) / resol) + hic_data.section_pos[line[chrom2Pos]][0])
+            seen += [(RE21, RE22)]
+        
+    
+    else:
+        # Since fragments from same concatemer are repeated, we could be overcounting the splitting
+        #of the same fragment many times, so need a control to count each fragment just once
+        # First fragment
+        if (RE11, RE12) not in seen:
+            ps1 = int(line[frag1Pos])
+            ps1_1 = ps1 / resol
+            ps12 = ps1 + int(line[lenFrag1Pos])
+            ps1_2 = ps12 / resol
+            interacting1 = []
 
-    return multiGroups, concatemers, nConcat, concatTemp, prev
+            if ps1_1 != ps1_2:
+                interacting1 += checkOverlap(line[chrom1Pos], ps1, ps12, split_by_bin, 
+                                                 resol, hic_data.sections)
+            else:
+                try:
+                    interacting1 += [hic_data.sections[(line[chrom1Pos], ps1 / resol)]]
+                except:
+                    interacting1 += [ps1_1]
+                    
+            seen += [(RE11, RE12)]
+            concatTemp += interacting1
+                
+        # second fragment 
+        if (RE21, RE22) not in seen:
+            ps2 = int(line[frag2Pos])
+            ps2_1 = ps2 / resol
+            ps22 = ps2 + int(line[lenFrag2Pos])
+            ps2_2 = ps22 / resol
+            interacting2 = []
+
+            if ps2_1 != ps2_2:
+                interacting2 += checkOverlap(line[chrom2Pos], ps2, ps22, split_by_bin, 
+                                                 resol, hic_data.sections)
+            else:
+                try:
+                    interacting2 += [hic_data.sections[(line[chrom2Pos], ps2 / resol)]]
+                except:
+                    interacting2 += [ps2_1]
+                    
+            seen += [(RE21, RE22)]
+            concatTemp += interacting2
+
+    return multiGroups, concatemers, nConcat, concatTemp, prev, seen
 
 # Obtain multiContacts from file just in a pairwise manner
 def goThroughConcatemerFilePairwise(hic_data, line, concatemers,
                                 resol, nConcat=0,
-                                concatTemp=set(), prev='',
-                                frag1Pos=2, frag2Pos=8,
-                                chrom1Pos = 1, chrom2Pos=7):
+                                concatTemp=[], prev='',
+                                frag1Pos=2, lenFrag1Pos=4,
+                                frag2Pos=8, lenFrag2Pos=10,
+                                chrom1Pos = 1, chrom2Pos=7,
+                                RE1Pos=[5,6], RE2Pos=[11,12],
+                                split_by_bin=False, seen={},
+                                checkOverlap = checkOverlapCount):
     '''
-    :param lookCombiDefined lookComb: Wether you want to retrieve just
-        the specified multicontactacts in findMulti (lookCombiDefined),
-        all the multicontacts in the range from 3 to findMulti 
-        (lookCombiDefinedRange), or all the existing ones (lookCombiAll)
     :param 2 frag1Pos: Index indicating in wich column of the tsv file are
         located the genomic coordinates of the first fragment in the 
         interaction
     :param 8 frag2Pos: Index indicating in wich column of the tsv file are
         located the genomic coordinates of the second fragment in the 
         interaction
+    :param False split_by_bin: Set to i) float between 0 to 1 or to ii) integer from 2
+        to above to extend to multiple bins the mapped reads cover more than one bin. 
+        If i) will include interaction in bin if x% of bin is covered (dangerous since 
+        interactions might be lost), if ii) will include interaction in bin if x 
+        nucleotides are inside bin.
     '''
     line = line.split()
     # If we are in a new concatemer or first one 
@@ -538,42 +667,113 @@ def goThroughConcatemerFilePairwise(hic_data, line, concatemers,
             concatemers[k] += 1
 
         # Reset variable
-        concatTemp = set()
+        concatTemp = []
         prev = prev_
 
         # New concatemer seen
         nConcat += 1
+        
+        # reset list of seen RFs
+        seen = {}
 
 
     # store each apparition of a fragment in a concatemer
-    #we store the bin of the mapping start position
-    # Since its a set, will store aparitions just once
-    concatTemp.add((int(line[frag1Pos]) / resol) + hic_data.section_pos[line[chrom1Pos]][0])
-    concatTemp.add((int(line[frag2Pos]) / resol) + hic_data.section_pos[line[chrom2Pos]][0])
+    RE11 = line[RE1Pos[0]]
+    RE12 = line[RE1Pos[1]]
+    
+    RE21 = line[RE2Pos[0]]
+    RE22 = line[RE2Pos[1]]
+    # store each apparition of a fragment in a concatemer
+    if split_by_bin == False:
+        #we store the bin of the mapping start position
+        if (RE11, RE12) not in seen:
+            pos = (int(line[frag1Pos]) / resol) + hic_data.section_pos[line[chrom1Pos]][0]
+            concatTemp.append(pos)
+            seen[(RE11, RE12)] = pos
+        else:
+            concatTemp.append(seen[(RE11, RE12)])
+            
+        if (RE21, RE22) not in seen:
+            pos = (int(line[frag2Pos]) / resol) + hic_data.section_pos[line[chrom2Pos]][0]
+            concatTemp.append(pos)
+            seen[(RE21, RE22)] = pos
+        else:
+            concatTemp.append(seen[(RE21, RE22)])
+    else:
+        # Since fragments from same concatemer are repeated, we could be overcounting the splitting
+        #of the same fragment many times, so need a control to count each fragment just once
+        # First fragment
+        if (RE11, RE12) not in seen:
+            ps1 = int(line[frag1Pos])
+            ps1_1 = ps1 / resol
+            ps12 = ps1 + int(line[lenFrag1Pos])
+            ps1_2 = ps12 / resol
+            interacting1 = []
 
-    return concatemers, nConcat, concatTemp, prev
+            if ps1_1 != ps1_2:
+                interacting1 += checkOverlap(line[chrom1Pos], ps1, ps12, split_by_bin, 
+                                                 resol, hic_data.sections)
+            else:
+                try:
+                    interacting1 += [hic_data.sections[(line[chrom1Pos], ps1 / resol)]]
+                except:
+                    interacting1 += [ps1_1]
+                    
+            seen[(RE11, RE12)] = interacting1
+            concatTemp += interacting1
+        else:
+            concatTemp += seen[(RE11, RE12)]
+            
+        # second fragment 
+        if (RE21, RE22) not in seen:
+            ps2 = int(line[frag2Pos])
+            ps2_1 = ps2 / resol
+            ps22 = ps2 + int(line[lenFrag2Pos])
+            ps2_2 = ps22 / resol
+            interacting2 = []
+
+            if ps2_1 != ps2_2:
+                interacting2 += checkOverlap(line[chrom2Pos], ps2, ps22, split_by_bin, 
+                                                 resol, hic_data.sections)
+            else:
+                try:
+                    interacting2 += [hic_data.sections[(line[chrom2Pos], ps2 / resol)]]
+                except:
+                    interacting2 += [ps2_1]
+                    
+            seen[(RE21, RE22)] = interacting2
+            concatTemp += interacting2
+            
+        else:
+            concatTemp += seen[(RE21, RE22)]
+
+    return concatemers, nConcat, concatTemp, prev, seen
 
     
 
 # Open tsv and obtain multiContact frecuencies
 def getMultiAndConcatemersPerBin(hic_data, tsvFile, resol, locusCh=False,
                                  regRange=False, returnNconcat = False,
-                                findMulti=False, lookComb=lookCombiDefined):
+                                findMulti=False, lookComb=lookCombiDefined,
+                                split_by_bin=False):
     '''
     Function to get the number of concatemers were a bin of interest is 
         appearing and the multi contact groups (is bin based, so all 
         fragments which start inside of a bin margin will be joined). 
         Assumes integer based chromosomes, where mt would be 26 in humans
-
     :param False returnNconcat: wether you want or not nConcat to be
         returned
-        
     :param False findMulti: Integer if you want to look just for multi
         contacts with that amount o members
     :param lookCombiDefined lookComb: Wether you want to retrieve just
         the specified multicontactacts in findMulti (lookCombiDefined),
         all the multicontacts in the range from 3 to findMulti 
         (lookCombiDefinedRange), or all the existing ones (lookCombiAll)
+    :param False split_by_bin: Set to i) float between 0 to 1 or to ii) integer from 2
+        to above to extend to multiple bins the mapped reads cover more than one bin. 
+        If i) will include interaction in bin if x% of bin is covered (dangerous since 
+        interactions might be lost), if ii) will include interaction in bin if x 
+        nucleotides are inside bin.
     '''
     # Prepare multi contact retrieving stratey
     if findMulti == False:
@@ -594,8 +794,13 @@ def getMultiAndConcatemersPerBin(hic_data, tsvFile, resol, locusCh=False,
     concatemers = defaultdict(int)
 
     # Use set to remove duplicates or fragments from same bin in a concatemer
-    concatTemp = set()
+    concatTemp = []
     nConcat = 0
+    
+    if split_by_bin <= 1:
+        checkOverlap = checkOverlapPerc
+    else:
+        checkOverlap = checkOverlapCount
 
     
 
@@ -608,14 +813,16 @@ def getMultiAndConcatemersPerBin(hic_data, tsvFile, resol, locusCh=False,
             if not line.startswith('#'):
                 break
         # Run current line (first one)
-        multiGroups, concatemers, nConcat, concatTemp, prev = goThroughConcatemerFile(hic_data, line, multiGroups, concatemers,
-                                findMulti, resol, nConcat=0,
-                                concatTemp=set(), prev='', lookComb=lookComb)
+        multiGroups, concatemers, nConcat, concatTemp, prev, seen = goThroughConcatemerFile(hic_data, 
+                                line, multiGroups, concatemers, findMulti, resol, nConcat=0,
+                                concatTemp=[], prev='', lookComb=lookComb,split_by_bin=split_by_bin, 
+                                                checkOverlap = checkOverlap)
         # Go for next lines
         for line in f:
-            multiGroups, concatemers, nConcat, concatTemp, prev = goThroughConcatemerFile(hic_data, line, multiGroups, concatemers,
+            multiGroups, concatemers, nConcat, concatTemp, prev, seen = goThroughConcatemerFile(hic_data, line, multiGroups, concatemers,
                                 findMulti, resol, nConcat=nConcat,
-                                concatTemp=concatTemp, prev=prev, lookComb=lookComb)
+                                concatTemp=concatTemp, prev=prev, lookComb=lookComb,split_by_bin=split_by_bin, 
+                                                checkOverlap = checkOverlap, seen=seen)
 
     # Add last concatemer of file
     for k in concatTemp:
@@ -663,11 +870,17 @@ def getMultiAndConcatemersPerBin(hic_data, tsvFile, resol, locusCh=False,
 
 # Open tsv and obtain multiContact frecuencies in a pairwise manner
 def getConcatemersPerBin(hic_data, tsvFile, resol, locusCh=False,
-                         regRange = False, returnNconcat = False):
+                         regRange = False, returnNconcat = False,
+                         split_by_bin=False):
     '''
     Function to get the number of concatemers were a bin of interest is 
         appearing (is bin based, so all fragments which start inside of
         a bin margin will be joined)
+    :param False split_by_bin: Set to i) float between 0 to 1 or to ii) integer from 2
+        to above to extend to multiple bins the mapped reads cover more than one bin. 
+        If i) will include interaction in bin if x% of bin is covered (dangerous since 
+        interactions might be lost), if ii) will include interaction in bin if x 
+        nucleotides are inside bin.
         
     :param False returnNconcat: wether you want or not nConcat to be
         returned
@@ -676,34 +889,40 @@ def getConcatemersPerBin(hic_data, tsvFile, resol, locusCh=False,
     prev = ''
     concatemers = defaultdict(int)
     
-    concatTemp = set()
+    concatTemp = []
     nConcat = 0
+    
+    if split_by_bin <= 1:
+        checkOverlap = checkOverlapPerc
+    else:
+        checkOverlap = checkOverlapCount
 
     with open(tsvFile, 'r') as f:
         # Skip initial comments that starts with #
         while True:
             line = f.readline()
-            # break while statement if it is not a comment line
-            # i.e. does not startwith #
             if not line.startswith('#'):
                 break
         # Run current line (first one)
-        concatemers, nConcat, concatTemp, prev = goThroughConcatemerFilePairwise(hic_data, line, concatemers,
-                                resol, nConcat=0,
-                                concatTemp=set(), prev='')
+        concatemers, nConcat, concatTemp, prev, seen = goThroughConcatemerFilePairwise(hic_data, 
+                                                line, concatemers, resol, nConcat=0, 
+                                                concatTemp=[], prev='', split_by_bin=split_by_bin, 
+                                                checkOverlap = checkOverlap)
         
         # Go for next lines
         for line in f:
-            concatemers, nConcat, concatTemp, prev = goThroughConcatemerFilePairwise(hic_data, line, concatemers,
-                                resol, nConcat=nConcat,
-                                concatTemp=concatTemp, prev=prev)
+            concatemers, nConcat, concatTemp, prev, seen = goThroughConcatemerFilePairwise(hic_data, 
+                                                line, concatemers, resol, nConcat=nConcat,
+                                                concatTemp=concatTemp, prev=prev, 
+                                                split_by_bin=split_by_bin, checkOverlap = checkOverlap,
+                                                seen=seen)
 
     # Add last concatemer of file
     for k in concatTemp:
         concatemers[k] += 1
 
 
-     # Get genomic coordinates for region of interest
+     # filter genomic coordinates outside region of interest
     if locusCh == True:
         regionStart = min(regRange)
         regionEnd = max(regRange) 
@@ -756,7 +975,7 @@ def randomiseMultiGroups(multiGroups, multiLevel):
 # Function to normalise by frecuencies
 def MultiNorm(hic_data, regionStartBin, regionEndBin, tsvFile, resol, locusCh=False,
               method='', multiLevel=2, zeroPercent=False, mininter=0, keep=False, 
-              returnNconcat=False, random=False, multResult=100):
+              returnNconcat=False, random=False, multResult=100, split_by_bin=False):
     '''
     :param regionStartBin: integer indicating the bin FROM wich we will store 
         normalised data in the new hic_data object
@@ -770,6 +989,11 @@ def MultiNorm(hic_data, regionStartBin, regionEndBin, tsvFile, resol, locusCh=Fa
         interaction scores. Default as 100 since the result is like a percentaje
     :param False random: Set to true if you want to normalise random distributions
         of the multicontacts
+    :param False split_by_bin: Set to i) float between 0 to 1 or to ii) integer from 2
+        to above to extend to multiple bins the mapped reads cover more than one bin. 
+        If i) will include interaction in bin if x% of bin is covered (dangerous since 
+        interactions might be lost), if ii) will include interaction in bin if x 
+        nucleotides are inside bin.
     '''
     
     sumStart = regionStartBin
@@ -784,22 +1008,28 @@ def MultiNorm(hic_data, regionStartBin, regionEndBin, tsvFile, resol, locusCh=Fa
     if multiLevel == 2:
         if returnNconcat == False:
             concatemersBin = getConcatemersPerBin(hic_data, tsvFile, resol, 
-                                                  locusCh, regRange, returnNconcat)
+                                                  locusCh, regRange, returnNconcat,
+                                                  split_by_bin=split_by_bin)
         else:
             concatemersBin, nConcat = getConcatemersPerBin(hic_data, tsvFile,
-                                             resol, locusCh, regRange, returnNconcat)
+                                             resol, locusCh, regRange, returnNconcat,
+                                             split_by_bin=split_by_bin)
     # If we are going to check for multi contacts
     elif multiLevel > 2:
         if returnNconcat == False:
             concatemersBin, multiGroups = getMultiAndConcatemersPerBin(hic_data, tsvFile, 
                                                                        resol, locusCh, regRange,
-                                                                       returnNconcat)
+                                                                       returnNconcat,
+                                                                       split_by_bin=split_by_bin,
+                                                                       findMulti=multiLevel)
         else:
             concatemersBin, multiGroups, nConcat = getMultiAndConcatemersPerBin(hic_data, 
                                                                                 tsvFile, resol,
                                                                                 locusCh, 
                                                                                 regRange,
-                                                                                returnNconcat)
+                                                                                returnNconcat,
+                                                                                split_by_bin=split_by_bin,
+                                                                                findMulti=multiLevel)
         # Clue to know how many multi contact groups we have
         #print 'Longest multicontact: %s' %max(multiGroups.keys())
     
@@ -956,15 +1186,23 @@ for pairwise interactions. Wont randomise'
                 focusMultiGroups = {}
                 # Normalise
                 for k in keys:
-                    # first get presence of all fragments 
-                    divider = sum(concatemersBin[k[nm]] for nm in range(multiLevel))
-                    # then remove duplicated ones
+                    # first get presence of all fragments in the whole dataset
+                    #meaning, number of times this fragment appeared
+                    #divider = sum(concatemersBin[k[nm]] for nm in range(multiLevel))
+                    # then remove concatemers counted more than once, maybe because
+                    #two of the fragments from k were present in them
                     # look for appearances of more than one member of the multiContact            
-                    divider -= sum(multiGroups[multiLevel][k2] * (sum(1 for kk in k if kk in k2) - 1) 
-                                   for k2 in keys 
-                                   # These concatemers with more than one member were counted more than once
-                                    # sum(1 for d in da if d in da2) - 1 indicates how many extra times were counted 
-                                   if sum(1 for kk in k if kk in k2) >= 2)
+                    #divider -= sum(multiGroups[multiLevel][k2] * (
+                                        # this line will give as how many times we counted extra this
+                                        #concatemer (given presence of fragments from k)
+                    #                    sum(1 for kk in k if kk in k2) - 1)
+                    #               for k2 in keys 
+                                   # To avoid multiplication by negative numbers, we just let pass the check
+                                   #concatemers were we know that at least 2 fragments from k are present
+                    #               if sum(1 for kk in k if kk in k2) >= 2)
+                    divider = sum(multiGroups[multiLevel][k2]
+                               for k2 in keys 
+                               if sum(1 for kk in k if kk in k2) >= 1)
                     if divider < 0:
                         print divider, [concatemersBin[k[nm]] for nm in range(multiLevel)], multiGroups[multiLevel][k]
 

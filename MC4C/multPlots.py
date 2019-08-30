@@ -274,3 +274,122 @@ def plot3Dmatrix(longi, focusMultiGroups2, regionStartBin, filterPerc=False, tit
     #    return colmap, ax
         
     
+# Python program to check  
+# if two lists have at-least  
+# one element common 
+# using set and property 
+  
+def common_member(a, b): 
+    a_set = set(a) 
+    b_set = set(b) 
+    if (a_set & b_set): 
+        return True 
+    else: 
+        return False
+
+
+def plotRidgePlot(df, longi, locusCh, viewPoint, viewPointReal, title='',
+                 heigh=10, wide=20, ysize=8):
+    
+    # change plotting style
+    oldStyle = sns.axes_style()
+    sns.set(style="white", rc={"axes.facecolor": (0, 0, 0, 0)})
+    
+    
+    # calculate height
+    height = heigh / float(longi)  # looking for a height of 10
+    wide = wide / height  # looking for a wide of 20
+
+    # Initialize the FacetGrid object
+    #pal = sns.cubehelix_palette(longi, rot=-.25, light=.7)
+    pal = [[66/255., 109/255., 185/255.]] * longi
+    g = sns.FacetGrid(df, row="g", hue="g", aspect=wide, height=height, palette=pal)
+
+    ## Draw the densities in a few steps
+    # tracks
+    #g.map(sns.kdeplot, "x", clip_on=False, shade=True, alpha=0.8, lw=1.5, bw=.2, gridsize=100)
+    g.map(plt.plot, locusCh, alpha=0.8, lw=1.5)
+
+    # draw a point to know where is the second view
+    g.map(plt.plot, locusCh, alpha=0.8, lw=1.5)
+
+
+    # fill plot background
+    for nax, ax in enumerate(g.axes.flat):
+        ax.fill_between(ax.lines[0].get_xdata().astype(int),
+                        ax.lines[0].get_ydata(0),
+                        facecolor=pal[nax], alpha=0.6)
+
+    #g = g.map(plt.fill_between, locusCh, 'g', alpha=1)
+    # white border for the tracs
+    #g.map(sns.kdeplot, "x", clip_on=False, color="w", lw=2, bw=.2)
+    # baseline zero for the tracks
+    #g.map(plt.axhline, y=0, lw=2, clip_on=False)
+
+    # Define and use a simple function to label the plot in axes coordinates
+    def label(x, color, label):
+        # change color when viewPoint
+        if int(label) in viewPointReal:
+            color = 'red'
+        ax = plt.gca()
+        #ax.set_ylim(min(x), max(x))
+        up = height * 0.25
+        left = -1/wide
+        ax.text(left, up, '{:,}'.format(int(label)), fontweight="bold", color=color, 
+                ha="left", va="center", transform=ax.transAxes, fontsize=ysize)
+
+    g.map(label, locusCh)
+
+
+    # Remove axes details that don't play will with overlap
+    g.set_titles("")
+    g.set(yticks=[])
+    g.despine(bottom=True, left=True)
+
+    # add red line in viewPoint and dot for second bin position
+    for nax, ax in enumerate(g.axes.ravel()):
+        ylim = ax.get_ylim()
+        ax.plot((viewPoint[0]-regionStartBin, viewPoint[0]-regionStartBin), 
+                (0, ax.get_ylim()[1]), 
+                ls='-', color='red')
+        # plot dot for position
+        ax.plot(nax, 0, color='black', marker='o')
+        ax.set_ylim(ylim)
+
+
+
+    # change ticks to genomic coordinates
+    # iterate over axes of FacetGrid
+    #for ax in g.axes.flat:
+    #    labels = ax.get_xticklabels() # get y labels for x axis
+    #    nlabels = len(labels)
+    #    adjust = nlabels = 10.0
+    #    for i,l in enumerate(labels):
+    #        if i != 0:
+    #            labels[i] = int(labels[i].get_position()[0])
+    #    ax.set_xticklabels(labels, rotation=30,
+    #                      fontweight='bold') # set new labels
+
+    for ax in g.axes.flat:
+        labels0 = ax.get_xticklabels() # get y labels for x axis
+        labels = list(df['g'])
+        nlabels = len(labels)
+        adjust = nlabels = 10.0
+        newLabels = [0] * int(nlabels)
+        for ni,i in enumerate(labels0):
+            if ni != 0:
+                pos = int(i.get_position()[0])
+                newLabels[ni] = '{:,}'.format(labels[pos])
+        ax.set_xticklabels(newLabels, rotation=30,
+                          fontweight='bold') # set new labels
+
+    # Set the subplots to overlap
+    g.fig.subplots_adjust(hspace=-0.8)
+
+    # add title
+    g.fig.suptitle(title)
+    
+    # go back to old ploting style
+    sns.set(oldStyle)
+
+    return g.fig
