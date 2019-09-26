@@ -4,6 +4,7 @@ from matplotlib import pyplot as plt
 import matplotlib.backends.backend_pdf
 import matplotlib.cm as cm
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+import seaborn as sns
 
 
 def plot3Dmatrix(longi, focusMultiGroups2, regionStartBin, filterPerc=False, title='',
@@ -288,8 +289,8 @@ def common_member(a, b):
         return False
 
 
-def plotRidgePlot(df, longi, locusCh, viewPoint, viewPointReal, title='',
-                 heigh=10, wide=20, ysize=8):
+def plotRidgePlot(df, longi, locusCh, viewPoint, viewPointReal, regionStartBin,
+                title='', heigh=10, wide=20, ysize=8):
     
     # change plotting style
     oldStyle = sns.axes_style()
@@ -347,14 +348,15 @@ def plotRidgePlot(df, longi, locusCh, viewPoint, viewPointReal, title='',
     g.despine(bottom=True, left=True)
 
     # add red line in viewPoint and dot for second bin position
-    for nax, ax in enumerate(g.axes.ravel()):
-        ylim = ax.get_ylim()
-        ax.plot((viewPoint[0]-regionStartBin, viewPoint[0]-regionStartBin), 
-                (0, ax.get_ylim()[1]), 
-                ls='-', color='red')
-        # plot dot for position
-        ax.plot(nax, 0, color='black', marker='o')
-        ax.set_ylim(ylim)
+    for vi in viewPoint:
+        for nax, ax in enumerate(g.axes.ravel()):
+            ylim = ax.get_ylim()
+            ax.plot((vi-regionStartBin, vi-regionStartBin), 
+                    (0, ax.get_ylim()[1]), 
+                    ls='-', color='red')
+            # plot dot for position
+            ax.plot(nax, 0, color='black', marker='o')
+            ax.set_ylim(ylim)
 
 
 

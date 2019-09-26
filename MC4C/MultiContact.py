@@ -786,8 +786,7 @@ def getMultiAndConcatemersPerBin(hic_data, tsvFile, resol, locusCh=False,
             multiGroups[sg] = defaultdict(int)
         
     else:
-        multiGroups = {findMulti:defaultdict(int)}
-        
+        multiGroups = {findMulti:defaultdict(int)}    
  
     # variable to store id
     prev = ''
