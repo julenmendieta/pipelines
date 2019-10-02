@@ -5,6 +5,7 @@ import matplotlib.backends.backend_pdf
 import matplotlib.cm as cm
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import seaborn as sns
+import matplotlib.ticker as plticker
 
 
 def plot3Dmatrix(longi, focusMultiGroups2, regionStartBin, filterPerc=False, title='',
@@ -289,16 +290,53 @@ def common_member(a, b):
         return False
 
 
-def plotRidgePlot(df, longi, locusCh, viewPoint, viewPointReal, regionStartBin,
-                title='', heigh=10, wide=20, ysize=8):
-    
+def plotRidgePlot(df, longi, locusCh, viewPointReal,
+                  resol, signifBinedM,
+                title='', height=10, wide=20, ysize=8,
+                 nxlabel = 10, ymax=False, cRanges=False):
+
+    '''
+    Function to plot 3-wise interaction data in a sea-plot or ridge plot form
+        :param df: Pandas dataframe with two columns: column 'g' indicates
+            starting point (in genomic coordinates) of the bin of intrest.
+            Second column (named by the chromosome of the region) indicates
+            frequency value at which we found the interactions.
+        :param longi: Number of bins our region has
+        :param viewPointReal: list with real coordinates (indicating starting
+            point of bin) at wich we had the viewPoint or capture
+        :param resol: resolution we are working with (in bp)
+        :param signifBinedM: List ot lists indicating Zscore or significance values
+            for each interaction (to paint the interaction frequencies by these values)
+        :param '' title: Title for the plot
+        :param 10 height: Integer indicating plot height
+        :param 20 wide: Integer indicating plot width
+        :param 8 ysize: Integer indicating size of column labels
+        :param 10 nxlabel: Integer indicating number of x labels to be shown
+        :param False ymax: Float indicating the upper limit of each line in the plot.
+            If not set maximum value in dataset will be used, and shown in the title.
+        :param False cRanges: Add dictionary with list of [starting, ending) point
+            as key and color as value, to color by your desired range. Ej:
+            {(0.0000001,0.5):'#fee5d9', (0.5,1):'#fcae91'}
+
+
+    '''
+
+    if cRanges == False:
+        cRanges = {(0.0000001,0.5):'#fee5d9', (0.5,1):'#fcae91', (1,1.5):'#fb6a4a',
+                   (1.5,2):'#de2d26', (2,100):'#a50f15',
+                  (-0.5,-0.0000001):'#eff3ff', (-1, -0.5):'#bdd7e7', (-1.5, -1):'#6baed6',
+                   (-2, -1.5):'#3182bd', (-100, -2):'#08519c'}
+
+
+    regionStart1 = min(df['g'])
+    posMarkReal = [(p * resol) + regionStart1 for p in positionsToMark]
     # change plotting style
     oldStyle = sns.axes_style()
     sns.set(style="white", rc={"axes.facecolor": (0, 0, 0, 0)})
-    
-    
+
+
     # calculate height
-    height = heigh / float(longi)  # looking for a height of 10
+    height = height / float(longi)  # looking for a height of 10
     wide = wide / height  # looking for a wide of 20
 
     # Initialize the FacetGrid object
@@ -312,14 +350,29 @@ def plotRidgePlot(df, longi, locusCh, viewPoint, viewPointReal, regionStartBin,
     g.map(plt.plot, locusCh, alpha=0.8, lw=1.5)
 
     # draw a point to know where is the second view
-    g.map(plt.plot, locusCh, alpha=0.8, lw=1.5)
+    #g.map(plt.plot, locusCh, alpha=0.8, lw=1.5)
 
 
-    # fill plot background
-    for nax, ax in enumerate(g.axes.flat):
-        ax.fill_between(ax.lines[0].get_xdata().astype(int),
-                        ax.lines[0].get_ydata(0),
-                        facecolor=pal[nax], alpha=0.6)
+    ## fill plot background
+    if signifBined != False:
+        for cr in cRanges:
+            for nax, ax in enumerate(g.axes.flat):
+                # select fill color
+                toColor = [False for i in ax.lines[0].get_ydata(0)]
+                for nx, x in enumerate(signifBinedM[nax]):
+                    if  cr[0] <= x < cr[1]:
+                        toColor[nx] = True
+
+                ax.fill_between(ax.lines[0].get_xdata().astype(int),
+                                ax.lines[0].get_ydata(0),
+                                where=toColor,
+                                facecolor=cRanges[cr], alpha=0.6)
+    else:
+        for nax, ax in enumerate(g.axes.flat):
+            ax.fill_between(ax.lines[0].get_xdata().astype(int),
+                            ax.lines[0].get_ydata(0),
+                            facecolor=pal[nax], alpha=0.6)
+
 
     #g = g.map(plt.fill_between, locusCh, 'g', alpha=1)
     # white border for the tracs
@@ -327,36 +380,55 @@ def plotRidgePlot(df, longi, locusCh, viewPoint, viewPointReal, regionStartBin,
     # baseline zero for the tracks
     #g.map(plt.axhline, y=0, lw=2, clip_on=False)
 
-    # Define and use a simple function to label the plot in axes coordinates
+    # Define and use a simple function to label the plot in y axis coordinates
     def label(x, color, label):
         # change color when viewPoint
         if int(label) in viewPointReal:
             color = 'red'
+        if int(label) in posMarkReal:
+            color = 'green'
         ax = plt.gca()
         #ax.set_ylim(min(x), max(x))
         up = height * 0.25
         left = -1/wide
-        ax.text(left, up, '{:,}'.format(int(label)), fontweight="bold", color=color, 
+        ax.text(left, up, '{:,}'.format(int(label)), fontweight="bold", color=color,
                 ha="left", va="center", transform=ax.transAxes, fontsize=ysize)
+
 
     g.map(label, locusCh)
 
 
-    # Remove axes details that don't play will with overlap
+    # Remove axes details that don't play with overlap
     g.set_titles("")
     g.set(yticks=[])
     g.despine(bottom=True, left=True)
 
     # add red line in viewPoint and dot for second bin position
-    for vi in viewPoint:
+    for vi in viewPointReal:
         for nax, ax in enumerate(g.axes.ravel()):
             ylim = ax.get_ylim()
-            ax.plot((vi-regionStartBin, vi-regionStartBin), 
-                    (0, ax.get_ylim()[1]), 
+            ax.plot(((vi-regionStart1) / resol, (vi-regionStart1) / resol),
+                    (0, ax.get_ylim()[1]),
                     ls='-', color='red')
             # plot dot for position
             ax.plot(nax, 0, color='black', marker='o')
-            ax.set_ylim(ylim)
+            if ymax == False:
+                ymax = ylim[1]
+
+            ax.set_ylim(ylim[0], ymax)
+
+    # mark positions of interest
+    if positionsToMark != False:
+        for p in positionsToMark:
+            for nax, ax in enumerate(g.axes.ravel()):
+                ylim = ax.get_ylim()
+                ax.plot((p, p),
+                        (0, ax.get_ylim()[1]),
+                        ls='--', color='green')
+
+                ax.set_ylim(ylim[0], ymax)
+
+        print [(p, positionsToMark[p]) for p in sorted(positionsToMark)]
 
 
 
@@ -372,26 +444,31 @@ def plotRidgePlot(df, longi, locusCh, viewPoint, viewPointReal, regionStartBin,
     #    ax.set_xticklabels(labels, rotation=30,
     #                      fontweight='bold') # set new labels
 
+    loc = plticker.MultipleLocator(base=float(longi/nxlabel)) # this locator puts ticks at regular intervals
     for ax in g.axes.flat:
-        labels0 = ax.get_xticklabels() # get y labels for x axis
-        labels = list(df['g'])
-        nlabels = len(labels)
-        adjust = nlabels = 10.0
-        newLabels = [0] * int(nlabels)
-        for ni,i in enumerate(labels0):
-            if ni != 0:
-                pos = int(i.get_position()[0])
-                newLabels[ni] = '{:,}'.format(labels[pos])
-        ax.set_xticklabels(newLabels, rotation=30,
-                          fontweight='bold') # set new labels
+        ax.xaxis.set_major_locator(loc)
+        labels0 = ax.get_xticks() # get x labels for x axis
+        if len(labels0) != 0:
+            nlabels = len(labels0)
+            newLabels = [0] * int(nlabels)
+            for ni,i in enumerate(labels0):
+                if ni != 0:
+                    newLabels[ni] = '{:,}'.format(int(min(df['g']) + (i * resol)))
+                else:
+                    newLabels[ni] = 0
+            ax.set_xticklabels(newLabels, rotation=30,
+                              fontweight='bold') # set new labels
+            xlim = ax.get_xlim()
+            ax.set_xlim(xlim[0] ,longi - 1)
 
     # Set the subplots to overlap
     g.fig.subplots_adjust(hspace=-0.8)
 
     # add title
-    g.fig.suptitle(title)
-    
+    g.fig.suptitle(title + ' maxVal=%s' %round(ymax, 4))
+
     # go back to old ploting style
     sns.set(oldStyle)
+
 
     return g.fig
