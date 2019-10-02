@@ -354,7 +354,7 @@ def plotRidgePlot(df, longi, locusCh, viewPointReal,
 
 
     ## fill plot background
-    if signifBined != False:
+    if signifBinedM != False:
         for cr in cRanges:
             for nax, ax in enumerate(g.axes.flat):
                 # select fill color
