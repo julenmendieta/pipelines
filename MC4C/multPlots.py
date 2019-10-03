@@ -290,7 +290,8 @@ def common_member(a, b):
         return False
 
 def plotRidgePlot(df, longi, locusCh, viewPointReal,
-                  resol, signifBinedM, trackMatrx=[],
+                  resol, signifBinedM, positionsToMark={},
+                  trackMatrx=[],
                 title='', height=10, wide=20, ysize=8,
                  nxlabel = 10, ymax=False, cRanges=False):
     
@@ -306,6 +307,8 @@ def plotRidgePlot(df, longi, locusCh, viewPointReal,
         :param resol: resolution we are working with (in bp)
         :param signifBinedM: List ot lists indicating Zscore or significance values 
             for each interaction (to paint the interaction frequencies by these values)
+        :param {} positionsToMark: Dictonary with bin postions to mark as key and label
+            as value
         :param [] trackMatrx: List of lists with same data as df, but more handy to locate
             the significant points from signifBinedM
         :param '' title: Title for the plot
