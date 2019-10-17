@@ -406,11 +406,12 @@ def plotRidgePlot(df, longi, locusCh, viewPointReal,
 
     # Define and use a simple function to label the plot in y axis coordinates
     def label(x, color, label):
+        # change color when we have a label
+        if int(label) in posMarkReal:
+            color = 'green'
         # change color when viewPoint
         if int(label) in viewPointReal:
             color = 'red'
-        if int(label) in posMarkReal:
-            color = 'green'
         ax = plt.gca()
         #ax.set_ylim(min(x), max(x))
         up = height * 0.25
