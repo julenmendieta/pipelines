@@ -1,3 +1,4 @@
+import collections
 from collections import defaultdict
 from pytadbit                     import HiC_data
 import itertools
