@@ -1,7 +1,6 @@
 from collections import defaultdict
 from pytadbit                     import HiC_data
 import itertools
-import copy
 
 def factorial(n):return reduce(lambda x,y:x*y,[1]+range(1,n+1))
 
@@ -433,6 +432,36 @@ def newNorm(hic_data, viewPoint, regionStartBin, regionEndBin, locusCh, tsvFile,
             
     return norm_data, concatemersBin
 
+# this is the old version like in TADbit, with a huge list of bins as dict_sect
+#def checkOverlapCount(cr1, p1, p2, split_by_bin, resolution, dict_sec):
+#    '''
+#    Function to get fragment bin location of all the bins included in a fragment
+#     and having more than split_by_bin nucleotides inside a bin. Function is called
+#     in load_hic_data_from_reads when split_by_bin > 1 and != False
+#    '''
+#    interacting = []
+#    # if first fragments passes thresshold of minimum allowed bp till bin change
+#    if (((p1/resolution) + 1) * resolution) - p1 >= split_by_bin:
+#        try:
+#            interacting.append(dict_sec[(cr1, p1 / resolution)])
+#        except:
+#            interacting.append(p1 / resolution)
+#            
+#    # same for second and fragment (we add all posible bins between extremes)
+#    if p2 - ((p2/resolution) * resolution) >= split_by_bin:
+#        try:
+#            interacting += range(dict_sec[(cr1, p1 / resolution)] + 1, dict_sec[(cr1, p2 / resolution)] + 1)
+#        except:
+#            interacting += range((p1 / resolution) + 1, (p2 / resolution) + 1)
+#            
+#    # Just in case there is a middle fragment and the last one didnt pass the thresshold
+#    else:
+#        try:
+#            interacting += range(dict_sec[(cr1, p1 / resolution)] + 1, dict_sec[(cr1, p2 / resolution)])
+#        except:
+#            interacting += range((p1 / resolution) + 1, (p2 / resolution))
+#            
+#    return interacting
 
 def checkOverlapCount(cr1, p1, p2, split_by_bin, resolution, dict_sec):
     '''
@@ -443,65 +472,81 @@ def checkOverlapCount(cr1, p1, p2, split_by_bin, resolution, dict_sec):
     interacting = []
     # if first fragments passes thresshold of minimum allowed bp till bin change
     if (((p1/resolution) + 1) * resolution) - p1 >= split_by_bin:
-        interacting.append(dict_sec[cr1][0] + (p1 / resolution))
+        try:
+            interacting.append(dict_sec[cr1][0] + (p1 / resolution))
+        except:
+            interacting.append(p1 / resolution)
 
     # same for second and middle fragment (we add all posible bins between extremes)
     if p2 - ((p2/resolution) * resolution) >= split_by_bin:
-        interacting += range(dict_sec[cr1][0] + (p1 / resolution) + 1, dict_sec[cr1][0] + (p2 / resolution) + 1)
+        try:
+            interacting += range(dict_sec[(cr1, p1 / resolution)] + 1, dict_sec[cr1][0] + (p1 / resolution) + 1)
+        except:
+            interacting += range((p1 / resolution) + 1, (p2 / resolution) + 1)
 
     # Just in case there is a middle fragment and the last one didnt pass the thresshold
     else:
-        interacting += range(dict_sec[cr1][0] + (p1 / resolution) + 1, dict_sec[cr1][0] + (p2 / resolution))
-            
+        try:
+            interacting += range(dict_sec[cr1][0] + (p1 / resolution) + 1, dict_sec[cr1][0] + (p1 / resolution))
+        except:
+            interacting += range((p1 / resolution) + 1, (p2 / resolution))
+
     return interacting
 
 def checkOverlapPerc(cr1, p1, p2, split_by_bin, resolution, dict_sec):
     '''
     Function to get fragment bin location of all the bins included in a fragment
-     and having a proportion greater or equal to split_by_bin inside a bin.
+     and having a proportion greater or equal to split_by_bin inside a bin. 
      Function is called in load_hic_data_from_reads when split_by_bin <= 1 and
      != False
     '''
     interacting = []
     # if first fragments passes thresshold of minimum allowed bp till bin change
     if ((((p1/resolution) + 1) * resolution) - p1) / float(resolution) >= split_by_bin:
-        interacting.append(dict_sec[cr1][0] + (p1 / resolution))
-        
+        try:
+            interacting.append(dict_sec[(cr1, p1 / resolution)])
+        except:
+            interacting.append(p1 / resolution)
     # same for second fragment
     if (p2 - ((p2/resolution) * resolution)) / float(resolution) >= split_by_bin:
-        interacting += range(dict_sec[cr1][0] + (p1 / resolution) + 1, dict_sec[cr1][0] + (p2 / resolution) + 1)
-        
+        try:
+            interacting += range(dict_sec[(cr1, p1 / resolution)] + 1, dict_sec[(cr1, p2 / resolution)] + 1)
+        except:
+            interacting += range((p1 / resolution) + 1, (p2 / resolution) + 1)
+            
     # Just in case there is a middle fragment and the last one didnt pass the thresshold
     else:
-        interacting += range(dict_sec[cr1][0] + (p1 / resolution) + 1, dict_sec[cr1][0] + (p2 / resolution))
-
-    return interacting
+        try:
+            interacting += range(dict_sec[(cr1, p1 / resolution)] + 1, dict_sec[(cr1, p2 / resolution)])
+        except:
+            interacting += range((p1 / resolution) + 1, (p2 / resolution))
     
+    return interacting
 
+    
 # Look for all the combinations of multiContacts from 0
 #to given value
 def lookCombiDefinedRange(findMulti, concatTemp, multiGroups):
     # Get all groups of multiContacts
     for sg in range(3, findMulti + 1):
         # create groups of sg multicontacts
-        groups = itertools.combinations(sorted([c[0] for c in concatTemp]), sg)
+        groups = itertools.combinations(sorted(concatTemp), sg)
         # Iterate over each group
         for gr in groups:
-            multiGroups[sg][gr] = 0
-
+            multiGroups[sg][gr] += 1
+        
     return multiGroups
 
 
 # Look for all the combinations of multiContacts for given value
 def lookCombiDefined(findMulti, concatTemp, multiGroups):
     # create groups of sg multicontacts
-    groups = itertools.combinations(sorted([c[0] for c in concatTemp]), findMulti)
+    groups = itertools.combinations(sorted(concatTemp), findMulti)
     # Iterate over each group
     for gr in groups:
-        multiGroups[findMulti][gr] = 0
+        multiGroups[findMulti][gr] += 1
         
     return multiGroups
-
 
 # Look for all posible combinations of multiContacts in
 #a concatemer
@@ -509,19 +554,18 @@ def lookCombiAll(findMulti, concatTemp, multiGroups):
     # Get all groups of multiContacts
     for sg in range(3, len(concatTemp) + 1):
         # create groups of sg multicontacts
-        groups = itertools.combinations(sorted([c[0] for c in concatTemp]), sg)
+        groups = itertools.combinations(sorted(concatTemp), sg)
         # Iterate over each group
         for gr in groups:
-            multiGroups[sg][gr] = 0
+            multiGroups[sg][gr] += 1
         
     return multiGroups
 
 # Obtain multiContacts from file
-def goThroughConcatemerFile(dict_sec, line, multiGroups, concatemers,
+def goThroughConcatemerFile(hic_data, line, multiGroups, concatemers,
                                 findMulti, resol, nConcat=0,
-                                concatTemp=set(), prev='',
+                                concatTemp=[], prev='',
                                 lookComb=lookCombiDefined,
-                                    concatIdPos=0,
                                 frag1Pos=2, lenFrag1Pos=4,
                                 frag2Pos=8, lenFrag2Pos=10,
                                 chrom1Pos = 1, chrom2Pos=7,
@@ -529,8 +573,6 @@ def goThroughConcatemerFile(dict_sec, line, multiGroups, concatemers,
                                 split_by_bin=False, seen=[],
                                 checkOverlap = checkOverlapCount):
     '''
-    :param dict_sec; dictionary with chromosomes as keys and list with begining
-        and end of binned coordiantes of this chromosome in our TSV file
     :param lookCombiDefined lookComb: Wether you want to retrieve just
         the specified multicontactacts in findMulti (lookCombiDefined),
         all the multicontacts in the range from 3 to findMulti 
@@ -543,13 +585,14 @@ def goThroughConcatemerFile(dict_sec, line, multiGroups, concatemers,
         # You can iterate over an empty set if
         #in first fragment
         for k in concatTemp:
-            concatemers[k[0]].add(k[1])
+            concatemers[k] += 1
 
         # Look for all combinations of multiContacts
         #if no one specified
         multiGroups = lookComb(findMulti, concatTemp, multiGroups)
+        
         # Reset variable
-        concatTemp = set()
+        concatTemp = []
         prev = prev_
 
         # New concatemer seen
@@ -566,18 +609,14 @@ def goThroughConcatemerFile(dict_sec, line, multiGroups, concatemers,
     
     RE21 = line[RE2Pos[0]]
     RE22 = line[RE2Pos[1]]
-    # store each apparition of a fragment in a concatemer
-    concatID = line[concatIdPos].split('#')[0]
     if split_by_bin == False:
         #we store the bin of the mapping start position
         if (RE11, RE12) not in seen:
-            pos = (int(line[frag1Pos]) / resol) + dict_sec[line[chrom1Pos]][0]
-            concatTemp.add((pos, concatID))
+            concatTemp.append((int(line[frag1Pos]) / resol) + hic_data.section_pos[line[chrom1Pos]][0])
             seen += [(RE11, RE12)]
             
         if (RE21, RE22) not in seen:
-            pos = (int(line[frag2Pos]) / resol) + dict_sec[line[chrom2Pos]][0]
-            concatTemp.add((pos, concatID))
+            concatTemp.append((int(line[frag2Pos]) / resol) + hic_data.section_pos[line[chrom2Pos]][0])
             seen += [(RE21, RE22)]
         
     
@@ -594,14 +633,15 @@ def goThroughConcatemerFile(dict_sec, line, multiGroups, concatemers,
 
             if ps1_1 != ps1_2:
                 interacting1 += checkOverlap(line[chrom1Pos], ps1, ps12, split_by_bin, 
-                                                 resol, dict_sec)
+                                                 resol, hic_data.sections)
             else:
-                interacting1 += [dict_sec[line[chrom1Pos]][0] + (ps1 / resol)]
-
+                try:
+                    interacting1 += [hic_data.sections[(line[chrom1Pos], ps1 / resol)]]
+                except:
+                    interacting1 += [ps1_1]
                     
             seen += [(RE11, RE12)]
-            for inte in interacting1:
-                concatTemp.add((inte, concatID))
+            concatTemp += interacting1
                 
         # second fragment 
         if (RE21, RE22) not in seen:
@@ -613,32 +653,30 @@ def goThroughConcatemerFile(dict_sec, line, multiGroups, concatemers,
 
             if ps2_1 != ps2_2:
                 interacting2 += checkOverlap(line[chrom2Pos], ps2, ps22, split_by_bin, 
-                                                 resol, dict_sec)
+                                                 resol, hic_data.sections)
             else:
-                interacting2 += [dict_sec[line[chrom2Pos]][0] + (ps2 / resol)]
-              
+                try:
+                    interacting2 += [hic_data.sections[(line[chrom2Pos], ps2 / resol)]]
+                except:
+                    interacting2 += [ps2_1]
                     
             seen += [(RE21, RE22)]
-            for inte in interacting2:
-                concatTemp.add((inte, concatID))
+            concatTemp += interacting2
 
     return multiGroups, concatemers, nConcat, concatTemp, prev, seen
 
-
 # Obtain multiContacts from file just in a pairwise manner
-def goThroughConcatemerFilePairwise(dict_sec, line, concatemers,
+def goThroughConcatemerFilePairwise(hic_data, line, concatemers,
                                 resol, nConcat=0,
-                                concatTemp=set(), prev='',
+                                concatTemp=[], prev='',
                                     concatIdPos=0,
                                 frag1Pos=2, lenFrag1Pos=4,
                                 frag2Pos=8, lenFrag2Pos=10,
                                 chrom1Pos = 1, chrom2Pos=7,
                                 RE1Pos=[5,6], RE2Pos=[11,12],
-                                split_by_bin=False, seen=[],
+                                split_by_bin=False, seen={},
                                 checkOverlap = checkOverlapCount):
     '''
-    :param dict_sec; dictionary with chromosomes as keys and list with begining
-        and end of binned coordiantes of this chromosome in our TSV file
     :param 2 frag1Pos: Index indicating in wich column of the tsv file are
         located the genomic coordinates of the first fragment in the 
         interaction
@@ -657,7 +695,6 @@ def goThroughConcatemerFilePairwise(dict_sec, line, concatemers,
     
     #### Este control ya no haria falta creo, para para la prueba dejamos todo igual
     # con la nueva version no haria falta mirar en que concatemer estamos
-    # Lo dejo porque tengo pensado utilizar nConcat
     if prev != prev_:
         # You can iterate over an empty set if
         #in first fragment
@@ -665,14 +702,14 @@ def goThroughConcatemerFilePairwise(dict_sec, line, concatemers,
             concatemers[k[0]].add(k[1])
 
         # Reset variable
-        concatTemp = set()
+        concatTemp = []
         prev = prev_
 
         # New concatemer seen
         nConcat += 1
         
         # reset list of seen RFs
-        seen = []
+        seen = {}
 
 
     # store each apparition of a fragment in a concatemer
@@ -686,16 +723,18 @@ def goThroughConcatemerFilePairwise(dict_sec, line, concatemers,
     if split_by_bin == False:
         #we store the bin of the mapping start position
         if (RE11, RE12) not in seen:
-            pos = (int(line[frag1Pos]) / resol) + dict_sec[line[chrom1Pos]][0]
-            concatTemp.add((pos, concatID))
-            seen += [(RE11, RE12)]
-        
+            pos = (int(line[frag1Pos]) / resol) + hic_data.section_pos[line[chrom1Pos]][0]
+            concatTemp.append([pos, concatID])
+            seen[(RE11, RE12)] = pos
+        else:
+            concatTemp.append([seen[(RE11, RE12)], concatID])
             
         if (RE21, RE22) not in seen:
-            pos = (int(line[frag2Pos]) / resol) + dict_sec[line[chrom2Pos]][0]
-            concatTemp.add((pos, concatID))
-            seen += [(RE21, RE22)]
-        
+            pos = (int(line[frag2Pos]) / resol) + hic_data.section_pos[line[chrom2Pos]][0]
+            concatTemp.append([pos,concatID])
+            seen[(RE21, RE22)] = pos
+        else:
+            concatTemp.append([seen[(RE21, RE22)], concatID])
     else:
         # Since fragments from same concatemer are repeated, we could be overcounting the splitting
         #of the same fragment many times, so need a control to count each fragment just once
@@ -709,17 +748,17 @@ def goThroughConcatemerFilePairwise(dict_sec, line, concatemers,
 
             if ps1_1 != ps1_2:
                 interacting1 += checkOverlap(line[chrom1Pos], ps1, ps12, split_by_bin, 
-                                                 resol, dict_sec)
+                                                 resol, hic_data.sections)
             else:
                 try:
-                    interacting1 += [dict_sec[line[chrom1Pos]][0] + (ps1 / resol)]
+                    interacting1 += [hic_data.sections[(line[chrom1Pos], ps1 / resol)]]
                 except:
                     interacting1 += [ps1_1]
                     
-            seen += [(RE11, RE12)]
-            for inte in interacting1:
-                concatTemp.add((inte, concatID))
-        
+            seen[(RE11, RE12)] = interacting1
+            concatTemp += [[interacting1, concatID]]
+        else:
+            concatTemp += [[seen[(RE11, RE12)], concatID]]
             
         # second fragment 
         if (RE21, RE22) not in seen:
@@ -731,24 +770,24 @@ def goThroughConcatemerFilePairwise(dict_sec, line, concatemers,
 
             if ps2_1 != ps2_2:
                 interacting2 += checkOverlap(line[chrom2Pos], ps2, ps22, split_by_bin, 
-                                                 resol, dict_sec)
+                                                 resol, hic_data.sections)
             else:
                 try:
-                    interacting2 += [dict_sec[line[chrom2Pos]][0] + (ps2 / resol)]
+                    interacting2 += [hic_data.sections[(line[chrom2Pos], ps2 / resol)]]
                 except:
                     interacting2 += [ps2_1]
                     
-            seen += [(RE21, RE22)]
-            for inte in interacting2:
-                concatTemp.add((inte, concatID))
+            seen[(RE21, RE22)] = interacting2
+            concatTemp += [[interacting2, concatID]]
             
-       
+        else:
+            concatTemp += [[seen[(RE21, RE22)], concatID]]
 
     return concatemers, nConcat, concatTemp, prev, seen
- 
+    
 
 # Open tsv and obtain multiContact frecuencies
-def getMultiAndConcatemersPerBin(dict_sec, tsvFile, resol, locusCh=False,
+def getMultiAndConcatemersPerBin(hic_data, tsvFile, resol, locusCh=False,
                                  regRange=False, returnNconcat = False,
                                 findMulti=False, lookComb=lookCombiDefined,
                                 split_by_bin=False):
@@ -757,8 +796,6 @@ def getMultiAndConcatemersPerBin(dict_sec, tsvFile, resol, locusCh=False,
         appearing and the multi contact groups (is bin based, so all 
         fragments which start inside of a bin margin will be joined). 
         Assumes integer based chromosomes, where mt would be 26 in humans
-    :param dict_sec; dictionary with chromosomes as keys and list with begining
-        and end of binned coordiantes of this chromosome in our TSV file
     :param False returnNconcat: wether you want or not nConcat to be
         returned
     :param False findMulti: Integer if you want to look just for multi
@@ -781,27 +818,24 @@ def getMultiAndConcatemersPerBin(dict_sec, tsvFile, resol, locusCh=False,
         multiGroups = {}
         # asume maximum of 20 multiContacts to avoid if statments
         for sg in range(3, 21):
-            multiGroups[sg] = dict()
+            multiGroups[sg] = defaultdict(int)
         
     else:
-        multiGroups = {findMulti:dict()}    
+        multiGroups = {findMulti:defaultdict(int)}    
  
     # variable to store id
     prev = ''
-    ######## cambiado ########
-    concatemers = defaultdict(set)
-    ######## cambiado ########
-    
+    concatemers = defaultdict(int)
+
     # Use set to remove duplicates or fragments from same bin in a concatemer
-    concatTemp = set()
+    concatTemp = []
     nConcat = 0
     
-    ####### cambiado #########
-    if 0 < split_by_bin <= 1:
+    if split_by_bin <= 1:
         checkOverlap = checkOverlapPerc
     else:
         checkOverlap = checkOverlapCount
-    ####### cambiado #########
+
     
 
     with open(tsvFile, 'r') as f:
@@ -813,22 +847,22 @@ def getMultiAndConcatemersPerBin(dict_sec, tsvFile, resol, locusCh=False,
             if not line.startswith('#'):
                 break
         # Run current line (first one)
-        multiGroups, concatemers, nConcat, concatTemp, prev, seen = goThroughConcatemerFile(dict_sec, 
+        multiGroups, concatemers, nConcat, concatTemp, prev, seen = goThroughConcatemerFile(hic_data, 
                                 line, multiGroups, concatemers, findMulti, resol, nConcat=0,
-                                concatTemp=set(), prev='', lookComb=lookComb,split_by_bin=split_by_bin, 
+                                concatTemp=[], prev='', lookComb=lookComb,split_by_bin=split_by_bin, 
                                                 checkOverlap = checkOverlap)
         # Go for next lines
         for line in f:
-            multiGroups, concatemers, nConcat, concatTemp, prev, seen = goThroughConcatemerFile(dict_sec, line, multiGroups, concatemers,
+            multiGroups, concatemers, nConcat, concatTemp, prev, seen = goThroughConcatemerFile(hic_data, line, multiGroups, concatemers,
                                 findMulti, resol, nConcat=nConcat,
                                 concatTemp=concatTemp, prev=prev, lookComb=lookComb,split_by_bin=split_by_bin, 
                                                 checkOverlap = checkOverlap, seen=seen)
 
     # Add last concatemer of file
     for k in concatTemp:
-        concatemers[k[0]].add(k[1])
+        concatemers[k] += 1
     multiGroups = lookComb(findMulti, concatTemp, multiGroups)
-    nConcat += 1
+
     
         
 
@@ -850,6 +884,9 @@ def getMultiAndConcatemersPerBin(dict_sec, tsvFile, resol, locusCh=False,
     else:
         regConcatemers = concatemers
 
+                
+
+    ##
     # Remove multiGroups keys with no data
     keys = multiGroups.keys()
     for sg in keys:
@@ -859,19 +896,20 @@ def getMultiAndConcatemersPerBin(dict_sec, tsvFile, resol, locusCh=False,
     if returnNconcat == False:
         return regConcatemers, multiGroups
     else:
-        return regConcatemers, multiGroups, nConcat 
+        return regConcatemers, multiGroups, nConcat
+    
+    
+
     
 
 # Open tsv and obtain multiContact frecuencies in a pairwise manner
-def getConcatemersPerBin(dict_sec, tsvFile, resol, locusCh=False,
+def getConcatemersPerBin(hic_data, tsvFile, resol, locusCh=False,
                          regRange = False, returnNconcat = False,
                          split_by_bin=False):
     '''
     Function to get the number of concatemers were a bin of interest is 
         appearing (is bin based, so all fragments which start inside of
         a bin margin will be joined)
-    :param dict_sec; dictionary with chromosomes as keys and list with begining
-/       and end of binned coordiantes of this chromosome in our TSV file
     :param False split_by_bin: Set to i) float between 0 to 1 or to ii) integer from 2
         to above to extend to multiple bins the mapped reads cover more than one bin. 
         If i) will include interaction in bin if x% of bin is covered (dangerous since 
@@ -883,12 +921,12 @@ def getConcatemersPerBin(dict_sec, tsvFile, resol, locusCh=False,
     '''
     # variable to store id
     prev = ''
-    concatemers = defaultdict(set)
-    ### in the future this could be optimised by changing concatTemp into a set
-    concatTemp = set()
+    concatemers = defaultdict(int)
+    
+    concatTemp = []
     nConcat = 0
     
-    if 0 < split_by_bin <= 1:
+    if split_by_bin <= 1:
         checkOverlap = checkOverlapPerc
     else:
         checkOverlap = checkOverlapCount
@@ -900,14 +938,14 @@ def getConcatemersPerBin(dict_sec, tsvFile, resol, locusCh=False,
             if not line.startswith('#'):
                 break
         # Run current line (first one)
-        concatemers, nConcat, concatTemp, prev, seen = goThroughConcatemerFilePairwise(dict_sec, 
+        concatemers, nConcat, concatTemp, prev, seen = goThroughConcatemerFilePairwise(hic_data, 
                                                 line, concatemers, resol, nConcat=0, 
-                                                concatTemp=concatTemp, prev='', split_by_bin=split_by_bin, 
+                                                concatTemp=[], prev='', split_by_bin=split_by_bin, 
                                                 checkOverlap = checkOverlap)
         
         # Go for next lines
         for line in f:
-            concatemers, nConcat, concatTemp, prev, seen = goThroughConcatemerFilePairwise(dict_sec, 
+            concatemers, nConcat, concatTemp, prev, seen = goThroughConcatemerFilePairwise(hic_data, 
                                                 line, concatemers, resol, nConcat=nConcat,
                                                 concatTemp=concatTemp, prev=prev, 
                                                 split_by_bin=split_by_bin, checkOverlap = checkOverlap,
@@ -915,8 +953,8 @@ def getConcatemersPerBin(dict_sec, tsvFile, resol, locusCh=False,
 
     # Add last concatemer of file
     for k in concatTemp:
-        concatemers[k[0]].add(k[1])
-    nConcat += 1
+        concatemers[k] += 1
+
 
      # filter genomic coordinates outside region of interest
     if locusCh == True:
@@ -941,7 +979,6 @@ def getConcatemersPerBin(dict_sec, tsvFile, resol, locusCh=False,
         return regConcatemers
     else:
         return regConcatemers, nConcat
-
 
 # Prepare randomised shufling of multicontacts
 def randomiseMultiGroups(multiGroups, multiLevel):
@@ -970,7 +1007,7 @@ def randomiseMultiGroups(multiGroups, multiLevel):
     return groups
 
 # Function to normalise by frecuencies
-def MultiNorm(dict_sec, regionStartBin, regionEndBin, tsvFile, resol, locusCh=False,
+def MultiNorm(hic_data, regionStartBin, regionEndBin, tsvFile, resol, locusCh=False,
               method='', multiLevel=2, zeroPercent=False, mininter=0, keep=False, 
               returnNconcat=False, random=False, multResult=100, split_by_bin=False):
     '''
@@ -1004,23 +1041,23 @@ def MultiNorm(dict_sec, regionStartBin, regionEndBin, tsvFile, resol, locusCh=Fa
     # Get concatemer appearances per bin
     if multiLevel == 2:
         if returnNconcat == False:
-            concatemersBin = getConcatemersPerBin(dict_sec, tsvFile, resol, 
+            concatemersBin = getConcatemersPerBin(hic_data, tsvFile, resol, 
                                                   locusCh, regRange, returnNconcat,
                                                   split_by_bin=split_by_bin)
         else:
-            concatemersBin, nConcat = getConcatemersPerBin(dict_sec, tsvFile,
+            concatemersBin, nConcat = getConcatemersPerBin(hic_data, tsvFile,
                                              resol, locusCh, regRange, returnNconcat,
                                              split_by_bin=split_by_bin)
     # If we are going to check for multi contacts
     elif multiLevel > 2:
         if returnNconcat == False:
-            concatemersBin, multiGroups = getMultiAndConcatemersPerBin(dict_sec, tsvFile, 
+            concatemersBin, multiGroups = getMultiAndConcatemersPerBin(hic_data, tsvFile, 
                                                                        resol, locusCh, regRange,
                                                                        returnNconcat,
                                                                        split_by_bin=split_by_bin,
                                                                        findMulti=multiLevel)
         else:
-            concatemersBin, multiGroups, nConcat = getMultiAndConcatemersPerBin(dict_sec, 
+            concatemersBin, multiGroups, nConcat = getMultiAndConcatemersPerBin(hic_data, 
                                                                                 tsvFile, resol,
                                                                                 locusCh, 
                                                                                 regRange,
@@ -1043,7 +1080,6 @@ for pairwise interactions. Wont randomise'
     zeroSums = {}
     ## Filter data
     if zeroPercent != False:
-        lalala #(Not optimised for new version)
         # For that, we turn it into zero
         # If badsThres is given in percentaje
         if zeroPercent <= 1:
@@ -1082,53 +1118,93 @@ for pairwise interactions. Wont randomise'
     
     # Now turn set to list again to recover order
     regRange = list(sorted(regRange))
-    normRange = list(sorted(normRange)) 
+    normRange = list(sorted(normRange))
+     
+    if zeroPercent == False:
+        # get number of zeros if no filtering step
+        for bin1 in regRange:
+            # If we are in the viewpoint just avoid diagonal
+            zeroSums[bin1] = sum(i != bin1 and 
+                                 not hic_data[bin1, i]
+                                 for i in normRange)
+            # If all points have data no adjustment required, so value = 1
+            # pass
+
+            suma = sum(i != bin1 and 
+                            hic_data[bin1, i]
+                             for i in range(sumStart, sumEnd + 1))
+            # If we have all zeros leave it as one for the enumerater, since
+            #interaction value will alway be zero
+            if suma == 0:
+                zeroSums[bin1] = 1
+
+            else:
+                zeroSums[bin1] = ((zeroSums[bin1] + 1)/ float(suma))
+                #zeroSums[bin1] = zeroSums[bin1]
+                
               
     if multiLevel == 2:
         # create HiC data for normalised interactions
-        # get list of chromosomes
-        chroms = sorted(dict_sec, key=dict_sec.get, reverse=False)
-        genome_seq = collections.OrderedDict()
-        for nc, c in enumerate(chroms):
-            if nc == 0:
-                genome_seq[c] = dict_sec[c][1]
-            else:
-                genome_seq[c] = dict_sec[c][1] - dict_sec[chroms[nc - 1]][1]
-
+        dict_sec = hic_data.sections
+        genome_seq = hic_data.chromosomes
         size = sum(genome_seq[crm] for crm in genome_seq)
-        norm_data = HiC_data((), size, genome_seq, resolution=resol)
-
+        norm_data = HiC_data((), size, genome_seq, dict_sec, resolution=resol)
+    
         # Will remove from divider concatemers counted twice
         if method == 'concatSameSum2':
             if keep == False:
                 for nbin1, bin1 in enumerate(regRange):
                     for bin2 in regRange[nbin1:]:
                         # If diagonal or bellow sed interactions
-                        inter = len(set.intersection(*(concatemersBin[bin1], concatemersBin[bin2])))
-                        if bin1 == bin2 or inter <= mininter:
+                        if bin1 == bin2 or hic_data[bin1, bin2] <= mininter:
                             pass  # Leave it as zero
 
                         else:
-                            divider = len(concatemersBin[bin1]) + len(concatemersBin[bin2])
-                            divider -= inter
-                            
-                            norm_data[bin1, bin2] = (inter / float(divider)) * multResult
+                            # get divider
+                            #if concatemersBin[bin1] == 0:
+                            #    if concatemersBin[bin2] == 0:
+                            #        divider = 1
+                            #    else:
+                            #        divider = concatemersBin[bin2]
+                            #elif concatemersBin[bin2] == 0:
+                            #    divider = concatemersBin[bin1]
+                            #else:
+                            divider = concatemersBin[bin1] + concatemersBin[bin2] - hic_data[bin1, bin2]
+
+                            #divider = float(concatemersBin[bin1] + concatemersBin[bin2])
+
+                            #if divider == 0:
+                            #    divider = 1
+                            # if both are zero 
+                            norm_data[bin1, bin2] = (hic_data[bin1, bin2] / float(divider)) * multResult
                             norm_data[bin2, bin1] = norm_data[bin1, bin2]
 
             else:
                 for ke in keep:
-                    # If diagonal or bellow said interactions
-                    if (ke[0] == ke[1] or (
-                        ke[0] not in regRange or ke[1] not in regRange)):
+                    # If diagonal or bellow sed interactions
+                    if (ke[0] == ke[1] or hic_data[ke[0], ke[1]] <= mininter or
+                        (ke[0] not in regRange or ke[1] not in regRange)):
                         pass  # Leave it as zero
                     else:
-                        inter = len(set.intersection(*(concatemersBin[ke[0]], concatemersBin[ke[1]])))
-                        if not inter <= mininter:
-                            divider = len(concatemersBin[ke[0]]) + len(concatemersBin[ke[1]])
-                            divider -= inter
-                            
-                            norm_data[ke[0], ke[1]] = inter / float(divider)
-                            norm_data[ke[1], ke[0]] = norm_data[ke[0], ke[1]]
+                        if not hic_data[ke[0], ke[1]] <= mininter:
+                        # get divider
+                        #if concatemersBin[ke[0]] == 0:
+                        #    if concatemersBin[ke[1]] == 0:
+                        #        divider = 1
+                        #    else:
+                        #        divider = concatemersBin[ke[1]]
+                        #elif concatemersBin[ke[1]] == 0:
+                        #    divider = concatemersBin[ke[0]]
+                        #else:
+                            divider = concatemersBin[ke[0]] + concatemersBin[ke[1]] - hic_data[ke[0], ke[1]]
+
+                        #divider = float(concatemersBin[bin1] + concatemersBin[bin2])
+
+                        #if divider == 0:
+                        #    divider = 1
+                        # if both are zero 
+                        norm_data[ke[0], ke[1]] = hic_data[ke[0], ke[1]] / float(divider)
+                        norm_data[ke[1], ke[0]] = norm_data[ke[0], ke[1]]
                         
     elif multiLevel >= 3:
         # Will remove from divider concatemers counted twice
@@ -1144,29 +1220,39 @@ for pairwise interactions. Wont randomise'
                 focusMultiGroups = {}
                 # Normalise
                 for k in keys:
-                    
-                    # shared concatemers between the three
-                    inter = len(set.intersection(*(concatemersBin[kk] for kk in k)))
-                    # total number of concatemeres in which they are present
-                    divider = sum(len(concatemersBin[kk]) for kk in k)
-                    divider -= inter
-
-                   
+                    # first get presence of all fragments in the whole dataset
+                    #meaning, number of times this fragment appeared
+                    #divider = sum(concatemersBin[k[nm]] for nm in range(multiLevel))
+                    # then remove concatemers counted more than once, maybe because
+                    #two of the fragments from k were present in them
+                    # look for appearances of more than one member of the multiContact            
+                    #divider -= sum(multiGroups[multiLevel][k2] * (
+                                        # this line will give as how many times we counted extra this
+                                        #concatemer (given presence of fragments from k)
+                    #                    sum(1 for kk in k if kk in k2) - 1)
+                    #               for k2 in keys 
+                                   # To avoid multiplication by negative numbers, we just let pass the check
+                                   #concatemers were we know that at least 2 fragments from k are present
+                    #               if sum(1 for kk in k if kk in k2) >= 2)
+                    divider = sum(multiGroups[multiLevel][k2]
+                               for k2 in keys 
+                               if sum(1 for kk in k if kk in k2) >= 1)
                     if divider < 0:
-                        print divider, [concatemersBin[k[nm]] for nm in range(multiLevel)]
-                        lllllll
-                    focusMultiGroups[k] = (inter / float(divider)) * multResult
+                        print divider, [concatemersBin[k[nm]] for nm in range(multiLevel)], multiGroups[multiLevel][k]
+
+                    focusMultiGroups[k] = (multiGroups[multiLevel][k] / float(divider)) * multResult
                 norm_data = focusMultiGroups
                 
             # If we dont have that level of multiContacts
             else:
-                print 'WARNING: No multicontacts with %s level' %multiLevel
+                print 'WWARNING: No multicontacts with %s level' %multiLevel
                 norm_data = {}
     
     if returnNconcat == False:      
         return norm_data, concatemersBin
     else:
         return norm_data, concatemersBin, nConcat
+
 
 
 
@@ -1286,86 +1372,5 @@ def multiReNorm(data):
 
         data2[da] = data[da] / float(divisor)
 
-
-    return data2
-
-
-# Set of functions to minimize if statements while
-#defining a range in which take numbers for multiReNorm_3wise
-def getRange1(minPos, maxPos, da):
-    mini = minPos
-    maxi = da[1] - 1
-    return mini, maxi
-
-def getRange2(minPos, maxPos, da):
-    mini = da[0] + 1
-    maxi = da[-1] - 1
-    return mini, maxi
-
-def getRange3(minPos, maxPos, da):
-    mini = da[1] + 1
-    maxi = maxPos
-    return mini, maxi
-
-
-# optimised way to normalise the 3-wise interaction data in
-#order to remove niewPoint signal
-def multiReNorm_3wise(data):
-
-    '''
-    Optimised function to normalise for viewPoint the multi contact data
-        when having 3-wise interactions
-    :param data: dictionary with multiContact values
-    '''
-
-    # Create variable to store output
-    data2 = {}
-
-    # get appearances of each position
-    interSums = defaultdict(int)
-    for da in data:
-        for d in da:
-            interSums[d] += data[da]
-
-    minPos = min(interSums.keys())
-    maxPos = max(interSums.keys())
-    # despues de esto hacer la busqueda entre elementos comunes teniendo en cuenta
-    #este rango de valores y pares de los elementos en cada concatemer
-    multiLevel = len(data.keys()[0])
-
-    # Normalise
-    for da in data.keys():
-        combis = set([tuple(sorted(i)) for i in itertools.permutations(list(da), 2)])
-        newCombs = []
-        for i in range(multiLevel):
-            if i == 0:
-                getRange = getRange1
-            elif i == 1:
-                getRange = getRange2
-            elif i == 2:
-                getRange = getRange3
-            else:
-                print('Code not optimised for this level of multiContact')
-                lallalal
-            for c in combis:
-                c = list(c)
-                rangeVals = getRange(minPos, maxPos, c)
-                for r in range(rangeVals[0], rangeVals[1] + 1):
-                    c2 = copy.copy(c)
-                    c2.insert(i, r)
-                    newCombs.append(tuple(c2))
-
-        # sum all appearances of fragments in the multicontact group
-        divisor = sum(interSums[d] for d in da)
-        # look for appearances of more than one member of the multiContact  
-        # In these case all elements in list have two members
-        divisor -= sum(max(data.get(tuple(da2)), 0) 
-                       for da2 in newCombs)
-
-        # "da" combination will have been counted multiLevel times (so totally removed from divisor)
-        # now we add it
-        divisor += data.get(tuple(da))
-
-        data2[da] = data[da] / float(divisor)
 
     return data2
