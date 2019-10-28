@@ -3,6 +3,10 @@ from collections import defaultdict
 from pytadbit                     import HiC_data
 import itertools
 import copy
+import os
+import h5py
+import numpy as np
+import random
 
 def factorial(n):return reduce(lambda x,y:x*y,[1]+range(1,n+1))
 
@@ -1370,3 +1374,354 @@ def multiReNorm_3wise(data):
         data2[da] = data[da] / float(divisor)
 
     return data2
+
+
+#  Function to get indexes from HDF5 files
+def getIndexes(header, chromn='Chr', REstartn='ExtStart', REendn='ExtEnd',
+                                      strandn='Strand', mapstartn = 'MapStart',
+                                      mapendn = 'MapEnd', qualn = 'MQ',
+                                       readidn='ReadID', concatlenn='ReadLength'):
+    chrom = ''
+    REstart = ''
+    REend = ''
+    strand=''
+    mapstart=''
+    mapend=''
+    qual=''
+    readid=''
+    concatlen=''
+    for nhe, he in enumerate(header):
+        if he == chromn:
+            chrom = nhe
+        elif he == REstartn:
+            REstart = nhe
+        elif he == REendn:
+            REend = nhe
+        elif he == strandn:
+            strand = nhe
+        elif he == mapstartn:
+            mapstart = nhe
+        elif he == mapendn:
+            mapend = nhe
+        elif he == qualn:
+            qual = nhe
+        elif he == readidn:
+            readid = nhe
+        elif he == concatlenn:
+            concatlen = nhe
+
+    return chrom, REstart, REend, strand, mapstart, mapend, qual, readid, concatlen
+
+
+#  Function to remove duplicated RE fragments from HDF5 files
+def removeDuplicatedRF(concatemer1, viewPoint, lonIndex=3, REindex=[4,5],
+                       startIndex=1,chromPos2 = 0, silent=False):
+    remove = []
+    duStore = []
+    # will find duplicated RE sites by looking at Restrictionfragments equal or included inside others
+    dupIndx = []
+    skip = set()
+    for n, x in enumerate(concatemer1):
+        di = []
+        if n not in skip:
+            for n2, x2 in enumerate(concatemer1[n:], n):
+                if n != n2 and x2[chromPos2] == x[chromPos2]:
+                    if (int(x2[REindex[0]]) == int(x[REindex[0]]) and
+                        int(x2[REindex[1]]) == int(x[REindex[1]])):
+                        di = di + [n, n2]
+                        skip.add(n)
+                        skip.add(n2)
+                        #dupIndx.append([n, n2])
+                    elif (int(x2[REindex[0]]) <= int(x[REindex[0]]) <=  int(x2[REindex[1]]) or
+                        int(x2[REindex[0]]) <= int(x[REindex[1]]) <=  int(x2[REindex[1]])):
+                        di = di + [n, n2]
+                        #dupIndx.append([n, n2])
+                        duStore.append([n, n2])
+                        skip.add(n)
+                        skip.add(n2)
+                    elif (int(x[REindex[0]]) <= int(x2[REindex[0]]) <=  int(x[REindex[1]]) or
+                        int(x[REindex[0]]) <= int(x2[REindex[1]]) <=  int(x[REindex[1]])):
+                        di = di + [n, n2]
+                        #dupIndx.append([n2, n])
+                        duStore.append([n, n2])
+                        skip.add(n)
+                        skip.add(n2)
+        di = sorted(list(set(di)))
+        if di not in dupIndx and len(di) != 0:
+            dupIndx.append(di)
+
+
+    # If we found duplicated
+    if len(dupIndx) != 0:
+
+        # short check to be sure we dont have triplicates
+        setdup = set([du[0] for du in dupIndx] + [du[1] for du in dupIndx])
+        listdup = [du[0] for du in dupIndx] + [du[1] for du in dupIndx]
+        if len(setdup) != len(listdup):
+            if silent == False:
+                print 'Found triplicates'
+                print dupIndx
+                print concatemer1
+
+
+
+        # remove one member per each duplicates randomly
+        for du in dupIndx:
+            present = [False] * len(du)
+            # if duplicates are viewPoint
+            if viewPoint[0] == concatemer1[du[0]][chromPos2]:
+                for primer in viewPoint[1]:
+                    for ndu in range(len(du)):
+                        if concatemer1[du[ndu]][REindex[0]] <= primer <= concatemer1[du[ndu]][REindex[0]]:
+                            present[ndu] = True
+
+            # if none or all of the duplicates were the viewPoint
+            if sum(present) == 0 or sum(present) == len(present):
+                # decide randomly which duplicate to keep and which to remove
+                #re = random.sample(range(len(du)), len(du) - 1)
+                # keep the longest fragment
+                maxi = (0,0)
+                for d in du:
+                    longi = int(concatemer1[d][lonIndex])
+                    if longi > maxi[0]:
+                        maxi = (longi, d)
+
+                remove += [d for d in du if d != maxi[1]]
+
+            # if
+            else:
+                print 'Improbable case happend: overlapping fragments, one with viewPoint other not'
+                print  concatemer1
+                lalala
+
+    if len(duStore) == 0:
+        return [concatemer1[i] for i in range(len(concatemer1)) if i not in remove], []
+    else:
+        return [concatemer1[i] for i in range(len(concatemer1)) if i not in remove], [duStore, concatemer1]
+
+
+#  Function to write the TSV files from HDF5 files
+def fromHDF5toTSV(outPath, proposedView, all_chromLengths, refGenomes,
+                    allViewREs,
+                    writeFiles=True, filterQual=21, addView=True, 
+                    headerLabel=u'frg_np_header_lst', dataLabel=u'frg_np',
+                    silent=False):
+
+    '''
+    Function to generate TSV files from the HDF5 ones
+    param outPath: String with path in which to store the output tsv files
+    param proposedView: A dictionary with the id of each file as key and
+        coordinates for the used viewPoint. E.j ('chr1', [13123629, 13123501])
+    param all_chromLengths: Dictionary with reference genomeas key and
+        a text including the lengts of each chromosome like in SAM format
+    param refGenomes: Dictionary with reference genome as key and the ID of files
+        mapped to it as value in a list. id = file.split('_', 1)[-1].split('.')[0]
+    param allViewREs:  dictionary with the id of each file as key and
+        Restriction Site coordinates for the used viewPoint. 
+        E.j (1, 13123298, 13123651)
+    param True writeFiles: Wether we want to write the files or not
+    param 21 filterQual: Minimum quality accepted
+    param True addView: Wether to add or not the viewPoint if not present in the read
+    param False silent: Hide triple overlap messages
+    '''
+
+    configPath = outPath + 'datasets/'
+    files = os.listdir(configPath)
+
+    doubleRE = {}
+    allViewAppear = {}
+    for filepath in sorted(files):
+        cmd = ''
+        if filepath.endswith('hdf5'):
+            id1 = filepath.split('_', 1)[-1].split('.')[0]
+            print '## ' + id1 + ' ##'
+            if addView == True:
+                directory = outPath + 'addedView/'
+                if not os.path.exists(directory):
+                    os.makedirs(directory)
+                outfile = directory + '%s.tsv' %(id1)
+            else:
+                directory = outPath + 'nonAddedView/'
+                if not os.path.exists(directory):
+                    os.makedirs(directory)
+                outfile = directory + '%s.tsv' %(id1)
+
+            viewPoint = proposedView[id1]
+
+            # get reference genome chromosome coordinates for this sample
+            for re in refGenomes:
+                if id1 in refGenomes[re]:
+                    chromLengths = all_chromLengths[re]
+
+
+
+            # Create list with concatemers with repeated RE
+            doubleRE[id1] = {}
+
+            # Keep record of number of concatemers check
+            nConcat = 0
+            # Keep record of number of concatermers with duplicated RE
+            nConcatDup = 0
+
+            ##  First to write, the header of the tsv
+            if writeFiles == True:
+                for h in chromLengths.split('\n'):
+                    cmd += '# CRM %s\n' %'\t'.join(h.split())
+                #  Create file and write first lines
+                with open(outfile,"w") as f:
+                    f.write(cmd)
+
+            ##  Then write the data
+            # start adding the contacts
+            concatemer = []
+
+            data = {}
+            f = h5py.File(configPath + filepath)
+            for k, v in f.items():
+                if k != u'#refs#':
+                    data[k] = np.array(v)
+
+
+            # index of positions of interest
+            (chromPos, REstart, REend, strandPos, mapstart,mapend,
+             qualityPos, readid, concatlen) = getIndexes(data[headerLabel])
+
+
+            #  Get the data we are interested in
+            data2 = data[dataLabel]
+
+
+            # get first concatemer data
+            oldId = int(data2[0,readid])
+
+
+            prevrow = data2[0]
+            for nrow in range(len(data2)):
+                # check if filters are surpassed
+                if data2[nrow,qualityPos] <= filterQual:
+                    continue
+
+                else:
+                    # store data
+                    readId = data2[nrow,readid]  # puede tener guion y bara baja
+                    chrom = data2[nrow,chromPos]
+                    start = data2[nrow,mapstart]
+                    end = data2[nrow,mapend]
+                    strand = data2[nrow,strandPos]
+                    #  Change to TADbit format
+                    if strand == -1:
+                        strand = 0
+                    seqLen = end - start + 1
+
+                    firstRE = data2[nrow,REstart]
+                    secondRE = data2[nrow,REend]
+
+                    # save RE fragment
+                    fragment = ['chr' + str(chrom), str(start),
+                           str(strand), str(seqLen), str(firstRE), str(secondRE)]
+
+
+                    # write in rounds of each concatemer
+                    if readId != oldId:
+                        ##  Remove duplicated Restriction Sites
+                        concatemer, double = removeDuplicatedRF(concatemer, viewPoint,
+                                                        lonIndex=3, REindex=[4,5],
+                                                        startIndex=1,chromPos2 = 0,
+                                                            silent=silent)
+
+                        # Keep record of n of concatermers and ones with duplicated RE
+                        if len(double) != 0:
+                            nConcatDup += 1
+                            doubleRE[id1][oldId] = double
+
+                        nConcat += 1
+
+                        # Add vewPoint if stated like that
+                        if addView == True:
+                            viPresent = False
+                            for c in concatemer:
+                                if c[0] == proposedView[id1][0]:
+                                    for v in proposedView[id1][1]:
+                                        if int(c[4]) <= v <= int(c[5]):
+                                            viPresent == True
+
+                            if viPresent == False:
+                                # add randomly one of the viewPoint RF
+                                toAdd = random.choice(allViewREs[id1])
+                                concatemer.append(['chr%s' %toAdd[0], str(toAdd[1]), '0', '100', str(toAdd[1]), str(toAdd[2])])
+                                #print concatemer
+
+
+                        # add first fragment agains the rest
+                        nmulti = len(concatemer) - 1
+
+                        # Write concatemer interactions
+                        if writeFiles == True:
+                            for nc, comb in enumerate(concatemer[1:], 1):
+                                key = '%s.%s#%s/%s' %(id1, oldId,
+                                                    nc, nmulti)
+                                toWrite = '%s\t%s\t%s\n' %(key,
+                                                        '\t'.join(concatemer[0]),
+                                                        '\t'.join(comb))
+                                # write
+                                with open(outfile, 'a') as f:
+                                    f.write(toWrite)
+
+                        oldId = readId
+                        concatemer = []
+                        # Add new fragment
+                        concatemer.append(fragment)
+                    else:
+                        concatemer.append(fragment)
+
+
+            # After reaching the end of the data we have to write the last read
+            #  Remove duplicated Restriction Sites
+            concatemer, double = removeDuplicatedRF(concatemer, viewPoint,
+                                                lonIndex=3, REindex=[4,5],
+                                                startIndex=1,chromPos2 = 0,
+                                                   silent=silent)
+
+
+            # Keep record of n of concatermers and ones with duplicated RE
+            if len(double) != 0:
+                nConcatDup += 1
+                doubleRE[id1][oldId] = double
+
+            nConcat += 1
+
+            # Add vewPoint if stated like that
+            if addView == True:
+                viPresent = False
+                for c in concatemer:
+                    if c[0] == proposedView[id1][0]:
+                        for v in proposedView[id1][1]:
+                            if int(c[4]) <= v <= int(c[5]):
+                                viPresent == True
+
+                if viPresent == False:
+                    # add randomly one of the viewPoint RF
+                    toAdd = random.choice(allViewREs[id1])
+                    concatemer.append(['chr%s' %toAdd[0], str(toAdd[1]), '0', '100', str(toAdd[1]), str(toAdd[2])])
+
+            # add first fragment agains the rest
+            nmulti = len(concatemer) - 1
+
+            # Write concatemer interactions
+            if writeFiles == True:
+                for nc, comb in enumerate(concatemer[1:], 1):
+                    key = '%s.%s#%s/%s' %(id1, oldId,
+                                        nc, nmulti)
+                    toWrite = '%s\t%s\t%s\n' %(key,
+                                            '\t'.join(concatemer[0]),
+                                            '\t'.join(comb))
+                    # write
+                    with open(outfile, 'a') as f:
+                        f.write(toWrite)
+
+            oldId = readId
+
+            # Store concatemer numbers and concatemers with repeated RE
+            doubleRE[id1]['nConcat'] = nConcat
+            doubleRE[id1]['nConcatDup'] = nConcatDup
+    return doubleRE
