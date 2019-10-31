@@ -64,7 +64,7 @@ else:
         while fi == 'lala':
             files1 = os.listdir(pathIn)
             for fi1 in files1:
-                if fi1.startswith('reg'):
+                if fi1.endswith('models'):
                     fi = fi1
         #fi = '_'.join(fi.split('_')[0].split('Scaled01'))
         #flag = '%s_%s' %(fi.split('Scaled01')[0], fi.split('Scaled01')[1].split('_')[0])

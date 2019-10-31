@@ -150,6 +150,7 @@ optimizer.run_grid_search(n_cpus=min(nmodels, 8), lowfreq_range=[float(lowfreq)]
                           timeout_job=time2,
 			  #savedata=path+'opt_LF%sUF%sMdis%s_%sbp.models'%(str(lowfreq),str(uperfreq),str(maxdist), str(res)),
 			  cleanup=True,
+              initial_conformation='random',
               # Lines to make timePoints and load them if they exist
               keep_restart_step=10000,
               keep_restart_out_dir=keep_restart_out_dir,
