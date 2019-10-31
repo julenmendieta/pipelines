@@ -133,7 +133,6 @@ models = exp.model_region(start=1,end=exp.size, n_models=1, n_keep=1, n_cpus=1, 
     cleanup=True, initial_conformation='random', 
     start_seed=random.choice(range(1000000)),
     hide_log=True,
-    keep_restart_step=10000,
     keep_restart_out_dir=keep_restart_out_dir,
     restart_path=keep_restart_out_dir) #, connectivity='FENE')
 

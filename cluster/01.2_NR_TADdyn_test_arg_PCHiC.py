@@ -154,7 +154,6 @@ optimizer.run_grid_search(n_cpus=min(nmodels, 8), lowfreq_range=[float(lowfreq)]
 			  cleanup=True,
               initial_conformation='random',
               # Lines to make timePoints and load them if they exist
-              keep_restart_step=10000,
               keep_restart_out_dir=keep_restart_out_dir,
               restart_path=keep_restart_out_dir)
 
