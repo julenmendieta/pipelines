@@ -38,6 +38,7 @@ parser.add_argument('-p','--pathtomtrx',help='path_to_matrix', required=True)
 parser.add_argument('-t','--jobtime',help='jobtime_HH:MM:SS', required=True)
 parser.add_argument('-nm','--nmodels',help='nmodels', required=True)
 parser.add_argument('-tp','--temp_path',help='path_to_tmp_files', required=False)
+parser.add_argument('-jid','--jobid',help='array_job_number', required=False)
 
 args = parser.parse_args()
 lowfreq= args.lowfreq
@@ -49,6 +50,7 @@ matPath=args.pathtomtrx
 jobTime=args.jobtime
 nmodels = int(args.nmodels)
 tempOut=args.temp_path
+jobID=args.jobid
 #matPath='/scratch/devel/jmendieta/deLaat/modelling/reg4_WPL-KOD/MatrixFreqNorm_WPL-KOD_reg4_chr8-120780000-122030000_10000kb'
 
 flag = matPath.split('/')[-2]
@@ -137,6 +139,7 @@ else:
     time2 = (time1[0] * 3600) + (time1[1] * 60) + time1[2]
 
 ##############################
+keep_restart_out_dir = path + 'lammpsSteps/jobArray_%s/' %jobID
 dcut_text = '-'.join(str(d) for d in dcutoff_range)
 optimizer = IMPoptimizer(exp, start=1, end=exp.size, n_models=nmodels, n_keep=nmodels,  tool='lammps', tmp_folder= tempOut)
 optimizer.run_grid_search(n_cpus=min(nmodels, 8), lowfreq_range=[float(lowfreq)],
@@ -146,7 +149,11 @@ optimizer.run_grid_search(n_cpus=min(nmodels, 8), lowfreq_range=[float(lowfreq)]
                           scale_range=[0.01][:], verbose=True,
                           timeout_job=time2,
 			  #savedata=path+'opt_LF%sUF%sMdis%s_%sbp.models'%(str(lowfreq),str(uperfreq),str(maxdist), str(res)),
-			  cleanup=True)
+			  cleanup=True,
+              # Lines to make timePoints and load them if they exist
+              keep_restart_step=10000,
+              keep_restart_out_dir=keep_restart_out_dir,
+              restart_path=keep_restart_out_dir)
 
 outfile=path+'opt_LF%sUF%sC%sMdis%s_%sbp.txt'%(str(lowfreq),str(uperfreq),dcut_text,str(maxdist), str(res))
 optimizer.write_result(outfile)

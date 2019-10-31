@@ -128,7 +128,7 @@ file=%s
 # Get each command from the file and run them with python
 orden=`sed "${SGE_TASK_ID}q;d" $file`
 # will add the command for the temporal folder
-orden=`echo $orden -tp $TMPDIR`
+orden=`echo $orden -tp $TMPDIR -jid ${SGE_TASK_ID}`
 
 python $orden''' %(flag, path, path, njobs, jobTime, prior,
 str(min(nmodels, 8)), runfile)
