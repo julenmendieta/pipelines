@@ -155,7 +155,8 @@ optimizer.run_grid_search(n_cpus=min(nmodels, 8), lowfreq_range=[float(lowfreq)]
               initial_conformation='random',
               # Lines to make timePoints and load them if they exist
               keep_restart_out_dir=keep_restart_out_dir,
-              restart_path=keep_restart_out_dir)
+              restart_path=keep_restart_out_dir,
+              store_n_steps=10)
 
 outfile=path+'opt_LF%sUF%sC%sMdis%s_%sbp.txt'%(str(lowfreq),str(uperfreq),dcut_text,str(maxdist), str(res))
 optimizer.write_result(outfile)
