@@ -139,9 +139,13 @@ else:
     time2 = (time1[0] * 3600) + (time1[1] * 60) + time1[2]
 
 ##############################
-keep_restart_out_dir = path + 'lammpsSteps/jobArray_%s/' %jobID
+keep_restart_out_dir = path + 'lammpsSteps/' 
 if not os.path.exists(keep_restart_out_dir):
     os.makedirs(keep_restart_out_dir)
+keep_restart_out_dir = path + 'lammpsSteps/jobArray_%s/' %jobID
+if not os.path.exists(keep_restart_out_dir):
+        os.makedirs(keep_restart_out_dir)
+
 dcut_text = '-'.join(str(d) for d in dcutoff_range)
 optimizer = IMPoptimizer(exp, start=1, end=exp.size, n_models=nmodels, n_keep=nmodels,  tool='lammps', tmp_folder= tempOut)
 optimizer.run_grid_search(n_cpus=min(nmodels, 8), lowfreq_range=[float(lowfreq)],

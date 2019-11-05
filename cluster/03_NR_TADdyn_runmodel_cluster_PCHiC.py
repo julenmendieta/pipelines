@@ -127,9 +127,13 @@ else:
     time2 = time2 + (6 * 60)  # 5 min are the extra time before killing a job
 
 # Build 3D models based on the HiC data. This is done by IMP.
-keep_restart_out_dir = path + 'lammpsSteps_mod/jobArray_%s/' %jobID
+keep_restart_out_dir = path + 'lammpsSteps_mod/'
 if not os.path.exists(keep_restart_out_dir):
     os.makedirs(keep_restart_out_dir)
+keep_restart_out_dir = path + 'lammpsSteps_mod/jobArray_%s/' %jobID
+if not os.path.exists(keep_restart_out_dir):
+        os.makedirs(keep_restart_out_dir)
+
 models = exp.model_region(start=1,end=exp.size, n_models=1, n_keep=1, n_cpus=1, config=optpar,verbose=True, tool='lammps', 
 	tmp_folder=lammpsOut, timeout_job=time2,
     cleanup=True, initial_conformation='random', 
