@@ -52,7 +52,7 @@ c_range= [float(s) for s in cToDot(args.cutoffRange).split('_')]
 m_range=np.arange(maxdist[0],maxdist[1] ,maxdist[2])
 upfreq_range=np.arange(uperfreq[0],uperfreq[1], uperfreq[2])
 
-flag = matPath.split('/')[-2]
+flag = '_'.join(matPath.split('/')[-1].split('_')[1:3])
 path='/'.join(matPath.split('/')[:-1]) + '/'
 #jobTime = '04:00:00'  # HH:MM:SS
 #path = "/scratch/devel/jmendieta/deLaat/modelling/reg4_WPL-KOD/"
