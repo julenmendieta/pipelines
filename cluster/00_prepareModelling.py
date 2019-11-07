@@ -103,7 +103,7 @@ def saveDoneJobs(clusterUser, outTrash, jobPathsOptim, cluster='cnag'):
 
 def createFailedOptimeRunFiles(matPath, combinations, scriptsPath, jobTime, nmodelsOptim,
                                 prior='long-sl7,mem_256,mem_512', cluster=False):
-    flag = matPath.split('/')[-2]
+    flag = '_'.join(matPath.split('/')[-1].split('_')[1:3])
     path='/'.join(matPath.split('/')[:-1]) + '/'
 
     fecha = time.strftime("%d-%m-%Y")
