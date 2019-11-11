@@ -16,7 +16,6 @@ import matplotlib.pyplot as plt
 import os, errno
 import shutil
 from pebble import ProcessPool
-import shutil
 
 def cToDot(text):
     newText = ''
@@ -39,7 +38,6 @@ parser.add_argument('-p','--pathtomtrx',help='path_to_matrix', required=True)
 parser.add_argument('-t','--jobtime',help='jobtime_HH:MM:SS', required=True)
 parser.add_argument('-nm','--nmodels',help='nmodels', required=True)
 parser.add_argument('-tp','--temp_path',help='path_to_tmp_files', required=False)
-parser.add_argument('-jid','--jobid',help='array_job_number', required=False)
 
 args = parser.parse_args()
 lowfreq= args.lowfreq
@@ -51,7 +49,6 @@ matPath=args.pathtomtrx
 jobTime=args.jobtime
 nmodels = int(args.nmodels)
 tempOut=args.temp_path
-jobID=args.jobid
 #matPath='/scratch/devel/jmendieta/deLaat/modelling/reg4_WPL-KOD/MatrixFreqNorm_WPL-KOD_reg4_chr8-120780000-122030000_10000kb'
 
 flag = matPath.split('/')[-2]
@@ -143,7 +140,8 @@ else:
 keep_restart_out_dir = path + 'lammpsSteps/' 
 if not os.path.exists(keep_restart_out_dir):
     os.makedirs(keep_restart_out_dir)
-keep_restart_out_dir = path + 'lammpsSteps/jobArray_%s/' %jobID
+jobName = 'LF%sUF%sMdis%s_%sbp'%(str(lowfreq),str(uperfreq),str(maxdist), str(res))
+keep_restart_out_dir = path + 'lammpsSteps/jobArray_%s/' %jobName
 if not os.path.exists(keep_restart_out_dir):
         os.makedirs(keep_restart_out_dir)
 

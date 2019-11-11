@@ -103,7 +103,7 @@ cmd+='''#!/bin/bash
 #SBATCH --job-name=%s
 #SBATCH --output=%s/%%A_submatrix_%%a.out
 #SBATCH --error=%s/%%A_submatrix_%%a.err
-#SBATCH --array=1-%s%%300
+#SBATCH --array=1-%s%%20
 #SBATCH --time=%s
 #SBATCH --qos=4dgenome
 #SBATCH --ntasks=1
@@ -117,7 +117,7 @@ file=%s
 # Get each command from the file and run them with python
 orden=`sed "${SLURM_ARRAY_TASK_ID}q;d" $file`
 # will add the command for the temporal folder
-orden=`echo $orden -tp $TMPDIR -jid ${SLURM_ARRAY_TASK_ID}`
+orden=`echo $orden -tp $TMPDIR`
 
 python $orden''' %(flag, path, path, njobs, jobTime, str(min(nmodels, 8)), runfile)
 

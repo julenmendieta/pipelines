@@ -93,7 +93,7 @@ file=%s
 # Get each command from the file and run them with python
 orden=`sed "${SLURM_ARRAY_TASK_ID}q;d" $file`
 # will add the command for the temporal folder
-orden=`echo $orden -tp $TMPDIR -t %s -jid ${SLURM_ARRAY_TASK_ID}`
+orden=`echo $orden -tp $TMPDIR -t %s`
 
 echo $TMPDIR
 echo ${SLURM_ARRAY_TASK_ID}

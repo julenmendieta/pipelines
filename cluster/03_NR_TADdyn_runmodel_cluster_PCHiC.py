@@ -38,7 +38,6 @@ parser.add_argument('-lf','--lammpsfolder',help='folder_temp_lammps', required=T
 parser.add_argument('-p','--pathtomtrx',help='path_to_matrix', required=True)
 parser.add_argument('-t','--jobtime',help='jobtime_HH:MM:SS', required=True)
 parser.add_argument('-tp','--temp_path',help='path_to_tmp_files', required=False)
-parser.add_argument('-jid','--jobid',help='array_job_number', required=False)
 
 args = parser.parse_args()
 low=float(args.lowfreq)
@@ -49,7 +48,6 @@ lammpsOut=args.lammpsfolder
 matPath=args.pathtomtrx
 jobTime=args.jobtime
 tempOut=args.temp_path
-jobID=args.jobid
 
 res = int(matPath.split('_')[-1][:-2])
 lampsFlag = lammpsOut.split('_')[-1]
@@ -130,7 +128,8 @@ else:
 #keep_restart_out_dir = path + 'lammpsSteps_mod/'
 #if not os.path.exists(keep_restart_out_dir):
 #    os.makedirs(keep_restart_out_dir)
-#keep_restart_out_dir = path + 'lammpsSteps_mod/jobArray_%s/' %jobID
+#jobName = 'LF%sUF%sMdis%s_%sbp'%(str(low),str(up),str(maxd), str(res))
+#keep_restart_out_dir = path + 'lammpsSteps_mod/jobArray_%s/' %jobName
 #if not os.path.exists(keep_restart_out_dir):
 #        os.makedirs(keep_restart_out_dir)
 #restart_path = keep_restart_out_dir
