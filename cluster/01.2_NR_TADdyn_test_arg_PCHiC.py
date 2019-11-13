@@ -40,9 +40,14 @@ parser.add_argument('-nm','--nmodels',help='nmodels', required=True)
 parser.add_argument('-tp','--temp_path',help='path_to_tmp_files', required=False)
 
 args = parser.parse_args()
-lowfreq= args.lowfreq
-uperfreq= args.upperfreq
-maxdist= args.maxdist
+lowfreq= float(args.lowfreq)
+uperfreq= float(args.upperfreq)
+try:
+    maxdist= int(args.maxdist)
+except:
+    maxdist= args.maxdist
+    print 'We dont consider floating points in maxdist: %s' %(maxdist)
+    maxdist= int(float(maxdist))
 #dcutoff_range= args.dcutoff_range
 dcutoff_range= [float(s) for s in cToDot(args.dcutoff_range).split('_')]
 matPath=args.pathtomtrx
@@ -62,7 +67,7 @@ res = int(matPath.split('_')[-1][:-2])
 dcutoff_range=np.arange(dcutoff_range[0],dcutoff_range[1],dcutoff_range[2]) #Cutoff
 dcutoff_range2 = []
 for dc in dcutoff_range:
-    if float(maxdist) - dc >= -50:
+    if maxdist - dc >= -50:
         dcutoff_range2.append(float(dc))
 
 #Rao_HIC/load8/Matrix_28331000_28568000

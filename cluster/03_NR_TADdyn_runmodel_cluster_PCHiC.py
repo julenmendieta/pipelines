@@ -42,7 +42,12 @@ parser.add_argument('-tp','--temp_path',help='path_to_tmp_files', required=False
 args = parser.parse_args()
 low=float(args.lowfreq)
 up=float(args.upperfreq)
-maxd=float(args.maxdist)
+try:
+    maxd= int(args.maxdist)
+except:
+    maxd= args.maxdist
+    print 'We dont consider floating points in maxdist: %s' %(maxd)
+    maxd= int(float(maxdist))
 c=float(args.dcutoff_range)
 lammpsOut=args.lammpsfolder
 matPath=args.pathtomtrx
