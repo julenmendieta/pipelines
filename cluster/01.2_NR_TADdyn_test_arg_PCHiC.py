@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 import os, errno
 import shutil
 from pebble import ProcessPool
+import random
 
 def cToDot(text):
     newText = ''
@@ -150,6 +151,9 @@ keep_restart_out_dir = path + 'lammpsSteps/jobArray_%s/' %jobName
 if not os.path.exists(keep_restart_out_dir):
         os.makedirs(keep_restart_out_dir)
 
+# define initial seed in order it gets totally different or same models
+initial_seed = random.choice(range(0, 100000000, nmodels))
+
 dcut_text = '-'.join(str(d) for d in dcutoff_range)
 optimizer = IMPoptimizer(exp, start=1, end=exp.size, n_models=nmodels, n_keep=nmodels,  tool='lammps', tmp_folder= tempOut)
 optimizer.run_grid_search(n_cpus=min(nmodels, 8), lowfreq_range=[float(lowfreq)],
@@ -159,7 +163,8 @@ optimizer.run_grid_search(n_cpus=min(nmodels, 8), lowfreq_range=[float(lowfreq)]
                           scale_range=[0.01][:], verbose=True,
                           timeout_job=time2,
 			  #savedata=path+'opt_LF%sUF%sMdis%s_%sbp.models'%(str(lowfreq),str(uperfreq),str(maxdist), str(res)),
-			  cleanup=True,
+			  cleanup=True, hide_log=True,
+              initial_seed=initial_seed,
               initial_conformation='random',
               # Lines to make timePoints and load them if they exist
               keep_restart_out_dir=keep_restart_out_dir,
