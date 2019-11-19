@@ -95,7 +95,15 @@ def getConcatemersPerBin_noMultiTSV(hic_data, tsvFile, resol, locusCh=False,
                                             
 # Normalise by frecuencies given the presence of each interacting fragment                                           
 def frecuenciesNorm(hic_data, resol, regRange, concatemersBin, multResult=100, 
-                    keep=False, mininter=0):
+                    keep=False, mininter=0, positionAdjust=0):
+    
+    '''
+    param 0 positionAdjust: In case the positions from concatemersBin are taking 
+        into account bining from the whole genome, but we just load in hic_data
+        one chromosome. Here concatemersBin will be substracted added to the 
+        positions in regRange in order to compensate this
+    
+    '''
     # create HiC data for normalised interactions
     dict_sec = hic_data.sections
     genome_seq = hic_data.chromosomes
@@ -120,7 +128,9 @@ def frecuenciesNorm(hic_data, resol, regRange, concatemersBin, multResult=100,
                     #elif concatemersBin[bin2] == 0:
                     #    divider = concatemersBin[bin1]
                     #else:
-                    divider = concatemersBin[bin1] + concatemersBin[bin2] - hic_data[bin1, bin2]
+                    divider = (concatemersBin[bin1 + positionAdjust] + 
+                               concatemersBin[bin2 + positionAdjust] - 
+                               hic_data[bin1, bin2])
 
                     #divider = float(concatemersBin[bin1] + concatemersBin[bin2])
 
@@ -149,7 +159,9 @@ def frecuenciesNorm(hic_data, resol, regRange, concatemersBin, multResult=100,
                 #elif concatemersBin[ke[1]] == 0:
                 #    divider = concatemersBin[ke[0]]
                 #else:
-                divider = concatemersBin[ke[0]] + concatemersBin[ke[1]] - hic_data[ke[0], ke[1]]
+                divider = (concatemersBin[ke[0] + positionAdjust] + 
+                               concatemersBin[ke[1] + positionAdjust] - 
+                               hic_data[ke[0], ke[1]])
 
                 #divider = float(concatemersBin[bin1] + concatemersBin[bin2])
 

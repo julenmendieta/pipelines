@@ -114,7 +114,7 @@ def getLocusWithGenomeIntTadbit(hic_data, resol, locusCh, regionStart, regionEnd
 
     
     if wholeGenome == True:
-
+        # in case we normalise given biases from OneD for example
         if bias != False:
             for cbin in binRange:
                 # cbin moves us to the position where interactions happened in our loci/s of interest
@@ -125,7 +125,7 @@ def getLocusWithGenomeIntTadbit(hic_data, resol, locusCh, regionStart, regionEnd
                         interVal = interVal / bias[cbin] / bias[ps]
                         if not np.isnan(interVal):
                             interList[ps] += interVal
-             
+        # if we normalise by frequency 
         elif concatemersBin != False:
             for cbin in binRange:
                 # cbin moves us to the position where interactions happened in our loci/s of interest
@@ -135,7 +135,7 @@ def getLocusWithGenomeIntTadbit(hic_data, resol, locusCh, regionStart, regionEnd
                         divider = concatemersBin[cbin] + concatemersBin[ps] - hic_data[cbin, ps]
                         interVal = hic_data[cbin, ps] / float(divider)
                         interList[ps] += interVal
-                        
+        # if we use raw data             
         else:
             for cbin in binRange:
                 # cbin moves us to the position where interactions happened in our loci/s of interest
@@ -148,6 +148,7 @@ def getLocusWithGenomeIntTadbit(hic_data, resol, locusCh, regionStart, regionEnd
                 
                 
     else:
+        # in case we normalise given biases from OneD for example
         if bias != False:
             for cbin in binRange:
                 # cbin moves us to the position where interactions happened in our loci/s of interest
@@ -159,7 +160,7 @@ def getLocusWithGenomeIntTadbit(hic_data, resol, locusCh, regionStart, regionEnd
                         if not np.isnan(interVal):
                             interList[ps] += interVal
                             
-                        
+        # if we normalise by frequency 
         elif concatemersBin != False:
             for cbin in binRange:
                 # cbin moves us to the position where interactions happened in our loci/s of interest
@@ -169,7 +170,7 @@ def getLocusWithGenomeIntTadbit(hic_data, resol, locusCh, regionStart, regionEnd
                         divider = concatemersBin[cbin] + concatemersBin[ps] - hic_data[cbin, ps]
                         interVal = hic_data[cbin, ps] / float(divider)
                         interList[ps] += interVal
-                        
+        # if we use raw data     
         else:
             for cbin in binRange:
                 # cbin moves us to the position where interactions happened in our loci/s of interest

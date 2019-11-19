@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 import os, errno
 import shutil
 from pebble import ProcessPool
+import random
 
 def cToDot(text):
     newText = ''
@@ -40,9 +41,14 @@ parser.add_argument('-nm','--nmodels',help='nmodels', required=True)
 parser.add_argument('-tp','--temp_path',help='path_to_tmp_files', required=False)
 
 args = parser.parse_args()
-lowfreq= args.lowfreq
-uperfreq= args.upperfreq
-maxdist= args.maxdist
+lowfreq= float(args.lowfreq)
+uperfreq= float(args.upperfreq)
+try:
+    maxdist= int(args.maxdist)
+except:
+    maxdist= args.maxdist
+    print 'We dont consider floating points in maxdist: %s' %(maxdist)
+    maxdist= int(float(maxdist))
 #dcutoff_range= args.dcutoff_range
 dcutoff_range= [float(s) for s in cToDot(args.dcutoff_range).split('_')]
 matPath=args.pathtomtrx
@@ -62,7 +68,7 @@ res = int(matPath.split('_')[-1][:-2])
 dcutoff_range=np.arange(dcutoff_range[0],dcutoff_range[1],dcutoff_range[2]) #Cutoff
 dcutoff_range2 = []
 for dc in dcutoff_range:
-    if float(maxdist) - dc >= -50:
+    if maxdist - dc >= -50:
         dcutoff_range2.append(float(dc))
 
 #Rao_HIC/load8/Matrix_28331000_28568000
@@ -137,6 +143,17 @@ else:
     time2 = (time1[0] * 3600) + (time1[1] * 60) + time1[2]
 
 ##############################
+keep_restart_out_dir = path + 'lammpsSteps/' 
+if not os.path.exists(keep_restart_out_dir):
+    os.makedirs(keep_restart_out_dir)
+jobName = 'LF%sUF%sMdis%s_%sbp'%(str(lowfreq),str(uperfreq),str(maxdist), str(res))
+keep_restart_out_dir = path + 'lammpsSteps/jobArray_%s/' %jobName
+if not os.path.exists(keep_restart_out_dir):
+        os.makedirs(keep_restart_out_dir)
+
+# define initial seed in order it gets totally different or same models
+initial_seed = random.choice(range(0, 100000000, nmodels))
+
 dcut_text = '-'.join(str(d) for d in dcutoff_range)
 optimizer = IMPoptimizer(exp, start=1, end=exp.size, n_models=nmodels, n_keep=nmodels,  tool='lammps', tmp_folder= tempOut)
 optimizer.run_grid_search(n_cpus=min(nmodels, 8), lowfreq_range=[float(lowfreq)],
@@ -146,8 +163,15 @@ optimizer.run_grid_search(n_cpus=min(nmodels, 8), lowfreq_range=[float(lowfreq)]
                           scale_range=[0.01][:], verbose=True,
                           timeout_job=time2,
 			  #savedata=path+'opt_LF%sUF%sMdis%s_%sbp.models'%(str(lowfreq),str(uperfreq),str(maxdist), str(res)),
-			  cleanup=True)
+			  cleanup=True, hide_log=True,
+              initial_seed=initial_seed,
+              initial_conformation='random',
+              # Lines to make timePoints and load them if they exist
+              keep_restart_out_dir=keep_restart_out_dir,
+              restart_path=keep_restart_out_dir,
+              store_n_steps=10)
 
 outfile=path+'opt_LF%sUF%sC%sMdis%s_%sbp.txt'%(str(lowfreq),str(uperfreq),dcut_text,str(maxdist), str(res))
 optimizer.write_result(outfile)
-
+# remove steps to save disk quota
+shutil.rmtree(keep_restart_out_dir) 

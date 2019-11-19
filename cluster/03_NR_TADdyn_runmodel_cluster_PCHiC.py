@@ -42,7 +42,12 @@ parser.add_argument('-tp','--temp_path',help='path_to_tmp_files', required=False
 args = parser.parse_args()
 low=float(args.lowfreq)
 up=float(args.upperfreq)
-maxd=float(args.maxdist)
+try:
+    maxd= int(args.maxdist)
+except:
+    maxd= args.maxdist
+    print 'We dont consider floating points in maxdist: %s' %(maxd)
+    maxd= int(float(maxdist))
 c=float(args.dcutoff_range)
 lammpsOut=args.lammpsfolder
 matPath=args.pathtomtrx
@@ -125,13 +130,27 @@ else:
     time2 = time2 + (6 * 60)  # 5 min are the extra time before killing a job
 
 # Build 3D models based on the HiC data. This is done by IMP.
+#keep_restart_out_dir = path + 'lammpsSteps_mod/'
+#if not os.path.exists(keep_restart_out_dir):
+#    os.makedirs(keep_restart_out_dir)
+#jobName = 'LF%sUF%sMdis%s_%sbp'%(str(low),str(up),str(maxd), str(res))
+#keep_restart_out_dir = path + 'lammpsSteps_mod/jobArray_%s/' %jobName
+#if not os.path.exists(keep_restart_out_dir):
+#        os.makedirs(keep_restart_out_dir)
+#restart_path = keep_restart_out_dir
+
+keep_restart_out_dir = None
+restart_path = False
 models = exp.model_region(start=1,end=exp.size, n_models=1, n_keep=1, n_cpus=1, config=optpar,verbose=True, tool='lammps', 
 	tmp_folder=lammpsOut, timeout_job=time2,
     cleanup=True, initial_conformation='random', 
     start_seed=random.choice(range(1000000)),
-    hide_log=True) #, connectivity='FENE')
-# Clustering of models
+    hide_log=True,
+    keep_restart_out_dir=keep_restart_out_dir,
+    restart_path=restart_path,
+    store_n_steps=2) #, connectivity='FENE')
+
 
 models.save_models(pathOut+'%s_%s.models'%(flag_name, lampsFlag))
-
 print lammpsOut, pathOut+'%s_%s.models'%(flag_name, lampsFlag)
+#shutil.rmtree(keep_restart_out_dir) 

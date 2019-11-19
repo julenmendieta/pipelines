@@ -103,7 +103,7 @@ def saveDoneJobs(clusterUser, outTrash, jobPathsOptim, cluster='cnag'):
 
 def createFailedOptimeRunFiles(matPath, combinations, scriptsPath, jobTime, nmodelsOptim,
                                 prior='long-sl7,mem_256,mem_512', cluster=False):
-    flag = matPath.split('/')[-2]
+    flag = '_'.join(matPath.split('/')[-1].split('_')[1:3])
     path='/'.join(matPath.split('/')[:-1]) + '/'
 
     fecha = time.strftime("%d-%m-%Y")
@@ -152,7 +152,7 @@ file=%s
 orden=`sed "${SGE_TASK_ID}q;d" $file`
 # will add the command for the temporal folder
 orden=`echo $orden -tp $TMPDIR`
-echo $orden
+
 python $orden''' %(flag, path, path, njobs, jobTime, prior, str(min(nmodelsOptim, 8)), runfile)
 
     elif cluster == 'cnag':
@@ -174,6 +174,9 @@ file=%s
 
 # Get each command from the file and run them with python
 orden=`sed "${SLURM_ARRAY_TASK_ID}q;d" $file`
+# will add the command for the temporal folder
+orden=`echo $orden -tp $TMPDIR`
+
 python $orden''' %(flag, path, path, njobs, jobTime, prior, str(min(nmodelsOptim, 8)), runfile)
     else:
         No_contemplado

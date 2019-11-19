@@ -94,6 +94,7 @@ file=%s
 orden=`sed "${SLURM_ARRAY_TASK_ID}q;d" $file`
 # will add the command for the temporal folder
 orden=`echo $orden -tp $TMPDIR -t %s`
+
 echo $TMPDIR
 echo ${SLURM_ARRAY_TASK_ID}
 
