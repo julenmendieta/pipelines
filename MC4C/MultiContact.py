@@ -1150,16 +1150,12 @@ for pairwise interactions. Wont randomise'
                 # Normalise
                 for k in keys:
                     
-                    # shared concatemers between the three
+                    # shared concatemers between all
                     inter = len(set.intersection(*(concatemersBin[kk] for kk in k)))
-                    # total number of concatemeres in which they are present
-                    divider = sum(len(concatemersBin[kk]) for kk in k)
-                    divider -= inter
 
-                   
-                    if divider < 0:
-                        print divider, [concatemersBin[k[nm]] for nm in range(multiLevel)]
-                        lllllll
+                    # total number of concatemeres in which they are present
+                    divider = len(set(item for kk in k for item in concatemersBin[kk]))
+
                     focusMultiGroups[k] = (inter / float(divider)) * multResult
                 norm_data = focusMultiGroups
                 
@@ -1503,9 +1499,9 @@ def removeDuplicatedRF(concatemer1, viewPoint, lonIndex=3, REindex=[4,5],
 #  Function to write the TSV files from HDF5 files
 def fromHDF5toTSV(outPath, proposedView, all_chromLengths, refGenomes,
                     allViewREs,
-                    writeFiles=True, filterQual=21, addView=True, 
+                    writeFiles=True, filterQual=21, addView=True,
                     headerLabel=u'frg_np_header_lst', dataLabel=u'frg_np',
-                    silent=False):
+                    silent=False, hic_data_style=True):
 
     '''
     Function to generate TSV files from the HDF5 ones
@@ -1517,12 +1513,17 @@ def fromHDF5toTSV(outPath, proposedView, all_chromLengths, refGenomes,
     param refGenomes: Dictionary with reference genome as key and the ID of files
         mapped to it as value in a list. id = file.split('_', 1)[-1].split('.')[0]
     param allViewREs:  dictionary with the id of each file as key and
-        Restriction Site coordinates for the used viewPoint. 
+        Restriction Site coordinates for the used viewPoint.
         E.j (1, 13123298, 13123651)
     param True writeFiles: Wether we want to write the files or not
     param 21 filterQual: Minimum quality accepted
     param True addView: Wether to add or not the viewPoint if not present in the read
     param False silent: Hide triple overlap messages
+    param True hic_data_style: Wether to write the tsv in hic_data style readble
+        by TADbit, or just keep minimum posible interactions to be used by our 
+        pipeline. The first one basically shows all vs all interactions for each
+        concatemer, whereas the second one shows the first fragment interaction
+        against all the others, saving some space
     '''
 
     configPath = outPath + 'datasets/'
@@ -1652,20 +1653,37 @@ def fromHDF5toTSV(outPath, proposedView, all_chromLengths, refGenomes,
                                 #print concatemer
 
 
-                        # add first fragment agains the rest
-                        nmulti = len(concatemer) - 1
+                        if hic_data_style:
+                            #  get all posible combinatios between the fragments
+                            allComb = list(itertools.combinations(concatemer, 2))
+                            nmulti = len(allComb)
 
-                        # Write concatemer interactions
-                        if writeFiles == True:
-                            for nc, comb in enumerate(concatemer[1:], 1):
-                                key = '%s.%s#%s/%s' %(id1, oldId,
+                            # Write concatemer interactions
+                            if writeFiles == True:
+                                for nc, comb in enumerate(allComb, 1):
+                                    key = '%s.%s#%s/%s' %(id1, oldId, 
                                                     nc, nmulti)
-                                toWrite = '%s\t%s\t%s\n' %(key,
-                                                        '\t'.join(concatemer[0]),
-                                                        '\t'.join(comb))
-                                # write
-                                with open(outfile, 'a') as f:
-                                    f.write(toWrite)
+                                    toWrite = '%s\t%s\t%s\n' %(key, 
+                                                            '\t'.join(comb[0]), 
+                                                            '\t'.join(comb[1]))
+                                    # write
+                                    with open(outfile, 'a') as f:
+                                        f.write(toWrite) 
+                        else:
+                            # add first fragment agains the rest
+                            nmulti = len(concatemer) - 1
+
+                            # Write concatemer interactions
+                            if writeFiles == True:
+                                for nc, comb in enumerate(concatemer[1:], 1):
+                                    key = '%s.%s#%s/%s' %(id1, oldId,
+                                                        nc, nmulti)
+                                    toWrite = '%s\t%s\t%s\n' %(key,
+                                                            '\t'.join(concatemer[0]),
+                                                            '\t'.join(comb))
+                                    # write
+                                    with open(outfile, 'a') as f:
+                                        f.write(toWrite)
 
                         oldId = readId
                         concatemer = []
@@ -1673,8 +1691,7 @@ def fromHDF5toTSV(outPath, proposedView, all_chromLengths, refGenomes,
                         concatemer.append(fragment)
                     else:
                         concatemer.append(fragment)
-
-
+                        
             # After reaching the end of the data we have to write the last read
             #  Remove duplicated Restriction Sites
             concatemer, double = removeDuplicatedRF(concatemer, viewPoint,
@@ -1704,20 +1721,38 @@ def fromHDF5toTSV(outPath, proposedView, all_chromLengths, refGenomes,
                     toAdd = random.choice(allViewREs[id1])
                     concatemer.append(['chr%s' %toAdd[0], str(toAdd[1]), '0', '100', str(toAdd[1]), str(toAdd[2])])
 
-            # add first fragment agains the rest
-            nmulti = len(concatemer) - 1
+                    
+            if hic_data_style:
+                #  get all posible combinatios between the fragments
+                allComb = list(itertools.combinations(concatemer, 2))
+                nmulti = len(allComb)
 
-            # Write concatemer interactions
-            if writeFiles == True:
-                for nc, comb in enumerate(concatemer[1:], 1):
-                    key = '%s.%s#%s/%s' %(id1, oldId,
-                                        nc, nmulti)
-                    toWrite = '%s\t%s\t%s\n' %(key,
-                                            '\t'.join(concatemer[0]),
-                                            '\t'.join(comb))
-                    # write
-                    with open(outfile, 'a') as f:
-                        f.write(toWrite)
+                # Write concatemer interactions
+                if writeFiles == True:
+                    for nc, comb in enumerate(allComb, 1):
+                        key = '%s.%s#%s/%s' %(id1, oldId, 
+                                            nc, nmulti)
+                        toWrite = '%s\t%s\t%s\n' %(key, 
+                                                '\t'.join(comb[0]), 
+                                                '\t'.join(comb[1]))
+                        # write
+                        with open(outfile, 'a') as f:
+                            f.write(toWrite)
+            else:
+                # add first fragment agains the rest
+                nmulti = len(concatemer) - 1
+
+                # Write concatemer interactions
+                if writeFiles == True:
+                    for nc, comb in enumerate(concatemer[1:], 1):
+                        key = '%s.%s#%s/%s' %(id1, oldId,
+                                            nc, nmulti)
+                        toWrite = '%s\t%s\t%s\n' %(key,
+                                                '\t'.join(concatemer[0]),
+                                                '\t'.join(comb))
+                        # write
+                        with open(outfile, 'a') as f:
+                            f.write(toWrite)
 
             oldId = readId
 
