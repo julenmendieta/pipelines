@@ -150,6 +150,10 @@ jobName = 'LF%sUF%sMdis%s_%sbp'%(str(lowfreq),str(uperfreq),str(maxdist), str(re
 keep_restart_out_dir = path + 'lammpsSteps/jobArray_%s/' %jobName
 if not os.path.exists(keep_restart_out_dir):
         os.makedirs(keep_restart_out_dir)
+restart_path = keep_restart_out_dir
+
+#keep_restart_out_dir = None
+#restart_path = False
 
 # define initial seed in order it gets totally different or same models
 #initial_seed = random.choice(range(0, 100000000, nmodels))
@@ -171,10 +175,25 @@ optimizer.run_grid_search(n_cpus=min(nmodels, 8), lowfreq_range=[float(lowfreq)]
               initial_conformation='random',
               # Lines to make timePoints and load them if they exist
               keep_restart_out_dir=keep_restart_out_dir,
-              restart_path=keep_restart_out_dir,
+              restart_path=restart_path,
               store_n_steps=10)
 
 outfile=path+'opt_LF%sUF%sC%sMdis%s_%sbp.txt'%(str(lowfreq),str(uperfreq),dcut_text,str(maxdist), str(res))
-optimizer.write_result(outfile)
-# remove steps to save disk quota
-shutil.rmtree(keep_restart_out_dir) 
+if keep_restart_out_dir != None:
+    # Now we need to check if all models finished before storing any output
+    modelFiles = os.listdir(keep_restart_out_dir)
+    nmodelFound = 0
+    for mo in modelFiles:
+        k = mo.split('_')[1]
+        if os.path.exists('%s/%s/finishedModel_%s.pickle' %(keep_restart_out_dir, mo, k)):
+            nmodelFound += 1
+    if nmodelFound == nmodels:
+        print 'All models finished correctly'
+        optimizer.write_result(outfile)
+        # remove steps to save disk quota
+        shutil.rmtree(keep_restart_out_dir) 
+    else:
+        print 'Some models didnt finished'
+else:
+    print 'Beware that some models might have failed, check WARNING prints'
+    optimizer.write_result(outfile)
