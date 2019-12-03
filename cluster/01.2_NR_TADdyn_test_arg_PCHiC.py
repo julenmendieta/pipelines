@@ -152,7 +152,10 @@ if not os.path.exists(keep_restart_out_dir):
         os.makedirs(keep_restart_out_dir)
 
 # define initial seed in order it gets totally different or same models
-initial_seed = random.choice(range(0, 100000000, nmodels))
+#initial_seed = random.choice(range(0, 100000000, nmodels))
+# cant use random because then the folder name to look for the individual
+#models changes lammps_n
+initial_seed = 0
 
 dcut_text = '-'.join(str(d) for d in dcutoff_range)
 optimizer = IMPoptimizer(exp, start=1, end=exp.size, n_models=nmodels, n_keep=nmodels,  tool='lammps', tmp_folder= tempOut)
