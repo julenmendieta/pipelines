@@ -103,9 +103,9 @@ cmd+='''#!/bin/bash
 #SBATCH --job-name=%s
 #SBATCH --output=%s/%%A_submatrix_%%a.out
 #SBATCH --error=%s/%%A_submatrix_%%a.err
-#SBATCH --array=1-%s%%20
+#SBATCH --array=1-%s%%100
 #SBATCH --time=%s
-#SBATCH --qos=4dgenome
+#SBATCH --qos=lowprio
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=%s
 

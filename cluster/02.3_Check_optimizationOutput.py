@@ -366,6 +366,6 @@ if topModels != False:
     #                                 jobTime=jobTime, outpath=outpath)
     
 
-    topsPath, topCor = getTopModels(paths, topCor = {}, nmodels=1000, action='w',
+    topsPath, topCor = getTopModels(paths, topCor = {}, nmodels=1200, action='w',
                             jobTime=jobTime, outpath=outpath)
 

@@ -47,7 +47,7 @@ try:
 except:
     maxd= args.maxdist
     print 'We dont consider floating points in maxdist: %s' %(maxd)
-    maxd= int(float(maxdist))
+    maxd= int(float(maxd))
 c=float(args.dcutoff_range)
 lammpsOut=args.lammpsfolder
 matPath=args.pathtomtrx
