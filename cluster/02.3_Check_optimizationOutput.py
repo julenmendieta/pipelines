@@ -256,13 +256,14 @@ if show_dcut == True:
         else:
             print 'No files in %s' %id1
 
-    for dc in topd:
+    for dc in sorted(topd):
         print '%s\t%s' %(dc, topd[dc])
     plt.show()
 
 
 # show maxdist distributions of the model correlations at selected dcutoff
 # Next we should check in the selected dcutoff which is the best maxdist
+topd = {}
 if dcut != False:
     for path in paths:
         id1 = '%s_%s' %(path.split('/')[-3], path.split('/')[-2])
@@ -324,6 +325,26 @@ if dcut != False:
                 plt.xlabel('Maxdist')
                 plt.ylabel('Correlation')
                 #plt.show()
+                plt.ylim(0.1, 1)
+
+                # add dcutoff with top correlation to list
+                maxd2 = [0,0]
+                for md in maxd:
+                    if len(maxd[md]) != 0:
+                        if max(maxd[md]) > maxd2[1]:
+                            maxd2 = [md, max(maxd[md])]
+                if maxd2[0] not in topd:
+                    topd[maxd2[0]] = 1
+                else:
+                    topd[maxd2[0]] += 1
+
+                # add line in top correlation
+                posi = None
+                for nal, al in enumerate(sorted(maxd.keys())):
+                    if al == maxd2[0]:
+                        posi = nal
+                plt.axvline(posi, color='blue', linestyle='--')
+
                 plt.ioff()
             else:
                 print 'No files with correlation in %s' %id1
@@ -331,6 +352,8 @@ if dcut != False:
         else:
             print 'No files in %s' %id1
 
+    for md in sorted(topd):
+        print '%s\t%s' %(md, topd[md])
     plt.show()
 
 
