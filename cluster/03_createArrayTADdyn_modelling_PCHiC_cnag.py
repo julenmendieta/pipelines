@@ -28,6 +28,7 @@ parser.add_argument('-p','--pathtomtrx',help='path_to_matrix', required=True)
 parser.add_argument('-t','--jobtime',help='jobtime_HH:MM:SS', required=True)
 parser.add_argument('-s','--scriptspath',help='path_to_scripts', required=True)
 parser.add_argument('-nm','--nmodels',help='output_nmodels', required=True)
+parser.add_argument('-chnk','--chunks',help='models_per_job', required=False)
 
 args = parser.parse_args()
 lowfreq=float(args.lowfreq)
@@ -39,16 +40,25 @@ matPath=args.pathtomtrx
 jobTime=args.jobtime
 scriptsPath=args.scriptspath
 nmodels=int(args.nmodels)
-
+chunkSize=args.chunks
 
 flag = matPath.split('/')[-2]
 path='/'.join(matPath.split('/')[:-1]) + '/'
 lammpsOut="/scratch_tmp/%s/temp" %(flag)
 
-
+# check if we want to create models in chunks
+if chunkSize == None:
+	chunkSize = 1
+else:
+	chunkSize = int(chunkSize)
 
 # Keep record of the number of jobs to run
-njobs = nmodels
+njobs = nmodels / chunkSize
+modelsLeft = nmodels % chunkSize
+jobList = [chunkSize] * njobs
+if modelsLeft != 0:
+	njobs += 1
+	jobList.append(modelsLeft)
 print njobs
 
 fecha = time.strftime("%d-%m-%Y")
@@ -56,14 +66,15 @@ fecha = time.strftime("%d-%m-%Y")
 runfile = '%s%s_%s.Modsarray'%(path, fecha, flag)
 ## Create the file with the commands to be run in the array
 fout=open(runfile,'w')
-for x in range(1, njobs + 1):
+for x in range(0, njobs):
 	cmd=''
 	cmd+='%s03_NR_TADdyn_runmodel_cluster_PCHiC.py -l %s '%(scriptsPath, lowfreq)
 	cmd+= '-d %s '%dcutoff
 	cmd+= '-m %s '%maxdist
 	cmd+= '-u %s '%uperfreq
-	cmd+= '-lf %s '%(lammpsOut + '_' + str(x))
+	cmd+= '-lf %s '%(lammpsOut + '_' + str(x + 1))
 	cmd+= '-p %s '%matPath
+	cmd+= '-nm %s'%jobList[x]
 	#cmd+= '-t %s '%jobTime  # will add it in the arrayMod.jobs so we can update it later
 	cmd+= '\n'
 	fout.write(cmd)

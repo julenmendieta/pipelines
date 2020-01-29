@@ -251,6 +251,10 @@ if createModellingFile:
     dcut_ = 250
     maxd_ = 400
     jobTime2_ = '00:30:00'
+    # how many models will we create
+    nmodelsModelling = 1500
+    # in chunks of how many models will each procces (with one CPU) work
+    chunkSize = 20
 
 modelling = False
 joinModels = False
@@ -520,8 +524,8 @@ if modelling == True:
         # Open model characteristics file
         with open(outTrash + 'modellinParams.txt', 'r') as f:
             for line in f:
+                line = line.rstrip('\n')
                 line = line.split()
-                # check if some jobs didnt finish
                 toModel.append(line)
         
         # get print when same matrix path (array file will be overwriten)
@@ -531,7 +535,7 @@ if modelling == True:
             if len(tm) == 0:
                 continue
             # toModel seria un fichero con
-            # matPath lowfreq upfreq d_cutoff maxdist jobTime nmodels
+            # matPath lowfreq upfreq d_cutoff maxdist jobTime nmodels chunkSize
             matPath = tm[0]
             lowfreq = float(tm[1])
             upfreq = float(tm[2])
@@ -542,6 +546,7 @@ if modelling == True:
             maxdist= float(tm[4])
             jobTime = tm[5]  # HH:MM:SS
             nmodels = int(tm[6])
+            chunkSize = int(tm[7])
 
             # warn if same matPath as previous
             if oldPath1 == matPath:
@@ -561,14 +566,16 @@ if modelling == True:
             ####################### END CHANGE ####################################
             script = scriptsPath + '03_createArrayTADdyn_modelling_PCHiC_%s.py' %(cluster)
 
-            cmd = script + ' -l %s -d %s -m %s -u %s -p %s -t %s -s %s -nm %s' %(lowfreq,
-                                            d_cutoff,
+            cmd = script + ' -l %s -d %s -m %s -u %s -p %s -t %s -s %s -nm %s -chnk %s' %(
+                                        lowfreq,
+                                        d_cutoff,
                                         maxdist,
                                         upfreq,
                                         matPath,
                                         jobTime,
                                         scriptsPath,
-                                nmodels)
+                                        nmodels,
+                                        chunkSize)
             print cmd
             os.system("python %s" %cmd)
 
@@ -807,5 +814,11 @@ if createModellingFile == True:
     topModels = '%s_%s_%s' %(dcut_, maxd_, jobTime2_)
 
     script = scriptsPath + '02.3_Check_optimizationOutput.py'
-    cmd = script + ' -op %s -sdc %s -dc %s -tm %s' %(outTrash, str(show_dcut), str(dcut), topModels)
+    cmd = script + ' -op %s -sdc %s -dc %s -tm %s -nm %s -chnk %s' %(
+                    outTrash, 
+                    str(show_dcut), 
+                    str(dcut), 
+                    topModels,
+                    nmodelsModelling,
+                    chunkSize)
     os.system("python %s" %cmd)

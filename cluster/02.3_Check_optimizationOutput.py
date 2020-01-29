@@ -7,7 +7,7 @@ import numpy as np
 import argparse
 
 def getTopModels(paths, topCor = {}, nmodels=1000, action='w', jobTime=False,
-                outpath='./'):
+                outpath='./', chunkSize=1):
 
     orderedKeys = {}
     for path in paths:
@@ -111,7 +111,8 @@ def getTopModels(paths, topCor = {}, nmodels=1000, action='w', jobTime=False,
             cmd += '%s\t' %topCor[cell][regi][3]  # Dcut
             cmd += '%s\t' %topCor[cell][regi][0]  # maxDist
             cmd += '%s\t' %jobTime
-            cmd += '%s\n' %nmodels
+            cmd += '%s\t' %nmodels
+            cmd += '%s\n' %chunkSize
 
     # write file
     with open(outmo, action) as f:
@@ -126,6 +127,9 @@ parser.add_argument('-sdc','--dcutDistrib', help='show_dcutoff_corr_distrib',req
 parser.add_argument('-dc','--dcutoff', help='dcutoff_mxd_corr_distrib',required=True)
 parser.add_argument('-tm','--topmodels', 
                         help='get_topModels_parameters',required=True)  # dcut_maxdist_jobtime
+parser.add_argument('-nm','--nmodels',help='output_nmodels', required=False)
+parser.add_argument('-chnk','--chunks',help='models_per_job', required=False)
+
 
 # load input
 args = parser.parse_args()
@@ -136,12 +140,22 @@ dcut=args.dcutoff
 dcut=False if dcut == 'False' else float(dcut)
 topModels=args.topmodels
 topModels=False if topModels == 'False' else topModels
+nmodels=args.nmodels
+chunkSize =args.chunks
 
 ###########################################
 # minimal value of correlation to be accepted
 minVal = 0.1
 
-
+# check if we defined number of models to build and chunk
+if nmodels != None:
+    nmodels = int(nmodels)
+else:
+    nmodels = 1200
+if chunkSize != None:
+    chunkSize = int(chunkSize)
+else:
+    chunkSize = 1
 
 #############################################
 
@@ -389,6 +403,6 @@ if topModels != False:
     #                                 jobTime=jobTime, outpath=outpath)
     
 
-    topsPath, topCor = getTopModels(paths, topCor = {}, nmodels=1200, action='w',
-                            jobTime=jobTime, outpath=outpath)
+    topsPath, topCor = getTopModels(paths, topCor = {}, nmodels=nmodels, action='w',
+                            jobTime=jobTime, outpath=outpath, chunkSize=chunkSize)
 

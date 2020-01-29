@@ -38,6 +38,7 @@ parser.add_argument('-lf','--lammpsfolder',help='folder_temp_lammps', required=T
 parser.add_argument('-p','--pathtomtrx',help='path_to_matrix', required=True)
 parser.add_argument('-t','--jobtime',help='jobtime_HH:MM:SS', required=True)
 parser.add_argument('-tp','--temp_path',help='path_to_tmp_files', required=False)
+parser.add_argument('-nm','--nmodels',help='model_to_build', required=False)
 
 args = parser.parse_args()
 low=float(args.lowfreq)
@@ -53,6 +54,7 @@ lammpsOut=args.lammpsfolder
 matPath=args.pathtomtrx
 jobTime=args.jobtime
 tempOut=args.temp_path
+nmodels=args.nmodels
 
 res = int(matPath.split('_')[-1][:-2])
 lampsFlag = lammpsOut.split('_')[-1]
@@ -66,6 +68,12 @@ flag_name='%s_%sScaled01C%sL%sU%sM%sRes%s' %(flag, res, c, low, up, maxd, res)
 # if we provide an alternative output dir we change it 
 if tempOut != None:
     lammpsOut = tempOut
+
+# check if we asked for more than one model
+if nmodels == None:
+    nmodels = 1
+else:
+    nmodels = int(nmodels)
 
 
 # Move to lammpsOut directory so its output gets stored there
@@ -141,7 +149,7 @@ else:
 
 keep_restart_out_dir = None
 restart_path = False
-models = exp.model_region(start=1,end=exp.size, n_models=1, n_keep=1, n_cpus=1, config=optpar,verbose=True, tool='lammps', 
+models = exp.model_region(start=1,end=exp.size, n_models=nmodels, n_keep=nmodels, n_cpus=1, config=optpar,verbose=True, tool='lammps', 
 	tmp_folder=lammpsOut, timeout_job=time2,
     cleanup=True, initial_conformation='random', 
     start_seed=random.choice(range(1000000)),
