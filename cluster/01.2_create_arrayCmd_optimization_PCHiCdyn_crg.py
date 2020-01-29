@@ -120,7 +120,7 @@ cmd+='''#!/bin/bash
 #$ -pe smp %s
 
 module purge
-module load GCC/5.3.0
+module load GCCcore/6.3.0
 
 # File were we have located our array commands
 file=%s

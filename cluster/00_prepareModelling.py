@@ -92,7 +92,8 @@ def saveDoneJobs(clusterUser, outTrash, jobPathsOptim, cluster='cnag'):
                     line = [line[0], int(line[1])]
                     # check if some jobs didnt finish
                     if int(line[1]) in jobs:
-                        toAdd.append(line)
+                        if line not in toAdd:
+                            toAdd.append(line)
     # Merge both lists
     jobPathsOptim += toAdd
 
@@ -143,7 +144,7 @@ def createFailedOptimeRunFiles(matPath, combinations, scriptsPath, jobTime, nmod
 #$ -pe smp %s
 
 module purge
-module load GCC/5.3.0
+module load GCCcore/6.3.0
 
 # File were we have located our array commands
 file=%s
@@ -152,7 +153,7 @@ file=%s
 orden=`sed "${SGE_TASK_ID}q;d" $file`
 # will add the command for the temporal folder
 orden=`echo $orden -tp $TMPDIR`
-
+echo $orden
 python $orden''' %(flag, path, path, njobs, jobTime, prior, str(min(nmodelsOptim, 8)), runfile)
 
     elif cluster == 'cnag':
@@ -168,13 +169,13 @@ python $orden''' %(flag, path, path, njobs, jobTime, prior, str(min(nmodelsOptim
 #SBATCH --cpus-per-task=%s
 
 module purge
+module load gcc/6.3.0
 
 # File were we have located our array commands
 file=%s
 
 # Get each command from the file and run them with python
 orden=`sed "${SLURM_ARRAY_TASK_ID}q;d" $file`
-# will add the command for the temporal folder
 orden=`echo $orden -tp $TMPDIR`
 
 python $orden''' %(flag, path, path, njobs, jobTime, prior, str(min(nmodelsOptim, 8)), runfile)
@@ -223,17 +224,20 @@ optimization = False
 # run optimisation
 runOptim = False
 # join optimisation files and make plots
-optimOut = False
+optimOut = True
 # rerun the ones which failed (checks from matPaths)
-runOptimFailed = False
-cleanFoldersOptim = False
+runOptimFailed = True
 if runOptimFailed:
     # dcutoff list if you want just to rerun the ones from here
     # To be writen as range (beggin, end, step)
-    c_focus = [250.0,450.0,50.0]
+    c_focus = [200,350,50]
+    #c_focus = [100,500,50]
     # maxdist list if you want just to rerun the ones from here
     # To be writen as range (beggin, end, step)
-    m_focus = [200.0,700.0, 100.0]
+    m_focus = [300,600,100]
+    #m_focus = [600,700,100]
+# clean cluster job output files
+cleanFoldersOptim = False
 # this will create a modelling file with the parameters combinations with top correlation
 # MUST be checked for cases of combinations like low -1 and up 1
 createModellingFile = False
@@ -241,26 +245,26 @@ if createModellingFile:
     # to check distirbution of correlations at each dcutoff
     show_dcut = False  # False to not use, True to check that dcutoff
     # to check distribution of correlations at certain dcutoff separating by maxdist
-    dcut = False  # False not to check, integer or float with dcutoff to do it
+    dcut = 200  # False not to check, integer or float with dcutoff to do it
     # create file with maximum correlations at certain dcutoff and maxdist
     # dcutof and maxdist parameters where to get the top correlators
-    dcut_ = 200
+    dcut_ = 250
     maxd_ = 400
-    jobTime2_ = '03:00:00'
+    jobTime2_ = '00:30:00'
 
-modelling = True
+modelling = False
 joinModels = False
 checkModellinTime = False
 cleanFolders= False
 
-jobTime = '0-03:00:00'
+jobTime = '0-02:00:00'
 # CNAG
-scriptsPath = '/scratch/devel/jmendieta/PCHiC_assesment/modelling/'
+scriptsPath = '/home/devel/jmendietaesteban/programas/PhD/cluster/'
 outTrash = '/scratch/devel/jmendieta/PCHiC_assesment/modelling/'
 loadMatrixFile = '/scratch/devel/jmendieta/PCHiC_assesment/modelling/matrixList.txt'
 cluster = 'cnag'
 # CRG
-#scriptsPath = '/users/mmarti/jmendieta/scratch/PCHiC_assesment/modelling/'
+#scriptsPath = '/users/mmarti/jmendieta/programas/PhD/cluster/'
 #outTrash = '/users/mmarti/jmendieta/scratch/PCHiC_assesment/modelling/'
 #loadMatrixFile = '/users/mmarti/jmendieta/scratch/PCHiC_assesment/modelling/matrixList.txt'
 #cluster = 'crg'
@@ -268,26 +272,32 @@ cluster = 'cnag'
 # You name in the cluster user queue
 clusterUser = 'jmendieta'
 # Maximum number of jobs allowed to be running before launching another job array
-maxJobs = 1000
+maxJobs = 7000
 # Get matrices from file
 matPaths= []
 with open(loadMatrixFile,'r') as f:
     for line in f:
-        matPaths += line.split()
+        if not line.startswith('#'):
+            matPaths += line.split()
 
 nmodelsOptim = 100
-lowfreq_arange = [-1.0,0.5,0.5]
-c_range= [50,450,50] #Cutoff no more overlap than 50nm with maxdist will be allowed
+lowfreq_arange = [-1.0,1.0,0.5]
+#lowfreq_arange = [0.5,1.0,0.5]
+#c_range= [100,500,50]
+c_range= [250,300,50] #Cutoff no more overlap than 50nm with maxdist will be allowed
 # El c_range optimo es menor o igual que la m_range optima,
 # que se saca asi
 # resol *scale * 2
 # (resol * scale = radius) * 2 = diameter of a particle
-m_range= [100,500,100]
+#m_range= [100,500,100]
+m_range= [500,700,100]
 upfreq_range= [-1,1.0,0.5]
+#upfreq_range= [0.5,1.0,0.5]
 
 
 ####################### END CHANGE ####################################
-
+if optimOut == True:
+    cleanFoldersOptim = True
 
 if cluster == 'crg':
     runArraycmd = 'qsub'
@@ -405,8 +415,8 @@ if optimOut == True:
             finish = True 
 
     # To finish we empty the optimisation josbs file
-    with open(outTrash + 'optimList.txt', 'w') as f:
-        pass
+    #with open(outTrash + 'optimList.txt', 'w') as f:
+    #    pass
 
 ## If want to rerun the ones which failed
 if runOptimFailed == True:
@@ -602,13 +612,14 @@ if modelling == True:
                     if len(line) != 0:
                         # check if some jobs didnt finish
                         if int(line[1]) in jobs:
-                            toAdd.append([line[0], int(line[1])])
+                            if [line[0], int(line[1])] not in toAdd:
+                                toAdd.append([line[0], int(line[1])])
         # Merge both lists
         jobPathsModel += toAdd
 
         # Recreate the file
         with open(outTrash + 'modelList.txt', 'w') as f:
-            for j in jobPathsModel:
+            for j in jobPathsOptim:
                 f.write('%s\t%s\n' %(j[0], j[1]))
 
     else:
@@ -618,7 +629,6 @@ if modelling == True:
 ########### No esta para nada terminado
 if joinModels == True:
     # First check if we have modelling jobs to prepare output
-    toAdd = []
     if os.path.exists(outTrash + 'modelList.txt'):
         with open(outTrash + 'modelList.txt', 'r') as f:
             for line in f:
@@ -677,8 +687,8 @@ if joinModels == True:
             finish = True 
 
     # To finish we empty the optimisation josbs file
-    with open(outTrash + 'modelList.txt', 'w') as f:
-        pass
+    #with open(outTrash + 'modelList.txt', 'w') as f:
+    #    pass
 
 # check if the time limit for modelling part is ok
 # NOT OPTIMISED FOR CRG CLUSTER
@@ -749,7 +759,6 @@ if cleanFoldersOptim == True:
                 if line not in jobPathsOptim:
                     jobPathsOptim.append(line)
 
-
     # Keep record of the number of jobs we finished
     doneJobs = 0
     jobs = range(3)
@@ -786,7 +795,11 @@ if cleanFoldersOptim == True:
         # If we finished all the jobs from the list but there are others around
         if oneFound == False:
             finish = True
-
+    
+    if optimOut == True:
+        # To finish we empty the optimisation josbs file
+        with open(outTrash + 'optimList.txt', 'w') as f:
+            pass
     
 
     

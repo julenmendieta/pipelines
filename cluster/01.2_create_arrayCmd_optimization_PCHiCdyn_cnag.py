@@ -105,11 +105,12 @@ cmd+='''#!/bin/bash
 #SBATCH --error=%s/%%A_submatrix_%%a.err
 #SBATCH --array=1-%s%%100
 #SBATCH --time=%s
-#SBATCH --qos=lowprio
+#SBATCH --qos=normal
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=%s
 
 module purge
+module load gcc/6.3.0
 
 # File were we have located our array commands
 file=%s

@@ -86,6 +86,7 @@ cmd+='''#!/bin/bash
 #SBATCH --cpus-per-task=1
 
 module purge
+module load gcc/6.3.0
 
 # File were we have located our array commands
 file=%s
