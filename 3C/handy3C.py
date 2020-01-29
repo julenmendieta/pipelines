@@ -65,7 +65,8 @@ def readMatrix(indir):
 
 
 def getLocusWithGenomeIntTadbit(hic_data, resol, locusCh, regionStart, regionEnd=False, 
-                                wholeGenome=True, concatemersBin=False, bias=False):
+                                wholeGenome=True, concatemersBin=False, bias=False,
+                                positionAdjust=0):
     '''
     Function to get all the interactions that bins from a given matrix have
         with a bin range of interest (from regionStart to regionEnd), or a
@@ -85,6 +86,14 @@ def getLocusWithGenomeIntTadbit(hic_data, resol, locusCh, regionStart, regionEnd
         the dictionary (index in bin positions) with the number of times each bin 
         was found in a chimeric read
     :param False bias: TADbit bias dictionary
+    param 0 positionAdjust: In case the positions from concatemersBin are taking 
+        into account bining from the whole genome, but we just load in hic_data
+        one chromosome. Here concatemersBin will be added the 
+        value in positionAdjust (which could also be negative) in order to 
+        compensate this. In the example above, we would set positionAdjust
+        to a negative number equal to the bin position in which the chromosome
+        starts when using all data.
+
     :returns: A defaultdict with bins from the whole matrix as column
         and interactions floating or integer values
     '''
@@ -132,7 +141,9 @@ def getLocusWithGenomeIntTadbit(hic_data, resol, locusCh, regionStart, regionEnd
                 # ps will move us for all the other bins in the genome to look for interactions
                 for ps in range(0, totalBins):
                     if hic_data[cbin, ps] != 0 and cbin != ps:
-                        divider = concatemersBin[cbin] + concatemersBin[ps] - hic_data[cbin, ps]
+                        divider = concatemersBin[cbin + positionAdjust] + \
+                                    concatemersBin[ps + positionAdjust] - \
+                                    hic_data[cbin, ps]
                         interVal = hic_data[cbin, ps] / float(divider)
                         interList[ps] += interVal
         # if we use raw data             
@@ -167,7 +178,9 @@ def getLocusWithGenomeIntTadbit(hic_data, resol, locusCh, regionStart, regionEnd
                 # ps will move us for all the other bins in the chromosome to look for interactions
                 for ps in range(chromBinBeg, chromBinEnd):
                     if hic_data[cbin, ps] != 0 and cbin != ps:
-                        divider = concatemersBin[cbin] + concatemersBin[ps] - hic_data[cbin, ps]
+                        divider = concatemersBin[cbin + positionAdjust] + \
+                                concatemersBin[ps + positionAdjust] - \
+                                hic_data[cbin, ps]
                         interVal = hic_data[cbin, ps] / float(divider)
                         interList[ps] += interVal
         # if we use raw data     
@@ -264,9 +277,18 @@ def getLocusWithGenomeIntMatrix(matriz1, resol, regionStart, regionEnd):
                 
     return interList, binRange
 
+
+# Pair of functions to get top interactors
+def computeRankPerc(inList, percentaje):
+    return np.nanpercentile(inList, percentaje) 
+                
+def computeRankTop(inList, topInter):
+    return sorted(inList)[-topInter - 1]
+
+
 def getNeighbourInteraction(data1, interList, locusCh, focus, dataType = 'matrix', 
-                            percentaje = 95, wholeGenome=False, concatemersBin=False,
-                            bias=False):
+                            topRank = 95, wholeGenome=False, concatemersBin=False,
+                            bias=False, positionAdjust=0, topMeasure='percentyle'):
     '''
     :param data1: List of lists (dataType='matrix') or hic_data object (dataType='tadbit')
         with interaction data
@@ -275,21 +297,40 @@ def getNeighbourInteraction(data1, interList, locusCh, focus, dataType = 'matrix
     :param locusCh: Chromosome of focus point
     :param 'matrix' dataType: String indicating wether our data comes from a list of lists
         ('matrix') or a HiC_data object ('tadbit') from TADbit 
-    :param 95 percentaje: Percentyle thresshold at wich to look for interactios
+    :param 95 topRank: Percentyle thresshold at wich to look for interactios OR
+        top value thresshold from which to look at interactions if topMeasure='top'
     :param False wholeGenome: Wether to look in the whole genome or not
     :param False concatemersBin: If you want to normalise by frecuency introduce
         the dictionary (index in bin positions) with the number of times each bin 
         was found in a chimeric read
     :param False bias: TADbit bias dictionary
+    :param 0 positionAdjust: In case the positions from concatemersBin are taking 
+        into account bining from the whole genome, but we just load in hic_data
+        one chromosome. Here concatemersBin will be added the 
+        value in positionAdjust (which could also be negative) in order to 
+        compensate this. In the example above, we would set positionAdjust
+        to a negative number equal to the bin position in which the chromosome
+        starts when using all data.
+    :param 'percentyle' topMeasure: Parameter to decide wether to use topRank to
+        retrieve the percentyle of top interactors ('percentyle') or just the
+        topRank top value in the list ('top'). Last one is not
+        dependent of coverage
     
     '''
+
+    # first define function to get maximum interactors
+    if topMeasure == 'top':
+        computeRank = computeRankTop
+    elif topMeasure == 'percentyle':
+        computeRank = computeRankPerc
+
     # To check if an interactions is significant, we should see if the neighbour
     #bins also interact with the focus region, and/or if some of the other TOP interacting
     #bins also interact with it
     # First get values distribution
-    # with percentaje we set the percentyle were we will set our value thresshold
-
-    limit = np.nanpercentile([inte for inte in interList.values() if inte != 0], percentaje)
+    # with topRank we set the percentyle  or top value were we will set our value thresshold
+    
+    limit = computeRank([inte for inte in interList.values() if inte != 0], topRank)
 
     # Obtain all bins that have interactions above the thresshold limit with
     #our bin or bins of interest
@@ -314,8 +355,11 @@ def getNeighbourInteraction(data1, interList, locusCh, focus, dataType = 'matrix
             for kPeak in sorted(list(thresKeys)):
                 highPeaks[kPeak] = {}
                 # Get new interaction limit for this bin
-                kLimit = np.percentile([(inte / float(concatemersBin[kPeak] + concatemersBin[ni] - inte)) 
-                                        for ni, inte in enumerate(data1[kPeak]) if inte != 0], percentaje) 
+                kLimit = computeRank([(inte / float(concatemersBin[kPeak + positionAdjust] + 
+                                                        concatemersBin[ni + positionAdjust] - 
+                                                        inte)) 
+                                        for ni, inte in enumerate(data1[kPeak]) if inte != 0], topRank)
+
                 newThres = thresKeys - set([kPeak])
                 # check interactions of this peak with the others
                 for nt in newThres:
@@ -323,8 +367,9 @@ def getNeighbourInteraction(data1, interList, locusCh, focus, dataType = 'matrix
                     #that the same thing interacts above the thresshold with kPeak, so later
                     #on the edge would be included twice, but is ok. It will help us to discern
                     #cases where binx has biny above thresshold but not the other way around
-                    val1 = (data1[kPeak][nt] / float(concatemersBin[kPeak] + concatemersBin[nt] 
-                                                     - data1[kPeak][nt]))
+                    val1 = (data1[kPeak][nt] / float(concatemersBin[kPeak + positionAdjust] + 
+                                                        concatemersBin[nt + positionAdjust] -
+                                                        data1[kPeak][nt]))
                     if val1 > kLimit:
                         highPeaks[kPeak][nt] = val1
                            
@@ -332,10 +377,11 @@ def getNeighbourInteraction(data1, interList, locusCh, focus, dataType = 'matrix
             for kPeak in sorted(list(thresKeys)):
                 highPeaks[kPeak] = {}
                 # Get new interaction limit for this bin
-                kLimit = np.nanpercentile([(inte / bias[ni] / bias[kPeak]) 
+                kLimit = computeRank([(inte / bias[ni] / bias[kPeak]) 
                                         for ni, inte in enumerate(data1[kPeak]) 
                                             if inte != 0], 
-                                       percentaje) 
+                                       topRank)
+
                 newThres = thresKeys - set([kPeak])
                 # check interactions of this peak with the others
                 for nt in newThres:
@@ -351,7 +397,9 @@ def getNeighbourInteraction(data1, interList, locusCh, focus, dataType = 'matrix
             for kPeak in sorted(list(thresKeys)):
                 highPeaks[kPeak] = {}
                 # Get new interaction limit for this bin
-                kLimit = np.percentile([inte for inte in data1[kPeak] if inte != 0], percentaje) 
+                kLimit = computeRank([inte for inte in data1[kPeak] 
+                                        if inte != 0], 
+                                        topRank)
                 newThres = thresKeys - set([kPeak])
                 # check interactions of this peak with the others
                 for nt in newThres:
@@ -386,10 +434,11 @@ def getNeighbourInteraction(data1, interList, locusCh, focus, dataType = 'matrix
             for kPeak in sorted(list(thresKeys)):
                 highPeaks[kPeak] = {}
                 # Get new interaction limit for this bin
-                kLimit = np.percentile([(data1[kPeak, i] / float(concatemersBin[kPeak] + 
-                                                            concatemersBin[i] - data1[kPeak, i]))  
+                kLimit = computeRank([(data1[kPeak, i] / float(concatemersBin[kPeak + positionAdjust] + 
+                                                            concatemersBin[i + positionAdjust] - 
+                                                            data1[kPeak, i]))  
                                         for i in range(binBeg, binEnd) 
-                                        if data1[kPeak, i] != 0], percentaje)
+                                        if data1[kPeak, i] != 0], topRank)
                 newThres = thresKeys - set([kPeak])
                 # check interactions of this peak with the others
                 for nt in newThres:
@@ -397,8 +446,9 @@ def getNeighbourInteraction(data1, interList, locusCh, focus, dataType = 'matrix
                     #that the same thing interacts above the thresshold with kPeak, so later
                     #on the edge would be included twice, but is ok. It will help us to discern
                     #cases where binx has biny above thresshold but not the other way around
-                    val1 = (data1[kPeak,nt] / float(concatemersBin[kPeak] + concatemersBin[nt] 
-                                                    - data1[kPeak,nt]))
+                    val1 = (data1[kPeak,nt] / float(concatemersBin[kPeak + positionAdjust] + 
+                                                    concatemersBin[nt + positionAdjust] -
+                                                    data1[kPeak,nt]))
                     if val1 > kLimit:
                         highPeaks[kPeak][nt] = val1
         
@@ -407,10 +457,10 @@ def getNeighbourInteraction(data1, interList, locusCh, focus, dataType = 'matrix
             for kPeak in sorted(list(thresKeys)):
                 highPeaks[kPeak] = {}
                 # Get new interaction limit for this bin
-                kLimit = np.nanpercentile([(data1[kPeak, i] / bias[kPeak] / bias[i])  
+                kLimit = computeRank([(data1[kPeak, i] / bias[kPeak] / bias[i])  
                                         for i in range(binBeg, binEnd) 
                                             if data1[kPeak, i] != 0], 
-                                        percentaje)
+                                        topRank)
                 newThres = thresKeys - set([kPeak])
                 # check interactions of this peak with the others
                 for nt in newThres:
@@ -427,8 +477,8 @@ def getNeighbourInteraction(data1, interList, locusCh, focus, dataType = 'matrix
             for kPeak in sorted(list(thresKeys)):
                 highPeaks[kPeak] = {}
                 # Get new interaction limit for this bin
-                kLimit = np.percentile([data1[kPeak, i]  for i in range(binBeg, binEnd) 
-                                        if data1[kPeak, i] != 0], percentaje)
+                kLimit = computeRank([data1[kPeak, i]  for i in range(binBeg, binEnd) 
+                                        if data1[kPeak, i] != 0], topRank)
                 newThres = thresKeys - set([kPeak])
                 # check interactions of this peak with the others
                 for nt in newThres:
