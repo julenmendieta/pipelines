@@ -224,17 +224,17 @@ optimization = False
 # run optimisation
 runOptim = False
 # join optimisation files and make plots
-optimOut = True
+optimOut = False
 # rerun the ones which failed (checks from matPaths)
-runOptimFailed = True
+runOptimFailed = False
 if runOptimFailed:
     # dcutoff list if you want just to rerun the ones from here
     # To be writen as range (beggin, end, step)
-    c_focus = [200,350,50]
+    c_focus = [100,450,50]
     #c_focus = [100,500,50]
     # maxdist list if you want just to rerun the ones from here
     # To be writen as range (beggin, end, step)
-    m_focus = [300,600,100]
+    m_focus = [100,600,100]
     #m_focus = [600,700,100]
 # clean cluster job output files
 cleanFoldersOptim = False
@@ -243,20 +243,20 @@ cleanFoldersOptim = False
 createModellingFile = False
 if createModellingFile:
     # to check distirbution of correlations at each dcutoff
-    show_dcut = False  # False to not use, True to check that dcutoff
+    show_dcut = False  # False to not use, True to check by dcutoff
     # to check distribution of correlations at certain dcutoff separating by maxdist
-    dcut = 200  # False not to check, integer or float with dcutoff to do it
+    dcut = False  # False not to check, integer or float with dcutoff to do it
     # create file with maximum correlations at certain dcutoff and maxdist
     # dcutof and maxdist parameters where to get the top correlators
-    dcut_ = 250
-    maxd_ = 400
+    dcut_ = 200
+    maxd_ = 300
     jobTime2_ = '00:30:00'
     # how many models will we create
     nmodelsModelling = 1500
     # in chunks of how many models will each procces (with one CPU) work
     chunkSize = 20
 
-modelling = False
+modelling = True
 joinModels = False
 checkModellinTime = False
 cleanFolders= False
@@ -594,7 +594,7 @@ if modelling == True:
             print jobId
             # assign job to current path
             jobPathsModel.append([matPath, jobId])
-            print jobPathsModel
+            #print jobPathsModel
 
         # Store all launched jobs
         # First get unfinished jobs
