@@ -55,7 +55,7 @@ def writeMatrix(matrix, outdir):
     matrix_end.write('\n'.join(['\t'.join([str(cell) for cell in line]) for line in matrix]) + '\n')
     matrix_end.close()
 
-# Read matrix from test format
+# Read matrix from text format
 def readMatrix(indir):
     '''Load matrix from txt to list of lists'''
     matrix_end=open(indir,'r')
