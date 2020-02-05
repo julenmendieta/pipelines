@@ -59,16 +59,32 @@ else:
     pathIn = sys.argv[1]
     pathOut = pathIn
     # build flag
+    if len(sys.argv) == 3:
+        flag = sys.argv[2]
+
+print flag
+
+# First check the files we have
+files = os.listdir(pathIn)
+# then check if we have different conformation parameters and split
+diffMods = set()
+for fi in files:
+    if fi[-6:] == 'models':
+        diffMods.add('_'.join(fi.split('_')[:-1]))
+
+for di in diffMods:
+    # Store all models in one list
+    modelos = []
+    fileNames = []
+    for fi in files:
+        if fi[-6:] == 'models' and fi.startswith(di):
+            a = load_structuralmodels(pathIn + fi)
+            fileNames.append(fi)
+            modelos.append(a)
+
+    # get flag
     if len(sys.argv) == 2:  # position zero is extra
-        fi = 'lala'
-        while fi == 'lala':
-            files1 = os.listdir(pathIn)
-            for fi1 in files1:
-                if fi1.endswith('models'):
-                    fi = fi1
-        #fi = '_'.join(fi.split('_')[0].split('Scaled01'))
-        #flag = '%s_%s' %(fi.split('Scaled01')[0], fi.split('Scaled01')[1].split('_')[0])
-        # If we dont have expeirment name in file name
+        fi = fileNames[0]
         try:
             flag = '%s_%s_%s' %(pathIn.split('/')[-4], 
                         fi.split('_')[0], 
@@ -79,54 +95,41 @@ else:
                                             fi.split('_')[0],
                                             fi.split('_')[2].split('Scaled01')[1])
             #flag = '%s_%s' %(pathIn.split('/')[-5], fi)
-    else:
-        flag = sys.argv[2]
 
-print flag
-# First store all models in one list
-files = os.listdir(pathIn)
-modelos = []
-fileNames = []
-for fi in files:
-    if fi[-6:] == 'models':
-        a = load_structuralmodels(pathIn + fi)
-        fileNames.append(fi)
-        modelos.append(a)
-
-## then merge them
-# check that first model has data
-full = False
-stop = False
-i0 = 0
-while full == False and stop == False:
-    mods1 = modelos[i0]
-    if len(mods1) == 0:
-        print '##### No models in one case!!!! #####'
-        print fileNames[i0]
-        i0 += 1
-    else:
-        full = True
-    # if reach end of models and all have no data
-    if i0 >= len(modelos):
-        stop = True
-# if we have data
-if full == True:
-    # can be that just have one model
-    if i0 == len(modelos) - 1:
+    ## then merge them
+    # check that first model has data
+    full = False
+    stop = False
+    i0 = 0
+    while full == False and stop == False:
         mods1 = modelos[i0]
-    # if we have more than one
-    else:
-        for i, mods2 in enumerate([m for m in modelos[i0 + 1:]]):
-            #mods1 = _extend_models(mods1, mods2, i + 2)
-            mods1 = _extend_models(mods1, mods2)
-            if len(mods2) == 0:
-                print fileNames[i+ i0 + 1]
+        if len(mods1) == 0:
+            print '##### No models in one case!!!! #####'
+            print fileNames[i0]
+            i0 += 1
+        else:
+            full = True
+        # if reach end of models and all have no data
+        if i0 >= len(modelos):
+            stop = True
+    # if we have data
+    if full == True:
+        # can be that just have one model
+        if i0 == len(modelos) - 1:
+            mods1 = modelos[i0]
+        # if we have more than one
+        else:
+            for i, mods2 in enumerate([m for m in modelos[i0 + 1:]]):
+                #mods1 = _extend_models(mods1, mods2, i + 2)
+                mods1 = _extend_models(mods1, mods2)
+                if len(mods2) == 0:
+                    print fileNames[i+ i0 + 1]
 
-print len(mods1)
-mods1.save_models(pathOut+'%s.modelsAll'%(flag))
+    print len(mods1)
+    mods1.save_models(pathOut+'%s.modelsAll'%(flag))
 
 # remove all files that are in the merge
-clean = False
+clean = True
 if clean == True:
     for fi in files:
         if fi[-6:] == 'models':
