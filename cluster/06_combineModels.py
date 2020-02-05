@@ -99,6 +99,8 @@ for di in diffMods:
             fi2 = 'asd83r2ndf09sd1d3'
         # case ii)
         if fi[-6:] == 'models' and (previousLabel == fi2):
+            print 'previous model ensemble found, combining'
+            print pathIn + fi
             a = load_structuralmodels(pathIn + fi)
             fileNames.append(fi)
             modelos.append(a)
