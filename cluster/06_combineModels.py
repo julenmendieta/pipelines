@@ -62,7 +62,7 @@ else:
     if len(sys.argv) == 3:
         flag = sys.argv[2]
 
-print flag
+        print flag
 
 # First check the files we have
 files = os.listdir(pathIn)
@@ -115,7 +115,7 @@ for di in diffMods:
                                             fi.split('_')[0],
                                             fi.split('_')[2].split('Scaled01')[1])
             #flag = '%s_%s' %(pathIn.split('/')[-5], fi)
-
+    print flag
     ## then merge them
     # check that first model has data
     full = False
@@ -149,7 +149,7 @@ for di in diffMods:
     mods1.save_models(pathOut+'%s.modelsAll'%(flag))
 
 # remove all files that are in the merge
-clean = True
+clean = False
 if clean == True:
     for fi in files:
         if fi[-6:] == 'models':
