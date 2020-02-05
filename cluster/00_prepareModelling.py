@@ -626,7 +626,7 @@ if modelling == True:
 
         # Recreate the file
         with open(outTrash + 'modelList.txt', 'w') as f:
-            for j in jobPathsOptim:
+            for j in jobPathsModel:
                 f.write('%s\t%s\n' %(j[0], j[1]))
 
     else:
