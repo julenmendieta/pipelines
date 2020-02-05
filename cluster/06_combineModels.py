@@ -89,6 +89,7 @@ for di in diffMods:
         if fi[-6:] == 'models' and fi.startswith(di):
             a = load_structuralmodels(pathIn + fi)
             fileNames.append(fi)
+            filenameForFlag = fi
             modelos.append(a)
             
         previousLabel = di.split('Scaled01')[-1]
@@ -104,7 +105,7 @@ for di in diffMods:
 
     # get flag
     if len(sys.argv) == 2:  # position zero is extra
-        fi = fileNames[0]
+        fi = filenameForFlag
         try:
             flag = '%s_%s_%s' %(pathIn.split('/')[-4], 
                         fi.split('_')[0], 
