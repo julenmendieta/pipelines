@@ -68,16 +68,36 @@ print flag
 files = os.listdir(pathIn)
 # then check if we have different conformation parameters and split
 diffMods = set()
+previousMods = set()
 for fi in files:
     if fi[-6:] == 'models':
-        diffMods.add('_'.join(fi.split('_')[:-1]))
+        if 'Scaled01' in fi:
+            diffMods.add('_'.join(fi.split('_')[:-1]))
+        else:
+            previousMods.add(fi.split('_')[-1][:-7])
 
 for di in diffMods:
     # Store all models in one list
     modelos = []
     fileNames = []
     for fi in files:
+        # here two things can happen;
+        # i) all models are from direct output
+        # ii) i changed the name of the merge output from
+        #...modelsAll to ...models to merge new build models
+        # case i)
         if fi[-6:] == 'models' and fi.startswith(di):
+            a = load_structuralmodels(pathIn + fi)
+            fileNames.append(fi)
+            modelos.append(a)
+            
+        previousLabel = di.split('Scaled01')[-1]
+        try:
+            fi2 = fi.split('_')[-1][:-7]
+        except:
+            fi2 = 'asd83r2ndf09sd1d3'
+        # case ii)
+        if fi[-6:] == 'models' and (previousLabel == fi2):
             a = load_structuralmodels(pathIn + fi)
             fileNames.append(fi)
             modelos.append(a)
