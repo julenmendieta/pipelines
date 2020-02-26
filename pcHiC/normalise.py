@@ -1,6 +1,7 @@
 from collections import defaultdict
 from pytadbit                     import HiC_data
-
+from pysam                           import AlignmentFile
+from collections                     import OrderedDict
 
 # Obtain multiContacts from file just in a pairwise manner
 def goThroughConcatemerFilePairwise_noMultiTSV(hic_data, line, concatemers,
@@ -89,7 +90,167 @@ def getConcatemersPerBin_noMultiTSV(hic_data, tsvFile, resol, locusCh=False,
     else:
         return regConcatemers, nConcat
 
+# this should substitute goThroughConcatemerFilePairwise_noMultiTSV
+# Obtain multiContacts from file just in a pairwise manner
+def goThroughReads(section_pos, line, interPerBin,
+                                resol, nRead=0):
+    '''
+    Function to obtain interaction frecuencies per bin from 
+        normal TSV with no multiContact data spected
+        
+    :param section_pos: Dictionary with the chromosomes
+        reference name as keys and a list or tuple of
+        the range of bins in which they lie. Ej.:
+        {'chr1':(0, 5000)}. Is 0 index, and last bin 
+        from range, is not included inside, so next
+        chromosome could be {'chr2':(5000, 10000)}
+    :param line: list or tuple with:
+        [chr1, startPos1, chr2, startPos2]
+    :param interPerBin: defaultdict(int) with the number
+        of times each bin interacts
+    :param resol: Resolution at wich we are going to be 
+        normalising our data
+    :param 0 nRead: Integer indicating number of reads 
+        counted
+    
+    '''
+   
+    # store each apparition of a fragment in a concatemer
+    #we store the bin of the mapping start position
+    fragment1 = (int(line[1]) / resol) + section_pos[line[0]][0]
+    interPerBin[fragment1] += 1
+    
+    fragment2 = (int(line[3]) / resol) + section_pos[line[2]][0]
+    interPerBin[fragment2] += 1
+    
+    # New concatemer seen
+    nRead += 1
+    
+    return interPerBin, nRead
 
+    
+
+
+    
+# this should substitute getConcatemersPerBin_noMultiTSV
+# Open tsv and obtain contact frecuencies in a pairwise manner
+def getInteractionsPerBin(infile, resol, locusCh=False,
+                         regRange = False, returnNread = False):
+    '''
+    Function to get the number of concatemers were a bin of interest is 
+        appearing (is bin based, so all fragments which start inside of
+        a bin margin will be joined)
+        
+    :param infile: Path to the input file. If TADbit style TSV, be sure 
+        it ends with .tsv. If usual BAM file, be sure it is sorted, the
+        index is located in the same folder, and it ends with .bam
+    :param resol: Resolution at wich we are going to be normalising our
+        data
+    :param False locusCh: Set to True if you want to return just data to
+        normalise the bin between the smallest and biggest binned coordinate
+        in regRange. Even if True the whole bam file must be cheked, so
+        wont safe any time.
+    :param False regRange: list or tuple with the first and last binned
+        coordinates we wont to retrieve.
+    :param False returnNread: wether you want or not nRead to be
+        returned. It returns the number of reads check.
+    '''
+
+    interPerBin = defaultdict(int)
+    
+    nRead = 0
+    
+    if infile.endswith('.bam'):
+        # get section positions 
+        bamfile = AlignmentFile(infile, 'rb')
+        bam_refs = bamfile.references
+        bam_lengths = bamfile.lengths
+
+        sections = OrderedDict(list(zip(bam_refs,
+                                   [x for x in bam_lengths])))
+        total = 0
+        section_pos = OrderedDict()
+        for crm in sections:
+            section_pos[crm] = (total, total + sections[crm])
+            total += sections[crm]
+        bamfile.close()
+
+        bamfile = AlignmentFile(infile, 'rb')
+        for r in bamfile.fetch():
+            crm1 = r.reference_name
+            pos1 = r.reference_start + 1
+            crm2 = r.next_reference_name
+            pos2 = r.next_reference_start + 1
+            
+            line = [crm1, pos1, crm2, pos2]
+            interPerBin, nRead = goThroughReads(section_pos, line, interPerBin,
+                                    resol, nRead=nRead)
+        bamfile.close()
+    
+
+    elif infile.endswith('.tsv'):
+        with open(infile, 'r') as f:
+            # get chromosome lengths
+            sections = OrderedDict()
+            while True:
+                line = f.readline()
+                if line.startswith('#'):
+                    line = line.split()
+                    if line[1] == 'CRM':
+                        sections[line[2]] = int(line[3])
+                        
+                elif line.startswith('@'):
+                    pass
+                else:
+                    break
+                    
+            # create binned positioning for chromosomes
+            total = 0
+            section_pos = OrderedDict()
+            for crm in sections:
+                section_pos[crm] = (total, total + sections[crm])
+                total += sections[crm]
+
+            # iterate over reads
+            line = line.split()
+            line = [line[1], line[2], line[7], line[8]]
+
+            # Run current line (first one)
+            interPerBin, nRead = goThroughReads(section_pos, line, interPerBin,
+                                    resol, nRead=nRead)
+
+            # Go for next lines
+            for line in f:
+                line = line.split()
+                line = [line[1], line[2], line[7], line[8]]
+                
+                interPerBin, nRead = goThroughReads(section_pos, line, interPerBin,
+                                    resol, nRead=nRead)
+
+    
+     # Get genomic coordinates for region of interest
+    if locusCh == True:
+        regionStart = min(regRange)
+        regionEnd = max(regRange) 
+
+        ## modify if we want data from all genome
+        # Get all the fragments that start inside this coordinates
+        keys = [k for k in concatemers.keys() if (regionStart <= 
+                                                            k <= 
+                                                            regionEnd)]
+        regInterPerBin = defaultdict(int)
+        for k in keys:
+            regInterPerBin[k] += interPerBin[k]
+            
+    # Or not
+    else:
+        regInterPerBin = interPerBin
+            
+
+    if returnNread == False:
+        return regInterPerBin
+    else:
+        return regInterPerBin, nRead
 
 
                                             
