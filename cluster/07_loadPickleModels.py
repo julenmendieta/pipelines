@@ -35,8 +35,8 @@ for i, m in enumerate(models.values()):
 models0 = StructuralModels(
         nloci=nloci, models=models, bad_models=None,
         resolution=resol, original_data=originalMatrix,
-        clusters=None, config=models0._config, zscores=None,
-        zeros=None, restraints=None,
+        clusters=None, config=None, zscores=None,
+        zeros=[True for i in range(nloci)], restraints=None,
         description=None)
 
 # save models
