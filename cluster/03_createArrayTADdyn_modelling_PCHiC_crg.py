@@ -42,7 +42,7 @@ scriptsPath=args.scriptspath
 nmodels=int(args.nmodels)
 chunkSize=args.chunks
 
-flag = matPath.split('/')[-2]
+flag = '_'.join(matPath.split('/')[-1].split('_')[1:3])
 path='/'.join(matPath.split('/')[:-1]) + '/'
 lammpsOut="/scratch_tmp/%s/temp" %(flag)
 

@@ -74,28 +74,28 @@ for opt in optFpath:
 	print optim.get_best_parameters_dict()
 
 	# Ya que estamos mostramos los modelos
-	dic = optim.get_best_parameters_dict()
-	file1 = 'opt_LF' + str(dic['lowfreq']) + 'UF' + str(dic['upfreq']) + 'C2Mdis' + str(int(dic['maxdist'])) + '.txt'
-	#print file1
-	if dic['scale'] == 0.01:
-		files2 = glob.glob('*Mdis100.txt')
-	elif dic['scale'] == 0.005:
-		files2 = glob.glob('*Mdis50.txt')
-	best = ""
-	bestCor = 0
-	for fi in files2:
-		with open(fi, 'r') as f:
-			for i, line in enumerate(f):
-				# In second line take header
-				if i == 1:
-					line = line.split('\t')
-					posLF = line.index('low_freq')
-					posUF = line.index('up_freq')
-				# Compare values
-				elif i == 2:
-					line = line.split('\t')
-					if line[5] > bestCor and (line[posLF] <= line[posUF]):
-						bestCor = line[5][:-1]
-						best = fi
-	print best
+	# dic = optim.get_best_parameters_dict()
+	# file1 = 'opt_LF' + str(dic['lowfreq']) + 'UF' + str(dic['upfreq']) + 'C2Mdis' + str(int(dic['maxdist'])) + '.txt'
+	# #print file1
+	# if dic['scale'] == 0.01:
+	# 	files2 = glob.glob('*Mdis100.txt')
+	# elif dic['scale'] == 0.005:
+	# 	files2 = glob.glob('*Mdis50.txt')
+	# best = ""
+	# bestCor = 0
+	# for fi in files2:
+	# 	with open(fi, 'r') as f:
+	# 		for i, line in enumerate(f):
+	# 			# In second line take header
+	# 			if i == 1:
+	# 				line = line.split('\t')
+	# 				posLF = line.index('low_freq')
+	# 				posUF = line.index('up_freq')
+	# 			# Compare values
+	# 			elif i == 2:
+	# 				line = line.split('\t')
+	# 				if line[5] > bestCor and (line[posLF] <= line[posUF]):
+	# 					bestCor = line[5][:-1]
+	# 					best = fi
+	# print best
 
