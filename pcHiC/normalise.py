@@ -2,6 +2,7 @@ from collections import defaultdict
 from pytadbit                     import HiC_data
 from pysam                           import AlignmentFile
 from collections                     import OrderedDict
+from pytadbit.parsers.hic_bam_parser import filters_to_bin
 
 # Obtain multiContacts from file just in a pairwise manner
 def goThroughConcatemerFilePairwise_noMultiTSV(hic_data, line, concatemers,
@@ -135,7 +136,8 @@ def goThroughReads(section_pos, line, interPerBin,
 # this should substitute getConcatemersPerBin_noMultiTSV
 # Open tsv and obtain contact frecuencies in a pairwise manner
 def getInteractionsPerBin(infile, resol, locusCh=False,
-                         regRange = False, returnNread = False):
+                         regRange = False, returnNread = False,
+                         filter_exclude=(1, 2, 3, 4, 6, 7, 8, 9, 10)):
     '''
     Function to get the number of concatemers were a bin of interest is 
         appearing (is bin based, so all fragments which start inside of
@@ -154,8 +156,16 @@ def getInteractionsPerBin(infile, resol, locusCh=False,
         coordinates we wont to retrieve.
     :param False returnNread: wether you want or not nRead to be
         returned. It returns the number of reads check.
+    :param (1, 2, 3, 4, 6, 7, 8, 9, 10) filter exclude: filters to define the
+        set of valid pair of reads. Just valid for TADbit style BAMfiles. If
+        working with already filtered non TADbit BAM set filter_exclude = ()
     '''
-
+    
+    # change filter exclude to binary
+    if not isinstance(filter_exclude, int):
+        filter_exclude = filters_to_bin(filter_exclude)
+    # variable to store id
+    prev = ''
     interPerBin = defaultdict(int)
     
     nRead = 0
@@ -173,10 +183,24 @@ def getInteractionsPerBin(infile, resol, locusCh=False,
         for crm in sections:
             section_pos[crm] = (total, total + sections[crm])
             total += sections[crm]
+            
+            
+        # check if this BAM file is not TADbit style
+        if 'Hicup' in bamfile.text:
+            print 'It seems this BAM file was produced outside TADbit, make \
+sure it has already been filtered'
+            if filter_exclude != ():
+                print 'Consider changing filter_exclude so its value is () \
+or you might get no reads'
+                
         bamfile.close()
 
         bamfile = AlignmentFile(infile, 'rb')
         for r in bamfile.fetch():
+            # Check if it is among positions to be filtered
+            # BEWARE that it follows TADbit format
+            if r.flag & filter_exclude:
+                continue
             crm1 = r.reference_name
             pos1 = r.reference_start + 1
             crm2 = r.next_reference_name
