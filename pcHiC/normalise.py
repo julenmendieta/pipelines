@@ -129,8 +129,22 @@ def goThroughReads(section_pos, line, interPerBin,
     
     return interPerBin, nRead
 
-    
+# function to get the bins list per chromosome
+def getSectionPos(infile, resol):
+    bamfile = AlignmentFile(infile, 'rb')
+    bam_refs = bamfile.references
+    bam_lengths = bamfile.lengths
 
+    sections = OrderedDict(list(zip(bam_refs,
+                               [x for x in bam_lengths])))
+    total = 0
+    section_pos = OrderedDict()
+    for crm in sections:
+        section_pos[crm] = (total, total + (sections[crm] / resol + 1))
+        total += (sections[crm] / resol + 1)
+        
+    bamfile.close()
+    return section_pos
 
     
 # this should substitute getConcatemersPerBin_noMultiTSV
@@ -181,8 +195,8 @@ def getInteractionsPerBin(infile, resol, locusCh=False,
         total = 0
         section_pos = OrderedDict()
         for crm in sections:
-            section_pos[crm] = (total, total + sections[crm])
-            total += sections[crm]
+            section_pos[crm] = (total, total + (sections[crm] / resol + 1))
+            total += (sections[crm] / resol + 1)
             
             
         # check if this BAM file is not TADbit style
@@ -232,8 +246,8 @@ or you might get no reads'
             total = 0
             section_pos = OrderedDict()
             for crm in sections:
-                section_pos[crm] = (total, total + sections[crm])
-                total += sections[crm]
+                section_pos[crm] = (total, total + (sections[crm] / resol + 1))
+                total += (sections[crm] / resol + 1)
 
             # iterate over reads
             line = line.split()
