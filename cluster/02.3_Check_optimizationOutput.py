@@ -52,6 +52,9 @@ def getTopModels(paths, topCor = {}, nmodels=1000, action='w', jobTime=False,
                     nres += 1
                 if nres >= len(allResults):
                     nres = None
+
+    # prepare file to run modelling
+    outmo = outpath + 'modellinParams.txt'
     # Now get file names for the models to be taken
     cmd = ''
     topsPath = []
@@ -65,9 +68,6 @@ def getTopModels(paths, topCor = {}, nmodels=1000, action='w', jobTime=False,
             #    topCor[cell][regi][0])
             cmds2 = cmds %(f, cell, regi)
             topsPath.append(cmds2)
-
-        # prepare file to run modelling
-        outmo = outpath + 'modellinParams.txt'
         
         #for regi in sorted(topCor[cell].keys()):
         for regi in orderedKeys[cell]:

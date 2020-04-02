@@ -283,6 +283,8 @@ def computeRankPerc(inList, percentaje):
     return np.nanpercentile(inList, percentaje) 
                 
 def computeRankTop(inList, topInter):
+    # in case list is sorter than said top
+    topInter = min(topInter, len(inList)-1)
     return sorted(inList)[-topInter - 1]
 
 
