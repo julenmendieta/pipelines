@@ -87,10 +87,14 @@ for di in diffMods:
         #...modelsAll to ...models to merge new build models
         # case i)
         if fi[-6:] == 'models' and fi.startswith(di):
-            a = load_structuralmodels(pathIn + fi)
-            fileNames.append(fi)
-            filenameForFlag = fi
-            modelos.append(a)
+            try:
+                a = load_structuralmodels(pathIn + fi)
+                fileNames.append(fi)
+                filenameForFlag = fi
+                modelos.append(a)
+            except:
+                print 'Empty file:'
+                print pathIn + fi
             
         previousLabel = di.split('Scaled01')[-1]
         try:
