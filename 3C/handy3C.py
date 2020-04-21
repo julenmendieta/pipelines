@@ -423,8 +423,8 @@ def getNeighbourInteraction(data1, interList, locusCh, focus, dataType = 'matrix
         elif wholeGenome == True:
             # Get maximum bin in our data
             maxBin = 0
-            for c in hic_data.section_pos:
-                maxBin = max(maxBin, hic_data.section_pos[c][1])
+            for c in data1.section_pos:
+                maxBin = max(maxBin, data1.section_pos[c][1])
             # Obtain number of cells in our data
             binBeg = 0
             binEnd = maxBin # Dont need to ad +1 because last value does not exist, is to count all in range
