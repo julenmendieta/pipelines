@@ -155,7 +155,7 @@ def getLocusWithGenomeIntTadbit(hic_data, resol, locusCh, regionStart, regionEnd
     if wholeGenome == True:
         # is an iterator
         interRange = chainxRange(xrange(0, chromBinBeg), 
-                                xrange(chromBinEnd+1, totalBins))
+                                xrange(chromBinEnd, totalBins))
     else:
         interRange = []
 
@@ -189,12 +189,12 @@ def getLocusWithGenomeIntTadbit(hic_data, resol, locusCh, regionStart, regionEnd
                 interList[ps] += interVal
 
         for ps2 in interRange:
-            interVal = hic_data[cbin, ps] 
-            if interVal != 0 and cbin != ps:
-                interVal = normWay(interVal, cbin, ps, 
+            interVal = hic_data[cbin, ps2] 
+            if interVal != 0 and cbin != ps2:
+                interVal = normWay(interVal, cbin, ps2, 
                         extraToNorm=extraToNorm, 
                         positionAdjust=positionAdjust)
-                interChromList[ps] += interVal
+                interChromList[ps2] += interVal
 
     # create variable for cases when focus bin do not interact at all
     #this could happend in promoter capture HiC when a fragments spans at least 3 bins. In
@@ -221,7 +221,7 @@ def getLocusWithGenomeIntTadbit(hic_data, resol, locusCh, regionStart, regionEnd
     # update binRange
     binRange = list(set(binRange) - set(delFocus))
     
-    if wholeGenome == True:
+    if wholeGenome != True:
         return interList, binRange
     else:
         return interList, interChromList, binRange
@@ -292,9 +292,12 @@ def computeRankPerc(inList, percentaje):
     return np.nanpercentile(inList, percentaje) 
                 
 def computeRankTop(inList, topInter):
-    # in case list is sorter than said top
-    topInter = min(topInter, len(inList)-1)
-    return sorted(inList)[-topInter - 1]
+    if len(inList) == 0:
+        return None
+    else:
+        # in case list is sorter than said top
+        topInter = min(topInter, len(inList)-1)
+        return sorted(inList)[-topInter - 1]
 
 def tadbitPeaks(data1, thresKeys, computeRank, 
                 normWay, extraToNorm,
@@ -304,33 +307,32 @@ def tadbitPeaks(data1, thresKeys, computeRank,
     if type(range1) != xrange:
         range1 = list(range1)
     for kPeak in sorted(list(thresKeys)):
-        # have to create it constantly to avoid RAM usage
-        highPeaks[kPeak] = {}
         # Get new interaction limit for this bin
         kLimit = computeRank([normWay(data1[kPeak, ni], kPeak, ni, 
                                         extraToNorm=extraToNorm,
                                         positionAdjust=positionAdjust)
                                 for ni in range1  
                                     if data1[kPeak, ni] != 0], topRank)
-
-        newThres = thresKeys - set([kPeak])
-        # check interactions of this peak with the others
-        for nt in newThres:
-            # we will get with what kPeak interacts above the thresshold, and could be
-            #that the same thing interacts above the thresshold with kPeak, so later
-            #on the edge would be included twice, but is ok. It will help us to discern
-            #cases where binx has biny above thresshold but not the other way around
-            val1 = normWay(data1[kPeak,nt], kPeak, nt, extraToNorm=extraToNorm,
-                            positionAdjust=positionAdjust)
-            
-            if val1 > kLimit:
-                highPeaks[kPeak][nt] = val1
+        if kLimit != None:
+            highPeaks[kPeak] = {} 
+            newThres = thresKeys - set([kPeak])
+            # check interactions of this peak with the others
+            for nt in newThres:
+                # we will get with what kPeak interacts above the thresshold, and could be
+                #that the same thing interacts above the thresshold with kPeak, so later
+                #on the edge would be included twice, but is ok. It will help us to discern
+                #cases where binx has biny above thresshold but not the other way around
+                val1 = normWay(data1[kPeak,nt], kPeak, nt, extraToNorm=extraToNorm,
+                                positionAdjust=positionAdjust)
+                
+                if val1 > kLimit:
+                    highPeaks[kPeak][nt] = val1
     
     return highPeaks
 
 def getNeighbourInteraction(data1, interList, locusCh, focus, dataType = 'matrix', 
                             topRank = 95, wholeGenome=False, interChromList={},
-                            concatemersBin=False,
+                            concatemersBin=False, topRankInterC = None,
                             bias=False, positionAdjust=0, topMeasure='percentyle'):
     '''
     :param data1: List of lists (dataType='matrix') or hic_data object (dataType='tadbit')
@@ -358,6 +360,8 @@ def getNeighbourInteraction(data1, interList, locusCh, focus, dataType = 'matrix
         retrieve the percentyle of top interactors ('percentyle') or just the
         topRank top value in the list ('top'). Last one is not
         dependent of coverage
+    :param None topRankInterC: topRank value for interchromosomal interactions.
+        If no given and wholeGenome==True, will use same as topRank
     
     '''
 
@@ -397,12 +401,13 @@ def getNeighbourInteraction(data1, interList, locusCh, focus, dataType = 'matrix
             thresKeys.add(k)
 
     if wholeGenome == True:
+        if topRankInterC == None:
+            topRankInterC = topRank
         if interChromList == {}:
             print 'Missing interChromList to run whole genome'
-            failll
 
         limit_interChr = computeRank([inte for inte in interChromList.values() 
-                                        if inte != 0], topRank)
+                                        if inte != 0], topRankInterC)
         thresKeysInter = set()
         for k in interChromList.keys():
             if interChromList[k] > limit_interChr:
@@ -467,7 +472,7 @@ def getNeighbourInteraction(data1, interList, locusCh, focus, dataType = 'matrix
             # get interChromosomal peaks
             highPeaksInter = tadbitPeaks(data1, thresKeysInter, computeRank, 
                                         normWay, extraToNorm,
-                                        positionAdjust, interRange, topRank)
+                                        positionAdjust, interRange, topRankInterC)
 
             ## Generate a list with all the interactions that passed the filtering
             edgeListInter = []
