@@ -296,9 +296,41 @@ def computeRankTop(inList, topInter):
     topInter = min(topInter, len(inList)-1)
     return sorted(inList)[-topInter - 1]
 
+def tadbitPeaks(data1, thresKeys, computeRank, 
+                normWay, extraToNorm,
+                positionAdjust, range1, topRank):
+    highPeaks = {}
+    # convert to list if generator
+    if type(range1) != xrange:
+        range1 = list(range1)
+    for kPeak in sorted(list(thresKeys)):
+        # have to create it constantly to avoid RAM usage
+        highPeaks[kPeak] = {}
+        # Get new interaction limit for this bin
+        kLimit = computeRank([normWay(data1[kPeak, ni], kPeak, ni, 
+                                        extraToNorm=extraToNorm,
+                                        positionAdjust=positionAdjust)
+                                for ni in range1  
+                                    if data1[kPeak, ni] != 0], topRank)
+
+        newThres = thresKeys - set([kPeak])
+        # check interactions of this peak with the others
+        for nt in newThres:
+            # we will get with what kPeak interacts above the thresshold, and could be
+            #that the same thing interacts above the thresshold with kPeak, so later
+            #on the edge would be included twice, but is ok. It will help us to discern
+            #cases where binx has biny above thresshold but not the other way around
+            val1 = normWay(data1[kPeak,nt], kPeak, nt, extraToNorm=extraToNorm,
+                            positionAdjust=positionAdjust)
+            
+            if val1 > kLimit:
+                highPeaks[kPeak][nt] = val1
+    
+    return highPeaks
 
 def getNeighbourInteraction(data1, interList, locusCh, focus, dataType = 'matrix', 
-                            topRank = 95, wholeGenome=False, concatemersBin=False,
+                            topRank = 95, wholeGenome=False, interChromList={},
+                            concatemersBin=False,
                             bias=False, positionAdjust=0, topMeasure='percentyle'):
     '''
     :param data1: List of lists (dataType='matrix') or hic_data object (dataType='tadbit')
@@ -355,14 +387,29 @@ def getNeighbourInteraction(data1, interList, locusCh, focus, dataType = 'matrix
     # First get values distribution
     # with topRank we set the percentyle  or top value were we will set our value thresshold
     
-    limit = computeRank([inte for inte in interList.values() if inte != 0], topRank)
-
+    limit = computeRank([inte for inte in interList.values() 
+                                if inte != 0], topRank)
     # Obtain all bins that have interactions above the thresshold limit with
     #our bin or bins of interest
     thresKeys = set()
     for k in interList.keys():
         if interList[k] > limit:
             thresKeys.add(k)
+
+    if wholeGenome == True:
+        if interChromList == {}:
+            print 'Missing interChromList to run whole genome'
+            failll
+
+        limit_interChr = computeRank([inte for inte in interChromList.values() 
+                                        if inte != 0], topRank)
+        thresKeysInter = set()
+        for k in interChromList.keys():
+            if interChromList[k] > limit_interChr:
+                thresKeysInter.add(k)
+        for fo in focus:
+            thresKeysInter.add(fo)
+
 
     # It could be that they where no interactions in the diagonal of our viewPoint
     #what could cause that wont be check in here, so if not present, we add it
@@ -374,8 +421,9 @@ def getNeighbourInteraction(data1, interList, locusCh, focus, dataType = 'matrix
     #the filtering in the interacting bin
     # Iterate over each one of the filtered bins
     if dataType == 'matrix':
+        print 'Matrices are searched whole, no distinction for interChrom'
         highPeaks = {}
-
+        
         for kPeak in sorted(list(thresKeys)):
             highPeaks[kPeak] = {}
             # Get new interaction limit for this bin
@@ -400,44 +448,38 @@ def getNeighbourInteraction(data1, interList, locusCh, focus, dataType = 'matrix
                     
     elif dataType == 'tadbit':
         
-        # If we want to just check at chromosome level
-        if wholeGenome == False:
-            binBeg = data1.section_pos[locusCh][0]
-            binEnd = data1.section_pos[locusCh][1]
+        # at chromosome level
+        chromBinBeg = data1.section_pos[locusCh][0]
+        chromBinEnd = data1.section_pos[locusCh][1]
+        intraRange = xrange(chromBinBeg, chromBinEnd)
         # If we want to go through the whole genome
-        elif wholeGenome != False:
+        if wholeGenome != False:
             # Get maximum bin in our data
             maxBin = 0
             for c in data1.section_pos:
                 maxBin = max(maxBin, data1.section_pos[c][1])
             # Obtain number of cells in our data
             binBeg = 0
-            binEnd = maxBin # Dont need to ad +1 because last value does not exist, is to count all in range
+            totalBins = maxBin # Dont need to ad +1 because last value does not exist, is to count all in range
+            interRange = chainxRange(xrange(binBeg, chromBinBeg), 
+                                xrange(chromBinEnd+1, totalBins))
+            
+            # get interChromosomal peaks
+            highPeaksInter = tadbitPeaks(data1, thresKeysInter, computeRank, 
+                                        normWay, extraToNorm,
+                                        positionAdjust, interRange, topRank)
 
+            ## Generate a list with all the interactions that passed the filtering
+            edgeListInter = []
+            for k in highPeaksInter.keys():
+                if len(highPeaksInter[k]) != 0:
+                    for k2 in highPeaksInter[k].keys():
+                        edgeListInter.append((k, k2))
 
-        highPeaks = {}
-
-        for kPeak in sorted(list(thresKeys)):
-            highPeaks[kPeak] = {}
-            # Get new interaction limit for this bin
-            kLimit = computeRank([normWay(data1[kPeak, ni], kPeak, ni, 
-                                            extraToNorm=extraToNorm,
-                                            positionAdjust=positionAdjust)
-                                    for ni in range(binBeg, binEnd)  
-                                      if data1[kPeak, ni] != 0], topRank)
-
-            newThres = thresKeys - set([kPeak])
-            # check interactions of this peak with the others
-            for nt in newThres:
-                # we will get with what kPeak interacts above the thresshold, and could be
-                #that the same thing interacts above the thresshold with kPeak, so later
-                #on the edge would be included twice, but is ok. It will help us to discern
-                #cases where binx has biny above thresshold but not the other way around
-                val1 = normWay(data1[kPeak,nt], kPeak, nt, extraToNorm=extraToNorm,
-                                positionAdjust=positionAdjust)
-                
-                if val1 > kLimit:
-                    highPeaks[kPeak][nt] = val1
+        # get intraChromosomal peaks
+        highPeaks = tadbitPeaks(data1, thresKeys, computeRank, 
+                                normWay, extraToNorm,
+                                positionAdjust, intraRange, topRank)
         
     ## Generate a list with all the interactions that passed the filtering
     edgeList = []
@@ -453,8 +495,10 @@ def getNeighbourInteraction(data1, interList, locusCh, focus, dataType = 'matrix
     #        for k2 in highPeaks[k].keys():
     #            edgeVals.append(highPeaks[k][k2])
     #emini, emaxi =  min(edgeVals), max(edgeVals)
-
-    return edgeList, highPeaks
+    if wholeGenome == False:
+        return edgeList, highPeaks
+    else:
+        return edgeList, highPeaks, edgeListInter, highPeaksInter
 
 
 def group_elements(element, group, visited, connections):
