@@ -64,6 +64,33 @@ def readMatrix(indir):
     return matrix
 
 
+def normWayBias(interVal, cbin, ps, extraToNorm=None,
+    positionAdjust=0):
+    interVal = interVal / extraToNorm[cbin] / extraToNorm[ps]
+    if not np.isnan(interVal):
+        return interVal
+    else:
+        return 0
+        
+def normWayFreq(interVal, cbin, ps, extraToNorm=None,
+    positionAdjust=0):
+    divider = extraToNorm[cbin + positionAdjust] + \
+                extraToNorm[ps + positionAdjust] - \
+                interVal
+    interVal = interVal / float(divider)
+    return interVal
+  
+def normWayRaw(interVal, cbin, ps, extraToNorm=None,
+    positionAdjust=0):
+    return interVal
+
+# from itertools
+def chainxRange(*iterables):
+    # chain('ABC', 'DEF') --> A B C D E F
+    for it in iterables:
+        for element in it:
+            yield element
+
 def getLocusWithGenomeIntTadbit(hic_data, resol, locusCh, regionStart, regionEnd=False, 
                                 wholeGenome=True, concatemersBin=False, bias=False,
                                 positionAdjust=0):
@@ -77,7 +104,8 @@ def getLocusWithGenomeIntTadbit(hic_data, resol, locusCh, regionStart, regionEnd
     :param resol: resolution of our experiment
     :param locusCh: Chromosome where our locus is located
     :param regionsStart: integer if starting point of a range (genomic coords),
-        or list (bin coords)if want to give specific not continuous values
+        or list (bin coords)if want to give specific not continuous values. All
+        positions must be from the same chromosome
     :param False regionEnd: integer with end of interest bins range or
         nothing if values range provided in regionStart
     :param True wholeGenome: True if you want to get data from the whole genome 
@@ -94,8 +122,9 @@ def getLocusWithGenomeIntTadbit(hic_data, resol, locusCh, regionStart, regionEnd
         to a negative number equal to the bin position in which the chromosome
         starts when using all data.
 
-    :returns: A defaultdict with bins from the whole matrix as column
-        and interactions floating or integer values
+    :returns: One/two defaultdict with bins from the chromosome/chromosome+fullData
+        as key and interaction floats or integers as values, depending on wholeGenome
+        value False/True. It also resturns a list with the focus bins that had data
     '''
     chromBinBeg = hic_data.section_pos[locusCh][0]
     chromBinEnd = hic_data.section_pos[locusCh][1]
@@ -112,6 +141,7 @@ def getLocusWithGenomeIntTadbit(hic_data, resol, locusCh, regionStart, regionEnd
 
     #interList = {}
     interList = defaultdict(int)
+    interChromList = defaultdict(int)
 
     # Get maximum bin in our data
     maxBin = 0
@@ -121,81 +151,52 @@ def getLocusWithGenomeIntTadbit(hic_data, resol, locusCh, regionStart, regionEnd
     nCells = maxBin**2
     totalBins = maxBin # Dont need to ad +1 because last value does not exist, is to count all in range
 
-    
+    # set search start and end in case of whole genome search
     if wholeGenome == True:
-        # in case we normalise given biases from OneD for example
-        if bias != False:
-            for cbin in binRange:
-                # cbin moves us to the position where interactions happened in our loci/s of interest
-                # ps will move us for all the other bins in the genome to look for interactions
-                for ps in range(0, totalBins):
-                    interVal = hic_data[cbin, ps] 
-                    if interVal != 0 and cbin != ps:
-                        interVal = interVal / bias[cbin] / bias[ps]
-                        if not np.isnan(interVal):
-                            interList[ps] += interVal
-        # if we normalise by frequency 
-        elif concatemersBin != False:
-            for cbin in binRange:
-                # cbin moves us to the position where interactions happened in our loci/s of interest
-                # ps will move us for all the other bins in the genome to look for interactions
-                for ps in range(0, totalBins):
-                    if hic_data[cbin, ps] != 0 and cbin != ps:
-                        divider = concatemersBin[cbin + positionAdjust] + \
-                                    concatemersBin[ps + positionAdjust] - \
-                                    hic_data[cbin, ps]
-                        interVal = hic_data[cbin, ps] / float(divider)
-                        interList[ps] += interVal
-        # if we use raw data             
-        else:
-            for cbin in binRange:
-                # cbin moves us to the position where interactions happened in our loci/s of interest
-                # ps will move us for all the other bins in the genome to look for interactions
-                for ps in range(0, totalBins):
-                    interVal = hic_data[cbin, ps]
-                    if interVal != 0 and cbin != ps:
-                        interList[ps] += interVal
-            
-                
-                
+        # is an iterator
+        interRange = chainxRange(xrange(0, chromBinBeg), 
+                                xrange(chromBinEnd+1, totalBins))
     else:
-        # in case we normalise given biases from OneD for example
-        if bias != False:
-            for cbin in binRange:
-                # cbin moves us to the position where interactions happened in our loci/s of interest
-                # ps will move us for all the other bins in the genome to look for interactions
-                for ps in range(chromBinBeg, chromBinEnd):
-                    interVal = hic_data[cbin, ps]
-                    if interVal != 0 and cbin != ps:
-                        interVal = interVal / bias[cbin] / bias[ps]
-                        if not np.isnan(interVal):
-                            interList[ps] += interVal
-                            
-        # if we normalise by frequency 
-        elif concatemersBin != False:
-            for cbin in binRange:
-                # cbin moves us to the position where interactions happened in our loci/s of interest
-                # ps will move us for all the other bins in the chromosome to look for interactions
-                for ps in range(chromBinBeg, chromBinEnd):
-                    if hic_data[cbin, ps] != 0 and cbin != ps:
-                        divider = concatemersBin[cbin + positionAdjust] + \
-                                concatemersBin[ps + positionAdjust] - \
-                                hic_data[cbin, ps]
-                        interVal = hic_data[cbin, ps] / float(divider)
-                        interList[ps] += interVal
-        # if we use raw data     
-        else:
-            for cbin in binRange:
-                # cbin moves us to the position where interactions happened in our loci/s of interest
-                # ps will move us for all the other bins in the chromosome to look for interactions
-                for ps in range(chromBinBeg, chromBinEnd):
-                    interVal = hic_data[cbin, ps]
-                    if interVal != 0 and cbin != ps:
-                        interList[ps] += interVal
-            
-                    
-                    
-    # create variable for cases when foucs bin do not interact at all
+        interRange = []
+
+    sstart = chromBinBeg
+    send = chromBinEnd
+
+    # taking into account type of comparison
+    # in case we normalise given biases from OneD for example
+    if bias != False:
+        normWay = normWayBias
+        extraToNorm = bias
+     # if we normalise by frequency 
+    elif concatemersBin != False:
+        normWay = normWayFreq
+        extraToNorm = concatemersBin
+    # if we use raw data             
+    else:
+        normWay = normWayRaw
+        extraToNorm = None
+    
+ 
+    for cbin in binRange:
+        # cbin moves us to the position where interactions happened in our loci/s of interest
+        # ps will move us for all the other bins in the genome to look for interactions
+        for ps in xrange(sstart, send):
+            interVal = hic_data[cbin, ps] 
+            if interVal != 0 and cbin != ps:
+                interVal = normWay(interVal, cbin, ps, 
+                        extraToNorm=extraToNorm, 
+                        positionAdjust=positionAdjust)
+                interList[ps] += interVal
+
+        for ps2 in interRange:
+            interVal = hic_data[cbin, ps] 
+            if interVal != 0 and cbin != ps:
+                interVal = normWay(interVal, cbin, ps, 
+                        extraToNorm=extraToNorm, 
+                        positionAdjust=positionAdjust)
+                interChromList[ps] += interVal
+
+    # create variable for cases when focus bin do not interact at all
     #this could happend in promoter capture HiC when a fragments spans at least 3 bins. In
     #this case it could be that the middle bind does not have any interaction at all because
     #the sequenced points are the borders of the restriction fragment
@@ -203,20 +204,27 @@ def getLocusWithGenomeIntTadbit(hic_data, resol, locusCh, regionStart, regionEnd
     for bi in binRange:
         if interList[bi] == 0 and hic_data[bi, bi] == 0:
             delFocus += [bi]
+    # in case we find them with interchrom
+    if wholeGenome == True:
+        reAd = []
+        for d in delFocus:
+            if interChromList[d] > 1:
+                print 'Bin %s just have inter chromosomal interactions' %d
+                reAd += [d]
+        delFocus = list(set(delFocus) - set(reAd))
             
     if len(delFocus) != 0:
-        message = 'Points removed from focus due to no interaction data '
-        if wholeGenome == True:
-            message += 'in the whole genome:\n %s' %delFocus
-        else:
-            message += 'in the whole chromosome:\n %s' %delFocus
+        message = 'Points removed from focus due to no interaction data, '
+        message += '%s' %delFocus
         print message
     
     # update binRange
     binRange = list(set(binRange) - set(delFocus))
     
-    
-    return interList, binRange
+    if wholeGenome == True:
+        return interList, binRange
+    else:
+        return interList, interChromList, binRange
 
 def getLocusWithGenomeIntMatrix(matriz1, resol, regionStart, regionEnd):
     '''
@@ -236,6 +244,7 @@ def getLocusWithGenomeIntMatrix(matriz1, resol, regionStart, regionEnd):
     :returns: A defaultdict with bins from the whole matrix as column
         and interactions floating or integer values
     '''
+    print 'THIS FUNCTION HASNT BIN UPDATED AS THE ONE USING TADBIT DATA'
     # If we provide a range
     if isinstance(regionStart, int):
         binBeg = regionStart / resol
@@ -326,6 +335,20 @@ def getNeighbourInteraction(data1, interList, locusCh, focus, dataType = 'matrix
     elif topMeasure == 'percentyle':
         computeRank = computeRankPerc
 
+    # taking into account type of comparison
+    # in case we normalise given biases from OneD for example
+    if bias != False:
+        normWay = normWayBias
+        extraToNorm = bias
+    # if we normalise by frequency 
+    elif concatemersBin != False:
+        normWay = normWayFreq
+        extraToNorm = concatemersBin
+    # if we use raw data             
+    else:
+        normWay = normWayRaw
+        extraToNorm = None
+
     # To check if an interactions is significant, we should see if the neighbour
     #bins also interact with the focus region, and/or if some of the other TOP interacting
     #bins also interact with it
@@ -352,66 +375,28 @@ def getNeighbourInteraction(data1, interList, locusCh, focus, dataType = 'matrix
     # Iterate over each one of the filtered bins
     if dataType == 'matrix':
         highPeaks = {}
-        # if freq normalise data
-        if concatemersBin != False:
-            for kPeak in sorted(list(thresKeys)):
-                highPeaks[kPeak] = {}
-                # Get new interaction limit for this bin
-                kLimit = computeRank([(inte / float(concatemersBin[kPeak + positionAdjust] + 
-                                                        concatemersBin[ni + positionAdjust] - 
-                                                        inte)) 
-                                        for ni, inte in enumerate(data1[kPeak]) if inte != 0], topRank)
 
-                newThres = thresKeys - set([kPeak])
-                # check interactions of this peak with the others
-                for nt in newThres:
-                    # we will get with what kPeak interacts above the thresshold, and could be
-                    #that the same thing interacts above the thresshold with kPeak, so later
-                    #on the edge would be included twice, but is ok. It will help us to discern
-                    #cases where binx has biny above thresshold but not the other way around
-                    val1 = (data1[kPeak][nt] / float(concatemersBin[kPeak + positionAdjust] + 
-                                                        concatemersBin[nt + positionAdjust] -
-                                                        data1[kPeak][nt]))
-                    if val1 > kLimit:
-                        highPeaks[kPeak][nt] = val1
-                           
-        elif bias != False:
-            for kPeak in sorted(list(thresKeys)):
-                highPeaks[kPeak] = {}
-                # Get new interaction limit for this bin
-                kLimit = computeRank([(inte / bias[ni] / bias[kPeak]) 
-                                        for ni, inte in enumerate(data1[kPeak]) 
-                                            if inte != 0], 
-                                       topRank)
+        for kPeak in sorted(list(thresKeys)):
+            highPeaks[kPeak] = {}
+            # Get new interaction limit for this bin
+            kLimit = computeRank([normWay(inte, kPeak, ni, extraToNorm=extraToNorm,
+                                            positionAdjust=positionAdjust)
+                                    for ni, inte in enumerate(data1[kPeak]) 
+                                        if inte != 0], topRank)
 
-                newThres = thresKeys - set([kPeak])
-                # check interactions of this peak with the others
-                for nt in newThres:
-                    # we will get with what kPeak interacts above the thresshold, and could be
-                    #that the same thing interacts above the thresshold with kPeak, so later
-                    #on the edge would be included twice, but is ok. It will help us to discern
-                    #cases where binx has biny above thresshold but not the other way around
-                    val1 = data1[kPeak][nt] / bias[kPeak] / bias[nt]
-                    if val1 > kLimit:
-                        highPeaks[kPeak][nt] = val1
-        # if raw data
-        else:
-            for kPeak in sorted(list(thresKeys)):
-                highPeaks[kPeak] = {}
-                # Get new interaction limit for this bin
-                kLimit = computeRank([inte for inte in data1[kPeak] 
-                                        if inte != 0], 
-                                        topRank)
-                newThres = thresKeys - set([kPeak])
-                # check interactions of this peak with the others
-                for nt in newThres:
-                    # we will get with what kPeak interacts above the thresshold, and could be
-                    #that the same thing interacts above the thresshold with kPeak, so later
-                    #on the edge would be included twice, but is ok. It will help us to discern
-                    #cases where binx has biny above thresshold but not the other way around
-                    if data1[kPeak][nt] > kLimit:
-                        highPeaks[kPeak][nt] = data1[kPeak][nt]
-            
+            newThres = thresKeys - set([kPeak])
+            # check interactions of this peak with the others
+            for nt in newThres:
+                # we will get with what kPeak interacts above the thresshold, and could be
+                #that the same thing interacts above the thresshold with kPeak, so later
+                #on the edge would be included twice, but is ok. It will help us to discern
+                #cases where binx has biny above thresshold but not the other way around
+                val1 = normWay(data1[kPeak][nt], kPeak, nt, 
+                                extraToNorm=extraToNorm,
+                                positionAdjust=positionAdjust)
+                
+                if val1 > kLimit:
+                    highPeaks[kPeak][nt] = val1    
                     
     elif dataType == 'tadbit':
         
@@ -420,7 +405,7 @@ def getNeighbourInteraction(data1, interList, locusCh, focus, dataType = 'matrix
             binBeg = data1.section_pos[locusCh][0]
             binEnd = data1.section_pos[locusCh][1]
         # If we want to go through the whole genome
-        elif wholeGenome == True:
+        elif wholeGenome != False:
             # Get maximum bin in our data
             maxBin = 0
             for c in data1.section_pos:
@@ -431,66 +416,29 @@ def getNeighbourInteraction(data1, interList, locusCh, focus, dataType = 'matrix
 
 
         highPeaks = {}
-        # if freq norm data
-        if concatemersBin != False:
-            for kPeak in sorted(list(thresKeys)):
-                highPeaks[kPeak] = {}
-                # Get new interaction limit for this bin
-                kLimit = computeRank([(data1[kPeak, i] / float(concatemersBin[kPeak + positionAdjust] + 
-                                                            concatemersBin[i + positionAdjust] - 
-                                                            data1[kPeak, i]))  
-                                        for i in range(binBeg, binEnd) 
-                                        if data1[kPeak, i] != 0], topRank)
-                newThres = thresKeys - set([kPeak])
-                # check interactions of this peak with the others
-                for nt in newThres:
-                    # we will get with what kPeak interacts above the thresshold, and could be
-                    #that the same thing interacts above the thresshold with kPeak, so later
-                    #on the edge would be included twice, but is ok. It will help us to discern
-                    #cases where binx has biny above thresshold but not the other way around
-                    val1 = (data1[kPeak,nt] / float(concatemersBin[kPeak + positionAdjust] + 
-                                                    concatemersBin[nt + positionAdjust] -
-                                                    data1[kPeak,nt]))
-                    if val1 > kLimit:
-                        highPeaks[kPeak][nt] = val1
-        
-        # if normalised by TADbit
-        elif bias != False:
-            for kPeak in sorted(list(thresKeys)):
-                highPeaks[kPeak] = {}
-                # Get new interaction limit for this bin
-                kLimit = computeRank([(data1[kPeak, i] / bias[kPeak] / bias[i])  
-                                        for i in range(binBeg, binEnd) 
-                                            if data1[kPeak, i] != 0], 
-                                        topRank)
-                newThres = thresKeys - set([kPeak])
-                # check interactions of this peak with the others
-                for nt in newThres:
-                    # we will get with what kPeak interacts above the thresshold, and could be
-                    #that the same thing interacts above the thresshold with kPeak, so later
-                    #on the edge would be included twice, but is ok. It will help us to discern
-                    #cases where binx has biny above thresshold but not the other way around
-                    val1 = data1[kPeak,nt] / bias[kPeak] / bias[nt]
-                    if val1 > kLimit:
-                        highPeaks[kPeak][nt] = val1
-                        
-        # if raw data
-        else:
-            for kPeak in sorted(list(thresKeys)):
-                highPeaks[kPeak] = {}
-                # Get new interaction limit for this bin
-                kLimit = computeRank([data1[kPeak, i]  for i in range(binBeg, binEnd) 
-                                        if data1[kPeak, i] != 0], topRank)
-                newThres = thresKeys - set([kPeak])
-                # check interactions of this peak with the others
-                for nt in newThres:
-                    # we will get with what kPeak interacts above the thresshold, and could be
-                    #that the same thing interacts above the thresshold with kPeak, so later
-                    #on the edge would be included twice, but is ok. It will help us to discern
-                    #cases where binx has biny above thresshold but not the other way around
-                    if data1[kPeak,nt] > kLimit:
-                        highPeaks[kPeak][nt] = data1[kPeak,nt]
 
+        for kPeak in sorted(list(thresKeys)):
+            highPeaks[kPeak] = {}
+            # Get new interaction limit for this bin
+            kLimit = computeRank([normWay(data1[kPeak, ni], kPeak, ni, 
+                                            extraToNorm=extraToNorm,
+                                            positionAdjust=positionAdjust)
+                                    for ni in range(binBeg, binEnd)  
+                                      if data1[kPeak, ni] != 0], topRank)
+
+            newThres = thresKeys - set([kPeak])
+            # check interactions of this peak with the others
+            for nt in newThres:
+                # we will get with what kPeak interacts above the thresshold, and could be
+                #that the same thing interacts above the thresshold with kPeak, so later
+                #on the edge would be included twice, but is ok. It will help us to discern
+                #cases where binx has biny above thresshold but not the other way around
+                val1 = normWay(data1[kPeak,nt], kPeak, nt, extraToNorm=extraToNorm,
+                                positionAdjust=positionAdjust)
+                
+                if val1 > kLimit:
+                    highPeaks[kPeak][nt] = val1
+        
     ## Generate a list with all the interactions that passed the filtering
     edgeList = []
     for k in highPeaks.keys():
