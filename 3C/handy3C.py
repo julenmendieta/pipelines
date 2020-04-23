@@ -409,7 +409,7 @@ def tadbitPeaksInterC(data1, thresKeys, computeRank,
 
         
         ## lets go interChrom
-        thresSelect = set(chainxRange([thresChroms[se] 
+        thresSelect = set(chainxRangeNested([thresChroms[se] 
                                     for se in thresChroms.keys()
                                         if se != chrom]))
         thresSelect = thresSelect.union(checkInterTo)
