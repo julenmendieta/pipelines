@@ -330,10 +330,111 @@ def tadbitPeaks(data1, thresKeys, computeRank,
     
     return highPeaks
 
+def chainxRangeNested(*iterables):
+    # chain('ABC', 'DEF') --> A B C D E F
+    for iterab in iterables:
+        for it in iterab:
+            for element in it:
+                yield element
+
+def filterHighPeaks(highPeaks, interkeys, thresSelect, sections,  
+                        data1, kPeak, topRank, computeRank, 
+                        normWay, extraToNorm, positionAdjust):
+    # get just bins from other chromosomes
+    range1 = chainxRangeNested(xrange(sections[interk][0],
+                                        sections[interk][1]) 
+                                for interk in interkeys)
+
+    # Get new interaction limit for this bin
+    kLimitInter = computeRank([normWay(data1[kPeak, ni], kPeak, ni, 
+                                    extraToNorm=extraToNorm,
+                                    positionAdjust=positionAdjust)
+                            for ni in range1  
+                                if data1[kPeak, ni] != 0], topRank)
+    if kLimitInter != None:
+        newThres = thresSelect - set([kPeak])
+        # check interactions of this peak with the others
+        for nt in newThres:
+            # we will get with what kPeak interacts above the thresshold, and could be
+            #that the same thing interacts above the thresshold with kPeak, so later
+            #on the edge would be included twice, but is ok. It will help us to discern
+            #cases where binx has biny above thresshold but not the other way around
+            val1 = normWay(data1[kPeak,nt], kPeak, nt, extraToNorm=extraToNorm,
+                            positionAdjust=positionAdjust)
+            
+            if val1 > kLimitInter:
+                highPeaks[kPeak][nt] = val1
+    return highPeaks
+
+def tadbitPeaksInterC(data1, thresKeys, computeRank, 
+                normWay, extraToNorm,
+                positionAdjust, topRank,
+                sections=None, checkInterTo=set()):
+    '''
+    Param set() checkInterTo: set with bin positions
+        with wich we want to check if our selected bins 
+        (thresKeys) interact with. Usually will be the
+        top interactions that passsed the filtering 
+        for intrachromosomal interactions with focus
+        point
+    '''
+    highPeaks = defaultdict(dict)
+    # separate thresKeys according to chromosome location
+    thresChroms = defaultdict(list)
+    for thre in thresKeys:
+        for se in sections:
+            if sections[se][0] <= thre < sections[se][1]:
+                thresChroms[se.split('_')[0]] += [thre]
+
+    # convert to list if generator
+    #if type(range1) != xrange:
+    #    range1 = list(range1)
+    for kPeak in sorted(list(thresKeys)):
+        # will have to get interchrom and intrachrom limits
+        # First get chromosome position
+        for se in sections:
+            if sections[se][0] <= kPeak < sections[se][1]:
+                # will take into account the alternate haplotypes
+                chrom = se.split('_')[0]
+        # then get according inter and intraChrom ranges
+        intrakeys = []
+        interkeys = []
+        for se in sections:
+            if se == chrom or '%s_' %chrom in se:
+                intrakeys.append(se)
+                
+            else:
+                interkeys.append(se)
+        
+
+        
+        ## lets go interChrom
+        thresSelect = set(chainxRange([thresChroms[se] 
+                                    for se in thresChroms.keys()
+                                        if se != chrom]))
+        thresSelect = thresSelect.union(checkInterTo)
+
+        highPeaks = filterHighPeaks(highPeaks, interkeys, 
+                                    thresSelect, sections,  
+                                data1, kPeak, topRank, computeRank, 
+                                normWay, extraToNorm, positionAdjust)
+
+        ## lets go intraChrom
+        thresSelect = set(thresChroms[chrom])
+
+        highPeaks = filterHighPeaks(highPeaks, intrakeys, 
+                                    thresSelect, sections,  
+                                data1, kPeak, topRank, computeRank, 
+                                normWay, extraToNorm, positionAdjust)
+
+
+    return highPeaks
+
 def getNeighbourInteraction(data1, interList, locusCh, focus, dataType = 'matrix', 
                             topRank = 95, wholeGenome=False, interChromList={},
                             concatemersBin=False, topRankInterC = None,
-                            bias=False, positionAdjust=0, topMeasure='percentyle'):
+                            bias=False, positionAdjust=0, topMeasure='percentyle',
+                            checkInterTo=True):
     '''
     :param data1: List of lists (dataType='matrix') or hic_data object (dataType='tadbit')
         with interaction data
@@ -362,6 +463,9 @@ def getNeighbourInteraction(data1, interList, locusCh, focus, dataType = 'matrix
         dependent of coverage
     :param None topRankInterC: topRank value for interchromosomal interactions.
         If no given and wholeGenome==True, will use same as topRank
+    :param True checkInterTo: Set to True if you want to check for top interactions
+        between the interChromosomal tops, and the intraChromosomal tops from
+        the focus
     
     '''
 
@@ -466,13 +570,20 @@ def getNeighbourInteraction(data1, interList, locusCh, focus, dataType = 'matrix
             # Obtain number of cells in our data
             binBeg = 0
             totalBins = maxBin # Dont need to ad +1 because last value does not exist, is to count all in range
-            interRange = chainxRange(xrange(binBeg, chromBinBeg), 
-                                xrange(chromBinEnd+1, totalBins))
+            #interRange = chainxRange(xrange(binBeg, chromBinBeg), 
+            #                    xrange(chromBinEnd+1, totalBins))
             
+            # check for intraChrom vs interChrom coherence
+            if checkInterTo == True:
+                checkInterTo = thresKeys
+            else:
+                checkInterTo = set()
             # get interChromosomal peaks
-            highPeaksInter = tadbitPeaks(data1, thresKeysInter, computeRank, 
+            highPeaksInter = tadbitPeaksInterC(data1, thresKeysInter, computeRank, 
                                         normWay, extraToNorm,
-                                        positionAdjust, interRange, topRankInterC)
+                                        positionAdjust, topRankInterC,
+                                        sections=data1.section_pos,
+                                        checkInterTo=checkInterTo)
 
             ## Generate a list with all the interactions that passed the filtering
             edgeListInter = []
