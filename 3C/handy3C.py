@@ -143,24 +143,22 @@ def getLocusWithGenomeIntTadbit(hic_data, resol, locusCh, regionStart, regionEnd
     interList = defaultdict(int)
     interChromList = defaultdict(int)
 
-    # Get maximum bin in our data
-    maxBin = 0
-    for c in hic_data.section_pos:
-        maxBin = max(maxBin, hic_data.section_pos[c][1])
-    # Obtain number of cells in our data
-    nCells = maxBin**2
-    totalBins = maxBin # Dont need to ad +1 because last value does not exist, is to count all in range
-
-    # set search start and end in case of whole genome search
-    if wholeGenome == True:
-        # is an iterator
-        interRange = chainxRange(xrange(0, chromBinBeg), 
-                                xrange(chromBinEnd, totalBins))
-    else:
+    
+    # get chromosome labels in our dataset and discriminate
+    #inter or intra chromosome
+    sections = hic_data.section_pos
+    intrakeys = []
+    interkeys = []
+    for se in sections:
+        if se == locusCh or '%s_' %locusCh in se:
+            intrakeys.append(se)
+            
+        else:
+            interkeys.append(se)
+    # set search start and end in case of whole genome False
+    if wholeGenome != True:
         interRange = []
 
-    sstart = chromBinBeg
-    send = chromBinEnd
 
     # taking into account type of comparison
     # in case we normalise given biases from OneD for example
@@ -178,9 +176,19 @@ def getLocusWithGenomeIntTadbit(hic_data, resol, locusCh, regionStart, regionEnd
     
  
     for cbin in binRange:
+        # set search start and end in case of whole genome search
+        if wholeGenome == True:
+            # is an iterator, so just one use but much faster than
+            #creating a list
+            interRange = chainxRangeNested(xrange(sections[interk][0],
+                                        sections[interk][1]) 
+                                for interk in interkeys)
+        intraRange = chainxRangeNested(xrange(sections[interk][0],
+                                        sections[interk][1]) 
+                                for interk in intrakeys)
         # cbin moves us to the position where interactions happened in our loci/s of interest
         # ps will move us for all the other bins in the genome to look for interactions
-        for ps in xrange(sstart, send):
+        for ps in intraRange:
             interVal = hic_data[cbin, ps] 
             if interVal != 0 and cbin != ps:
                 interVal = normWay(interVal, cbin, ps, 
