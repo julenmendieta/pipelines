@@ -560,18 +560,39 @@ def convertRGB(value):
     return [i/255.0 for i in value]
 def plotearStatsBoth(indirs, clust, marksAll, marksBar, regionStart, regionEnd, resol, rotation=90,
                  title='', titleSize = 20, figsize = (20, 10), diff=0, propor=[4], radius="?",
-                 fromOri = 0, fromEnd = 0):
+                 fromOri = 0, fromEnd = 0, colors=False):
     fontSize = 15
     # propor is the proportion of size for normal plots against grey bar info plots
     # marksAll is to add the marks in all the plots, and MarksBar is to add marks just in the
     #top bar (is a list of lists)
-    xa,ya,eMa,ePa,da=GetXYA(indirs[0] + 'accessibility.cluster%s.dat' %clust,diff=diff)
-    xc,yc=GetXY(indirs[0] + 'consistency.cluster%s.dat' %clust,diff=diff)
-    xi,yi,eMi,ePi,di=GetXY_smooth4(indirs[0] + 'interactionscluster%s.dat' %clust,diff=diff)
-
-    xa2,ya2,eMa2,ePa2,da2=GetXYA(indirs[1] + 'accessibility.cluster%s.dat' %clust,diff=diff)
-    xc2,yc2=GetXY(indirs[1] + 'consistency.cluster%s.dat' %clust,diff=diff)
-    xi2,yi2,eMi2,ePi2,di2=GetXY_smooth4(indirs[1] + 'interactionscluster%s.dat' %clust,diff=diff)
+    xas = []
+    yas = []
+    eMas = []
+    ePas = []
+    das = []
+    xcs = []
+    ycs = []
+    xis = []
+    yis = []
+    eMis = []
+    ePis = []
+    dis = []
+    for ni, indi in enumerate(indirs):
+        xa,ya,eMa,ePa,da=GetXYA(indirs[ni] + 'accessibility.cluster%s.dat' %clust,diff=diff)
+        xc,yc=GetXY(indirs[ni] + 'consistency.cluster%s.dat' %clust,diff=diff)
+        xi,yi,eMi,ePi,di=GetXY_smooth4(indirs[ni] + 'interactionscluster%s.dat' %clust,diff=diff)
+        xas += [copy.copy(xa)]
+        yas += [copy.copy(ya)]
+        eMas += [copy.copy(eMa)]
+        ePas += [copy.copy(ePa)]
+        das += [copy.copy(da)]
+        xcs += [copy.copy(xc)]
+        ycs += [copy.copy(yc)]
+        xis += [copy.copy(xi)]
+        yis += [copy.copy(yi)]
+        eMis += [copy.copy(eMi)]
+        ePis += [copy.copy(ePi)]
+        dis += [copy.copy(di)]
 
     nplot = len(marksBar) + 3 #we alway have 3 plots at least
     #f, (ax3, ax1, ax2, ax5) = plt.subplots(4, sharex=True, sharey=False,figsize=figsize)
@@ -582,17 +603,20 @@ def plotearStatsBoth(indirs, clust, marksAll, marksBar, regionStart, regionEnd, 
     #f.tick_params(axis='both', which='minor', labelsize=8)
     #gs1 = gridspec.GridSpec(figsize[0], figsize[1])
     #gs1.update(wspace=0.025, hspace=0.05)
-    color1 = convertRGB([84,39,136])
-    color2 = convertRGB([179,88,6])
-    allAxis[-3].plot(xc, yc,'-', color = color1, lw=1.75)
-    allAxis[-3].plot(xc2, yc2,'-', color = color2, lw=1.75)
+    if colors == False:
+        colors = [(120,94,240), (220,38,127), (254,97,0)]
+    colors2 = []
+    for c in colors:
+        colors2.append(convertRGB(c))
+    for ni, indi in enumerate(indirs):
+        allAxis[-3].plot(xcs[ni], ycs[ni],'-', color = colors2[ni], lw=1.75)
     allAxis[-3].set_title('Consistency per particle', fontsize=fontSize)
     #allAxis[-3].axhline(y=np.mean(yc),c="blue")#,linewidth=0.2)
     allAxis[-3].set_ylabel("Consistency %",rotation=rotation, fontsize=fontSize)
     allAxis[-3].set_ylim(0, 100)
 
-    allAxis[-2].plot(xa, ya,'-', color = color1, lw=1.75)
-    allAxis[-2].plot(xa2, ya2,'-', color = color2, lw=1.75)
+    for ni, indi in enumerate(indirs):
+        allAxis[-2].plot(xas[ni], yas[ni],'-', color = colors2[ni], lw=1.75)
     allAxis[-2].set_title('Accessibility per particle', fontsize=fontSize)
     #allAxis[-2].axhline(y=np.mean(np.nan_to_num(ya)),c="blue")#,linewidth=0.2)
     allAxis[-2].set_ylabel("Accessibility" ,rotation=rotation,multialignment='center',
@@ -600,8 +624,8 @@ def plotearStatsBoth(indirs, clust, marksAll, marksBar, regionStart, regionEnd, 
     #allAxis[-2].fill_between(xa,eMa,ePa,alpha=0.5, edgecolor='#bebebe', facecolor='#bebebe' )
     allAxis[-2].set_ylim(0, 100)
 
-    allAxis[-1].plot(xi, yi,'-', color = color1, lw=1.75)
-    allAxis[-1].plot(xi2, yi2,'-', color = color2, lw=1.75)
+    for ni, indi in enumerate(indirs):
+        allAxis[-1].plot(xis[ni], yis[ni],'-', color = colors2[ni], lw=1.75)
     allAxis[-1].set_title('Contacts within sphere per particle', fontsize=fontSize)
     allAxis[-1].set_ylabel("Number of contact",rotation=rotation, multialignment='center',
                           fontsize=fontSize)
