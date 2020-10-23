@@ -273,7 +273,7 @@ or you might get no reads'
 
         ## modify if we want data from all genome
         # Get all the fragments that start inside this coordinates
-        keys = [k for k in concatemers.keys() if (regionStart <= 
+        keys = [k for k in interPerBin.keys() if (regionStart <= 
                                                             k <= 
                                                             regionEnd)]
         regInterPerBin = defaultdict(int)
