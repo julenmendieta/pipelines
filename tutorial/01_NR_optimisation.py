@@ -8,10 +8,13 @@ import os, errno
 import shutil
 import random
 
-def PCHiC_filtering(exp):
+def PCHiC_filtering(exp, index=0):
     zeros = {}
     for i in range(exp.size):
-        if sum(exp.norm[0][i,j] for j in range(exp.size)) == 0:
+        lineAdd = 0
+        for j in xrange(exp.size):
+            lineAdd += exp.norm[index]['matrix'].get(i * exp.size + j, 0)
+        if lineAdd == 0:
             zeros[i] = 0
     exp._zeros = [zeros]
 
