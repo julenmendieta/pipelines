@@ -9,11 +9,11 @@ import shutil
 import random
 
 def PCHiC_filtering(exp):
-	zeros = {}
+    zeros = {}
     for i in range(exp.size):
         if sum(exp.norm[0][i,j] for j in range(exp.size)) == 0:
-			zeros[i] = 0
-	exp._zeros = [zeros]
+            zeros[i] = 0
+    exp._zeros = [zeros]
 
 def cToDot(text):
     newText = ''
