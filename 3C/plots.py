@@ -1111,3 +1111,814 @@ grey=interction filtered' %(percentaje, filterDgrRatio, tag))
         if outPath != False:
             pdf.close()
             
+
+def getMatrixOrder(histdict, method='ward', metric='euclidean'):
+    marks = sorted(histdict.keys())
+    # get data in matrix format
+    matrix = [[histdict[mark][k] for mark in marks ]for k in sorted(histdict[marks[0]].keys())]
+    # normalize all columns by zscore values
+    matrix = zscore(matrix, axis=0)
+    #matrix = zip(*[[(v/float(sum(m))) if sum(m) else 0 for v in m] for m in zip(*matrix)])
+    #matrix = np.array(matrix)
+    
+    # transpose matrix to get column clusters
+    matrix2 = np.matrix.transpose(np.array(matrix))
+
+
+    # Cluster it
+    Y = sch.linkage(matrix2, method=method, metric=metric)
+    Z2 = sch.dendrogram(Y, no_plot=True)
+    markOrder = Z2['leaves']
+    
+    # return clustering order
+    return markOrder
+
+def squarePlot(histdict, region, title = '', prevOrder='', saveFig = True, minMax = "", zscore = False):
+    # Generate some variables we will need
+    marks = sorted(histdict.keys())
+    nmark = len(marks)
+    
+    # get title
+    if title == '':
+        title = 'Marker intensities'
+        
+    # get data in matrix format
+    matrix = [[histdict[mark][k] for mark in marks ]for k in sorted(histdict[marks[0]].keys())]
+    if zscore == True:
+        # normalize all columns by zscore values
+        matrix = zscore(matrix, axis=0)
+    #matrix = zip(*[[(v/float(sum(m))) if sum(m) else 0 for v in m] for m in zip(*matrix)])
+    else:
+        matrix = np.array(matrix)
+    
+    if prevOrder == '':
+        markOrder = range(nmark)
+        
+    else:
+        markOrder = prevOrder
+    matrix = matrix[:,markOrder]
+
+    # set colorbar limits
+    mini = 100
+    maxi = 0
+    for i in matrix:
+        for ii in i:
+            mini = min(mini, ii)
+            maxi = max(maxi, ii)
+    colorLim = max(abs(mini), abs(maxi))
+    colorLim = [-colorLim, colorLim]
+    # check if there are given ones and are bigger
+    if minMax != '':
+        if (minMax[0] > colorLim[0]) or (minMax[1] < colorLim[1]):
+            print 'There are values smaller/bigger than the provided range'
+            print 'Default range will be used'
+        
+        # Just using the given values limit for asiggning color
+        else:
+            colorLim = minMax
+
+    
+
+    fig = plt.figure(figsize=(20, 10))
+    plt.imshow(matrix, 
+               cmap = "RdBu_r", aspect='auto', interpolation='none', origin='lower', 
+               vmin=colorLim[0], vmax=colorLim[1])
+    plt.xticks(range(nmark), [marks[i] for i in markOrder])
+    plt.colorbar()
+
+    
+    # Add y labels tick
+    ylabels = [int(i) for i in sorted(histdict[marks[0]].keys())]
+    plt.yticks(range(len(ylabels)), ylabels)
+
+    # Add labels
+    plt.ylabel("Distance from center (nm)")
+    plt.xlabel("ChIP mark Zscore")
+    plt.title('%s to perifery in %s\n' %(title, region), size=20)
+    
+    
+    #plt.colorbar(boundaries=np.linspace(-colorLim,colorLim,20))
+    if saveFig == True:
+        pdf.savefig( fig, bbox_inches='tight')
+    plt.show()
+    
+
+    
+# Newer version
+def radialPlot(histdict, region, valRange, markOrder='', timesEach=7, nylabels=10, 
+               title='', saveFig=True, minMax = "", oneCheese=False, color='RdBu_r',
+               unEqualRadi = False, colorTrend='bimodal', fixedMinMax=False):
+    
+
+    '''
+    Plot radial matrix with given data from selected point of the model outwards it
+    :param histdict: Dictionary with two leves. First the data to separate into plot portions,
+        second the value asociated to each radius in the plot
+    :param nmark: Number of keys we have in the first level of histdict
+    :param bins: Number of distance chunks we have (number of keys in the second level of histdict)
+    :param valRange: Value ranges analyzed from start point to end point
+    :param fixedMinMax: Wether the function can look for a range that contains or values (False), or 
+        the range given in minMax cannot be changed (True)
+    '''
+
+    # Generate some variables we will need
+    if oneCheese == False:
+        marks = sorted(histdict.keys())
+        nmark = len(marks)
+        # Need to add one value more to bin so we see all data
+        bins = len(histdict[marks[0]].keys()) + 1
+    else:
+        marks = ['']
+        nmark = 1
+        # Need to add one value more to bin so we see all data
+        bins = len(histdict.keys()) + 1
+
+
+
+    # get title
+    if title == '':
+        title = 'Marker intensities'
+    # Generate some data...
+    # Note that all of these are _2D_ arrays, so that we can use meshgrid
+    # You'll need to "grid" your data to use pcolormesh if it's un-ordered points
+    # theta es el angulo y r es la distancia en 'radio' a la que esta cada sub circunferencia
+    portions = nmark * timesEach + 1
+    theta, r = np.mgrid[0:2*np.pi:portions+0j, 0:1:bins+0j]
+    z = np.random.random(theta.size).reshape(theta.shape)
+    # Por algun motivo la ultima lista que se mete en pcolormesh no aparece, asi que hay q darle indices +1
+    #aunque no existan
+    # Lo mismo pasa cuando mira cuantos radios tiene cada quesito, siempre tendra en cuenta como que hay uno mas
+    zs = []
+
+    # If we are dealing with radius with different sizes
+    if unEqualRadi == True:
+        r = []
+        for i in range(portions):
+            r.append([v / valRange[-1] for v in valRange])
+        r = np.array(r)
+
+    # get new marks order
+    if oneCheese == False:
+        if markOrder != '':
+            newMarks = [marks[i] for i in markOrder]
+        else:
+            newMarks = [marks[i] for i in range(nmark)]
+        for n in range(nmark):
+            values = [histdict[newMarks[n]][i] for i in sorted(histdict[newMarks[n]].keys())]
+            for i in range(timesEach):
+                zs.append(values)
+    else:
+        newMarks = ''
+        values = [histdict[i] for i in sorted(histdict.keys())]
+        for i in range(timesEach):
+            zs.append(values)
+    
+
+
+
+
+
+    fig, ax2 = plt.subplots(ncols=1, subplot_kw=dict(projection='polar'), figsize=(10,10))
+    #fig = plt.figure(figsize=(10,10))
+    #plt.polar()
+    
+    infinites = []
+    # Take color limit 
+    if fixedMinMax == False:
+        for n in range(0, (nmark * timesEach), timesEach):
+            if sum(zs[n]) != 0:
+                ## set colorbar limits
+                # keep track of infinites
+                for iz, z in enumerate(zs[n]):
+                    if z ==  float('Inf') or z ==  float('-Inf'):
+                        infinites.append([n, iz])
+                # Find extrem values for color ranges
+                mini = min([z for z in zs[n] if (z !=  float('Inf') and z !=  float('-Inf'))])
+                maxi = max([z for z in zs[n] if (z !=  float('Inf') and z !=  float('-Inf'))])
+                colorLim = max(abs(mini), abs(maxi))
+                colorLim = [-colorLim, colorLim]
+                # check if there are given ones and are bigger
+                if minMax != '':
+                    if (minMax[0] > colorLim[0]) or (minMax[1] < colorLim[1]):
+                        print 'There are values smaller/bigger than the provided range'
+                        print 'Default range will be used'
+                        minMax = colorLim
+                        #print colorLim
+                    # Just using the given values limit for asiggning color
+                    else:
+                        colorLim = minMax
+            else:
+                colorLim = minMax
+    else:
+        colorLim = minMax
+    if colorTrend == 'unimodal':
+        colorLim[0] = 0     
+    for n in range(0, (nmark * timesEach), timesEach):
+        #if sum(zs[n]) != 0:
+        ## Plot cheese
+        plt.pcolormesh(theta[n:n+timesEach+1], r[n:n+timesEach+1], zs[n:n+timesEach], 
+                       cmap=color, vmin=colorLim[0], vmax=colorLim[1], edgecolors='face')
+                       #cmap=colors[n/timesEach], )
+        ## Add vertical line separating portions
+        plt.axvline(x=theta[n][0], color='black', alpha=0.3, linestyle='--')
+
+    # If there is an infinite value we add an asterisk
+    #print infinites
+    #for infi in infinites:
+    #    plt.plot((theta[infi[0]][0] + theta[infi[0] + timesEach][0])/2, 
+    #             (r[0][infi[1]] + r[0][infi[1] + 1])/2, 
+    #             '*', c = 'white', markersize = 20)
+    #plt.plot(0.5178449428994164, 0.25, '*', c='white', markersize = 20)
+    ## Add labels
+    # get position for x labels
+    angles = [i[0] for i in theta]
+    # we should put the label more or less in the middle portion
+    labpos = timesEach / 2
+    angles = [ angles[n + labpos] for n in range(0, len(angles) - 1, timesEach)]
+    # Add x labels  
+    plt.xticks(angles, newMarks)
+
+
+    #ax2.set_ylim([0, 1])
+
+    ## Add y tick values
+    # we remove the starting point from valRAnge
+    #valRange = valRange[1:]
+    # we need to create a range from 0 to one with same numbers as our bins
+    if unEqualRadi == True:
+        binrange = r[0][1:]
+        # The plot will for sure have too many divisions
+        fibonacci_numbers = [0, 1]
+        for i in range(2,len(binrange) + 3):
+            fibonacci_numbers.append(fibonacci_numbers[i-1]+fibonacci_numbers[i-2])
+        # sacrilegious change
+        fibonacci_numbers[3] = 0
+        fibonacci_numbers[4] = 2
+        binrangePos = [i for i in fibonacci_numbers[3:] if i <= len(binrange)]
+        valRangeS = [int(valRange[1:][i]) if i in binrangePos else '' for i in range(0, len(valRange[1:]))]
+        plt.yticks(binrange, valRangeS)
+        alpha=0.3
+    else:
+        nytics = bins
+        binrange = np.linspace(0,1,nytics,endpoint=True)[1:]
+        # If the plot has to many divisions we need to show just a few axis
+        steps = (bins / nylabels) + 1
+        if bins > nylabels :
+            binrangePos = [i for i in range(0, len(binrange), steps)]
+            #binrangeS = [binrange[i] if i in binrangePos else '' for i in range(0, len(binrange))]
+            valRangeS = [int(valRange[1:][i]) if i in binrangePos else '' for i in range(0, len(valRange[1:]))]
+            plt.yticks(binrange, valRangeS)
+        # If there are just a few divisions we just use the range values to delimitate y axis
+        else:
+            plt.yticks(binrange, valRange[1:])
+        # transparency for radius lines
+        alpha=0.3
+
+
+
+    # Add LINES if we dont have to many divisions
+    if len(valRange) < 100:
+        plt.grid(axis='y', linestyle='--', linewidth=1, alpha=alpha)
+
+    # Add colorbar
+    if colorTrend == 'bimodal':
+        cbar = plt.colorbar(ticks=[colorLim[0], 0, colorLim[1]], orientation='vertical', fraction=0.040, pad=0.15)
+    else:
+        cbar = plt.colorbar(ticks=[colorLim[0], colorLim[1]], orientation='vertical', fraction=0.040, pad=0.15)
+    #cbar.ax.set_yticklabels(['Low', 'Average', 'High'])  # horizontal colorbar
+
+    
+    # title etc
+    plt.title('%s to perifery in %s\n\n' %(title, region), size=20)
+
+    # move positions of y labels
+    if oneCheese == True:
+        ax2.set_rlabel_position(90)
+
+    
+    if saveFig == True:
+        pdf.savefig( fig, bbox_inches='tight')
+    plt.show()
+
+    return colorLim, infinites
+    
+# Function to know if we are dealing with a NaN
+# works because NaN isn't equal to anything, even itself
+def isNaN(num):
+    return num != num
+    
+    
+# Function to load coverage files info and stats
+def covLoading(covFiles, regiones, resol, discrete=False):
+    '''
+    param False discrete: False if you want actual values, or threshold if you want
+        0 if smaller or 1 if greater or equal
+    '''
+
+    notPresent = set()
+    # Load files coverage
+    covDict = {}
+    for regi in regiones:
+        covDict[regi] = {}
+        for cfi in covFiles:
+            marker = cfi.split('/')[-1].split('_')[0]
+            marker = marker.replace('.', '')
+            covDict[regi][marker] = []
+        
+            with open(cfi, 'r') as f:
+                for line in f:
+                    line = line.rstrip().split('\t')
+                    # in line[0] we would have region id
+                    if line[0] in covDict[regi][marker]:
+                        if discrete == False:
+                            covDict[regi][marker].append(float(line[1]))
+
+                        else:
+                            if float(line[1]) < discrete:
+                                covDict[regi][marker].append(0)
+                            else:
+                                covDict[regi][marker].append(1)
+                    else:
+                        # just in case we want too see regions we havent add to analysis
+                        notPresent.add(line[0])
+    marks = sorted(covDict[regi].keys())         
+    nmark = len(marks)
+
+    # Check if region length is ok
+    for regi in covDict.keys():
+        for m in marks:
+            reg = regiones[regi]
+            regionStart = reg[1]
+            regionEnd = reg[2]
+            longi = ((regionEnd - regionStart) / resol) + 1
+            if len(covDict[regi][m]) != longi:
+                difference = len(covDict[regi][m]) - longi
+                print 'Region %s has %s more/less positions in file %s' \
+                %(regi, difference, m)
+                # If more in file, we remove from the end #### CHANGE WHEN CORRECT FILES ###
+                exit()
+    # get coverage total average and standar deviation
+    statsCov = {}
+    for regi in covDict.keys():
+        statsCov[regi] = {}
+        for m in marks:
+            # get total average
+            statsCov[regi][m] = {'tAvg': np.mean(covDict[regi][m]), 'tSD':np.std(covDict[regi][m])}
+
+    return covDict, statsCov, marks, nmark
+
+
+def center_of_mass(self):
+    """
+    Gives the center of mass of a model
+
+    :returns: the center of mass of a given model
+    """
+    r_x = sum(self['x'])/len(self)
+    r_y = sum(self['y'])/len(self)
+    r_z = sum(self['z'])/len(self)
+    return dict((('x', r_x), ('y', r_y), ('z', r_z)))
+
+def getBinDistribution(cdistDict, mini, modelRadius, resThres, listOfBins = '', 
+                       maxRadi=False, groupBy = 'binNumber'):
+
+    '''
+    groupBy str 'binNumber': Options are 'binNumber' and 'density'
+    '''
+    # dictionary to show bins distribution
+    binsDistdic = {}
+
+    if listOfBins == '':
+        listOfBins = cdistDict.keys()
+        binsRep = Counter(listOfBins)
+    else:
+        binsRep = Counter(listOfBins)
+        
+    # get mean and std
+    mean = np.mean(binsRep.values())
+    std = np.std(binsRep.values())
+        
+    # compute model radius
+    maximumDistance = resThres * (int(modelRadius/resThres) + 1)
+    # Need to create this one in tha Density case to avoid white areas at the end
+    maximumDistanceDensi = round(modelRadius + 1)
+    valRange = range(0, int(maximumDistance) + 1, int(resThres))
+    # set the limit of our search diameter
+    if maxRadi == False:
+        maxRadi2 = maximumDistance
+        maxRadi2Densi = maximumDistanceDensi
+    else:
+        maxRadi2 = maxRadi
+        maxRadi2Densi = maxRadi
+
+    # If groupBy != 'density' we set valRangeTrimmed, otherwise will ve overwriten
+    valRangeTrimmed = [i for i in valRange if i <= maxRadi2]
+    if groupBy == 'density':
+        # First of all we modify maximumDistance so its real
+        valRangeTrimmed = [0]
+        # get list with all cut sites
+        # Since distances are from center of bin, we need to ad a radius of a bin
+        #modelDiameter += resThres/2 ### !!!!!!!!! NO LO VEO NECESARIO
+
+        # Now we need to compute de volume of the first sphere (with r equal to 
+        #bin radius)
+        firstVolume = (4 * np.pi * (resThres)**3) / 3
+        valRangeTrimmed.append(resThres)
+        # With info of the first volume we can multiply it for each radius in the plot
+        #to obatain the distance for the next radius
+        n = 2
+        nextRadi = round((((n * firstVolume) * 3) / (4 * np.pi))**(1./3))
+        # ULTIMO CAMBIO DE < A <=
+        while nextRadi <= maxRadi2Densi:
+            valRangeTrimmed.append(nextRadi)
+            # Find in next radius away
+            n += 1
+            nextRadi = round((((n * firstVolume) * 3) / (4 * np.pi))**(1./3))
+
+
+        # create the valrange we use to store distance data
+        valRange = list(sorted(set(valRangeTrimmed + [round(modelRadius) + 1])))
+        #print valRange
+        # we create the value ranges we have prepared
+        for mrange in valRange[1:]:
+            #mrange = np.mean([v, valRange[nv + 1]])
+            binsDistdic[mrange] = []
+
+            
+        # for each bin in our model for all values
+        for nbin in listOfBins:
+            for nb in cdistDict[nbin]:
+                # we check between which range positions should our value be located and add it
+                pos = [n+1 for n, va in enumerate(valRange) if va <= nb < valRange[n+1]][0]
+                mrange = valRange[pos]
+
+                binsDistdic[mrange].append(binsRep[nbin])
+
+                # Add values to the continuous list (not binned)
+                # Is a defaultdict, so if value doesnt exist is the same, will add it
+                #histdictContinuous[k][nb] += covDict[k][region][nbin]
+
+           
+    # We adjust valRange and maxRadi so the last one points to the range value locating the limit
+    #maxRadi2 = maxRadi2 - ((valRange[1] - valRange[0]) / 2)
+    #print valRange
+    else:
+        
+        # we create the value ranges we have prepared
+        for nv, v in enumerate(valRange[:-1]):
+            #mrange = np.mean([v, valRange[nv + 1]])
+            mrange = valRange[nv + 1]
+            binsDistdic[mrange] = []
+            
+        # for each bin in our model for all values
+        for nbin in listOfBins:
+            for nb in cdistDict[nbin]:
+                # we check between which range positions should our value be located and add it
+                # if we substract the ranging starting point to our value and divide it by the range
+                #length we get the position in valRange where our value is located
+                pos = int((nb - int(mini)) / (valRange[1] - valRange[0]))
+                mrange = valRange[pos + 1]
+                #mrange = np.mean([valRange[pos], valRange[pos + 1]])
+
+                binsDistdic[mrange].append(binsRep[nbin])
+
+
+    # If there is a maximum distance set from the point of interest we romeve the ranges above
+    if maxRadi != False:
+        for di in binsDistdic.keys():
+            if di > maxRadi2:
+                del binsDistdic[di]
+  
+
+
+
+    # Normalize data 
+    for piece in binsDistdic.keys():
+        #prev = histdict2[k][piece] 
+        binsDistdic[piece] = sum([i for i in binsDistdic[piece]])
+        # !!!!!!! if the result is a nan, means that there wasnt enough bins in this distance, so we change 
+        # it for a 0
+        if isNaN(binsDistdic[piece]):
+            #print k, piece, 'removed'
+            binsDistdic[piece] = 0
+
+    if maxRadi == False:
+        return binsDistdic, valRange
+    else:
+        return binsDistdic, list(sorted(set(valRangeTrimmed)))
+
+# Function to get distance from interest point 
+def getDistancesFromPoint(mods, cluster, interest='center'):
+    '''
+    :param mods: Clustered ensemble of models in tadbit StructuralModels object
+    :param cluster: Integer indicating the models from wich cluster will
+        be measured.
+    :param 'center' interest: Point from wich we measure distances. If
+        not set model center of mass will be set as default. If an integer
+        is probided, the distances will be measured from the bin this integer
+        relates to
+    :returns: cdistDict, a dictionary with model bins as keys (integers) and
+                    the distance from this bin, in all the models from the 
+                    ensemble belonging to the selected cluster, to the interest
+                    bin
+              cdistDictMean, a dictionary like cdistDict but just containing the 
+                    mean distances
+              mini, a float with the minimum distance detected
+              maxi, a float with the maximum distance detected
+              
+    
+    '''
+    # Here we store distances from interest point 
+    # get cluster ids
+    models = [mods[str(m)]['index'] for m in mods.clusters[cluster]]
+    models = [mods[mdl] for mdl in models]
+
+    # variables to know values range
+    mini = 100
+    maxi = 0
+
+    cdistDict = {}
+    # create bin indexes
+    for nbin in range(len(models[0]['x'])):
+        cdistDict[nbin] = []
+    for mo in models:
+        if interest == 'center':
+            # get center of mass
+            mcen = center_of_mass(mo)
+        else:
+            # In this case interest should be a bin
+            mcen = {'x': mo['x'][interest], 'y': mo['y'][interest], 'z': mo['z'][interest]}
+
+        # go for each bin
+        for nbin, x in enumerate(mo['x']):
+            pos = {'x': x, 'y': mo['y'][nbin], 'z': mo['z'][nbin]}
+            # get distance 
+            dist = sqrt((mcen['x'] - pos['x'])**2 + (mcen['y'] - pos['y'])**2 + (mcen['z'] - pos['z'])**2)
+            cdistDict[nbin].append(dist)
+            # store range
+            mini = min(mini, dist)
+            maxi = max(maxi, dist)
+
+
+
+    # get distance dict with mean
+    cdistDictMean = {}
+    for nbin in cdistDict.keys():
+        cdistDictMean[nbin] = np.mean(cdistDict[nbin])
+
+    return cdistDict, cdistDictMean, mini, maxi
+
+
+# Funtion to get the distribution from interest point of all bins
+# Funtion to get the distribution from interest point of all bins
+def getMarkerDistribution(cdistDict, cdistDictMean, covDict, statsCov, marks, region, 
+                          mini, modelRadius, resThres, maxRadi=False, groupBy = 'binNumber',
+                         discrete=False,method = 'divVolume', pval=0.01):
+
+
+    
+    '''
+    zscore bool True: wether to use zscores or raw data instead
+    groupBy str 'binNumber': Options are 'binNumber' and 'density'. binNumber stands for
+        a radius distribution of fixed distance whereas 'density' will do all spheres with 
+        mantaining equal volumes
+    para 'zscore' method: Which method to use at the time to normalize. Can choose between
+        zscore, contingency, divVolume and percentage
+    param False discrete: NOT False if you want to build a contingency table and obtain the 
+        odds
+    '''
+    # Create list to tell when there is no data
+    noData = set()
+    # Get histogram input
+    histdict = {}
+    # dictionary for pseudo normalization
+    histdict2 = {}
+    histdictMean = {}
+    #histdictContinuous = {}
+    #histdictContinuousMean = {}
+
+    # compute model radius
+    maximumDistance = resThres * (int(modelRadius/resThres) + 1)
+    # Need to create this one in tha Density case to avoid white areas at the end
+    maximumDistanceDensi = round(modelRadius + 1)
+    valRange = range(0, int(maximumDistance) + 1, int(resThres))
+    # set the limit of our search diameter
+    if maxRadi == False:
+        maxRadi2 = maximumDistance
+        maxRadi2Densi = maximumDistanceDensi
+    else:
+        maxRadi2 = maxRadi
+        maxRadi2Densi = maxRadi
+
+    # If groupBy != 'density' we set valRangeTrimmed, otherwise will ve overwriten
+    valRangeTrimmed = [i for i in valRange if i <= maxRadi2]
+    if groupBy == 'density':
+        # First of all we modify maximumDistance so its real
+        valRangeTrimmed = [0]
+        # get list with all cut sites
+        # Since distances are from center of bin, we need to ad a radius of a bin
+        #modelDiameter += resThres/2 ### !!!!!!!!! NO LO VEO NECESARIO
+
+        # Now we need to compute de volume of the first sphere (with r equal to 
+        #bin radius)
+        firstVolume = (4 * np.pi * (resThres)**3) / 3
+        valRangeTrimmed.append(resThres)
+        # With info of the first volume we can multiply it for each radius in the plot
+        #to obatain the distance for the next radius
+        n = 2
+        nextRadi = round((((n * firstVolume) * 3) / (4 * np.pi))**(1./3))
+        # ULTIMO CAMBIO DE < A <=
+        while nextRadi <= maxRadi2Densi:
+            valRangeTrimmed.append(nextRadi)
+            # Find in next radius away
+            n += 1
+            nextRadi = round((((n * firstVolume) * 3) / (4 * np.pi))**(1./3))
+
+
+        # create the valrange we use to store distance data
+        # if we have not reached the end of the model because it lies in the middle
+        #of two radii checked
+        if (round(modelRadius) + 1) > max(valRangeTrimmed):
+            valRange = list(sorted(set(valRangeTrimmed + [round(modelRadius) + 1])))
+        else:
+            valRange = valRangeTrimmed
+        #print valRange
+        # in each marker
+        for k in covDict.keys():
+            histdict[k] = {}
+            histdict2[k] = {}
+            histdictMean[k] = {}
+            #histdictContinuous[k] = defaultdict(int)
+            #histdictContinuousMean[k] = defaultdict(int)
+
+            # we create the value ranges we have prepared
+            for mrange in valRange[1:]:
+                #mrange = np.mean([v, valRange[nv + 1]])
+                histdict[k][mrange] = 0
+                histdict2[k][mrange] = []
+                histdictMean[k][mrange] = 0
+
+            # for each bin in our model for all values
+            for nbin in cdistDict.keys():
+                for nb in cdistDict[nbin]:
+                    # we check between which range positions should our value be located and add it
+                    pos = [n+1 for n, va in enumerate(valRange) if va <= nb < valRange[n+1]][0]
+                    mrange = valRange[pos]
+
+                    histdict[k][mrange] += covDict[k][nbin]
+                    histdict2[k][mrange].append(covDict[k][nbin])
+
+                    # Add values to the continuous list (not binned)
+                    # Is a defaultdict, so if value doesnt exist is the same, will add it
+                    #histdictContinuous[k][nb] += covDict[k][nbin]
+
+                # Same with the mean distance values for a Bin in all models
+                pos = [n+1 for n, va in enumerate(valRange) if va <= cdistDictMean[nbin] < valRange[n+1]][0]
+                mrange = valRange[pos]
+                histdictMean[k][mrange] += covDict[k][nbin]
+
+                # Add values to the continuous list (not binned)
+                # Is a defaultdict, so if value doesnt exist is the same, will add it
+                #pos = cdistDictMean[nbin]
+                #histdictContinuousMean[k][pos] += covDict[k][nbin]
+
+    # We adjust valRange and maxRadi so the last one points to the range value locating the limit
+    #maxRadi2 = maxRadi2 - ((valRange[1] - valRange[0]) / 2)
+    #print valRange
+    else:
+        # in each marker
+        for k in covDict.keys():
+            histdict[k] = {}
+            histdict2[k] = {}
+            histdictMean[k] = {}
+            #histdictContinuous[k] = defaultdict(int)
+            #histdictContinuousMean[k] = defaultdict(int)
+
+            # we create the value ranges we have prepared
+            for nv, v in enumerate(valRange[:-1]):
+                #mrange = np.mean([v, valRange[nv + 1]])
+                mrange = valRange[nv + 1]
+                histdict[k][mrange] = 0
+                histdict2[k][mrange] = []
+                histdictMean[k][mrange] = 0
+
+            # for each bin in our model for all values
+            for nbin in cdistDict.keys():
+                for nb in cdistDict[nbin]:
+                    # we check between which range positions should our value be located and add it
+                    # if we substract the ranging starting point to our value and divide it by the range
+                    #length we get the position in valRange where our value is located
+                    pos = int((nb - int(mini)) / (valRange[1] - valRange[0]))
+                    mrange = valRange[pos + 1]
+                    #mrange = np.mean([valRange[pos], valRange[pos + 1]])
+
+                    histdict[k][mrange] += covDict[k][nbin]
+                    histdict2[k][mrange].append(covDict[k][nbin])
+
+                    # Add values to the continuous list (not binned)
+                    # Is a defaultdict, so if value doesnt exist is the same, will add it
+                    #histdictContinuous[k][nb] += covDict[k][nbin]
+
+                # Same with the mean distance values for a Bin in all models
+                pos = int((cdistDictMean[nbin] - int(mini)) / (valRange[1] - valRange[0]))
+                #histdictMean[k][np.mean([valRange[pos], valRange[pos + 1]])] += covDict[k][nbin]
+                mrange = valRange[pos + 1]
+                histdictMean[k][mrange] += covDict[k][nbin]
+
+                # Add values to the continuous list (not binned)
+                # Is a defaultdict, so if value doesnt exist is the same, will add it
+                #pos = cdistDictMean[nbin]
+                #histdictContinuousMean[k][pos] += covDict[k][nbin]
+        #return histdict2
+
+    # Get values distribution 
+    #listMark = []
+    #for m in histdict2.keys():
+    #    tempi = []
+    #    for rang in histdict2[m].keys():
+    #        # Always PI - TB
+    #        tempi.append(histdict2[m][rang])  
+    #    listMark += tempi
+
+    # If there is a maximum distance set from the point of interest we remove the ranges above
+    if maxRadi != False:
+        for k in marks:
+            for di in histdict2[k].keys():
+                if di > maxRadi2:
+                    del histdict2[k][di]
+                    del histdict[k][di]
+                    del histdictMean[k][di]
+
+            #for di in histdictContinuous[k].keys():
+            #    if di > maxRadi:
+            #        del histdictContinuous[k][di]
+            #        del histdictContinuousMean[k][di]
+
+    
+    ## Normalize data in histdict2
+    # obtain numer of models been analysed
+    nmodels = len(cdistDict[cdistDict.keys()[0]])
+    # start iterating over particles
+    for k in marks:
+        # get number of particles with positive and negative mark
+        # number of particles with positive signal
+        regiPositive = np.nansum(covDict[k]) * nmodels
+        # number of particles with negative signal
+        regiNegative = (len(covDict[k]) - np.nansum(covDict[k])) * nmodels
+        for piece in histdict2[k].keys():
+            if method == 'zscore':
+                #prev = histdict2[k][piece] 
+                histdict2[k][piece] = ((np.mean([i for i in histdict2[k][piece]]) - statsCov[k]['tAvg'])\
+                                       / statsCov[k]['tSD'])
+            # if we want odds ratio from a contingency table
+            if discrete != False:
+                if method == 'contingency':
+                    # Get positive presence and negative signal number in the spherical shell
+                    positive = np.nansum(histdict2[k][piece])
+                    negative = len(histdict2[k][piece]) - positive
+                    # get positive and negatives out of the shell
+                    restPos = regiPositive - positive
+                    restNeg = regiNegative - negative
+                    contingencyTab = [[positive,negative],[restPos,restNeg]]
+                    # get odds
+                    #print contingencyTab, k, piece
+                    oddsratio, pvalue = stats.fisher_exact(contingencyTab)
+                    # convert to logarithm if significant and not 0
+                    #if k == 'NKX61':
+                    #print contingencyTab
+                    #print piece, oddsratio, pvalue
+                    if pvalue <= pval and oddsratio != 0:
+                        oddsratio = np.log(oddsratio)
+                    else:
+                        oddsratio=0
+                    # assign log Odds ratio value
+                    #if k == 'NKX61':
+                    #    print oddsratio
+                    histdict2[k][piece] = oddsratio
+                elif method == 'percentage':
+                    # obtain percentage of positives in our spherical shell
+                    shellPositives = np.nansum([i for i in histdict2[k][piece]])
+                    wholePositives = np.nansum(covDict[k]) * nmodels
+                    if wholePositives != 0:
+                        #print shellPositives, wholePositives
+                        histdict2[k][piece] = round((shellPositives / float(wholePositives)) * 100)
+                    else:
+                        histdict2[k][piece] = 0
+                        noData.add(k)
+            elif method == 'divVolume':
+                # divide by volume and multiply result by 1000 to get higher values
+                histdict2[k][piece] = (np.nansum([i for i in histdict2[k][piece]]) / firstVolume) * 1000
+
+            # if the result is a nan, means that there wasnt enough bins in this distance, so we change 
+            # it for a 0
+            if isNaN(histdict2[k][piece]) or histdict2[k][piece] == float('Inf'):
+                #print k, piece, 'removed'
+                histdict2[k][piece] = 0
+    
+    print 'YOY SHOULD CHANGE THE PART THAT COLLAPSES RADIUS SMALLER IN DIFFERENCE THAN 1NM'
+    print 'AT LEAST SHOW A WARNING OR STOP IN THERE'
+    if maxRadi == False:
+        return histdict2, valRange, noData, (histdict, histdictMean) # ,histdictContinuous, histdictContinuousMean)
+    else:
+        return histdict2, list(sorted(set(valRangeTrimmed))), noData, (histdict, histdictMean)
+    
