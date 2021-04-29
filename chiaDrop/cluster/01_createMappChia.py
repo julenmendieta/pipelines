@@ -3,6 +3,7 @@ import time
 ######################  TO CHANGE #####################
 # path to file with read1 and read 2 of each experiment
 filesPath = '/home/jmendietaes/data/2021/chia-drop/fastq/toMapp.txt'
+#realpath *dsrc > toMapp.txt
 
 # load genome path
 #genome = '/home/jmendietaes/referenceGenomes/mm10_reordered/mm10.reordered.fa'
@@ -37,8 +38,8 @@ scriptsPath = '/home/jmendietaes/programas/PhD/chiaDrop/cluster/'
 reads = []
 with open(filesPath, 'r') as f:
     for line in f:
-        read1 = line.split()
-        read2 = f.next().split()
+        read1 = line.split()[0]
+        read2 = f.readline().split()[0]
         reads += [(read1, read2)]
 
 
