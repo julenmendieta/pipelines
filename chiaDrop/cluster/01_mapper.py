@@ -202,29 +202,37 @@ if not os.path.exists(outTSV):
     # If this directory does not exist yet
     print('%s outMap' %(id1))
     if not os.path.exists(outMap):
-        print('%s inMap' %(id1))
-        os.makedirs(outMap)
-        temp_dir1 = '{0}/mapped_{1}_r1_tmp/'.format(outMap, id1)
-        os.makedirs(temp_dir1)
+        try:
+            print('%s inMap' %(id1))
+            os.makedirs(outMap)
+            temp_dir1 = '{0}/mapped_{1}_r1_tmp/'.format(outMap, id1)
+            os.makedirs(temp_dir1)
 
-        temp_dir2 = '{0}/mapped_{1}_r2_tmp/'.format(outMap, id1)
-        os.makedirs(temp_dir2)
+            temp_dir2 = '{0}/mapped_{1}_r2_tmp/'.format(outMap, id1)
+            os.makedirs(temp_dir2)
 
-        # for the first side of the reads 
-        full_mapping(mapper_index_path=gem_index_path, 
-                        out_map_dir='{0}mapped_{1}_r1/'.format(outMap, id1),
-                        fastq_path=fi1, frag_map=False, clean=True, nthreads=nthreads,
-                        windows=rangePos,
-                        temp_dir=temp_dir1)
-        # ver si trimming en fastq o mirar desde len(barcode) + 1
-        #NORMALMENTE SE MIRA DE 5 EN 5
+            # for the first side of the reads 
+            full_mapping(mapper_index_path=gem_index_path, 
+                            out_map_dir='{0}mapped_{1}_r1/'.format(outMap, id1),
+                            fastq_path=fi1, frag_map=False, clean=True, nthreads=nthreads,
+                            windows=rangePos,
+                            temp_dir=temp_dir1)
+            # ver si trimming en fastq o mirar desde len(barcode) + 1
+            #NORMALMENTE SE MIRA DE 5 EN 5
 
-        # for the second side of the reads
-        full_mapping(mapper_index_path=gem_index_path,
-                        out_map_dir='{0}/mapped_{1}_r2/'.format(outMap, id1),
-                        fastq_path=fi2, frag_map=False, clean=True, nthreads=nthreads,
-                        windows=rangePos,
-                        temp_dir=temp_dir2)
+            # for the second side of the reads
+            full_mapping(mapper_index_path=gem_index_path,
+                            out_map_dir='{0}/mapped_{1}_r2/'.format(outMap, id1),
+                            fastq_path=fi2, frag_map=False, clean=True, nthreads=nthreads,
+                            windows=rangePos,
+                            temp_dir=temp_dir2)
+        except Exception as e:
+            print('Mapping failed')
+            print(e)
+            shutil.rmtree(outMap)
+            STOPnow = True
+            
+
 
     ## Parsing
     # create folder for cell line and replicate
@@ -233,7 +241,7 @@ if not os.path.exists(outTSV):
     outKeep = tempOut + '%s/%s/03_filtering/' %(genomeName, id1)
     reads = '{0}reads12_{1}.tsv'.format(outKeep, id1)
     print('%s outParsing' %(id1))
-    if not os.path.exists(reads):
+    if not os.path.exists(reads) and STOPnow == False:
         print('%s inParsing' %(id1))
         os.makedirs(outPars)
 
@@ -284,7 +292,7 @@ if not os.path.exists(outTSV):
             STOPnow = True
             
         #plot_distance_vs_interactions(reads, resolution=100000, max_diff=1000, show=True)
-    if STOPnow != True:
+    if STOPnow == False:
         outKeep = tempOut + '%s/%s/03_filtering/' %(genomeName, id1)
         outTSV = '{0}valid_reads12_{1}.tsv'.format(pathFinal, id1)
         print('%s outFiltering' %(id1))
