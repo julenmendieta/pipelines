@@ -170,6 +170,8 @@ rangePos = tuple([r for r in rangePos if abs(r[0]-r[1]) >= (minseq - 1)])
 
 # wont plot anything in case there are issues, only store
 showInterMatrix=False
+# if we got no reads will stop further steps
+STOPnow = False
 
 ## Mapping
 print(fi1)
@@ -277,60 +279,60 @@ if not os.path.exists(outTSV):
             print('Crap mapping, no reads from both ends survived. Stoping here')
             print(fi1)
             print(fi2)
-            continue
+            STOPnow = True
             
         #plot_distance_vs_interactions(reads, resolution=100000, max_diff=1000, show=True)
+    if STOPnow != True:
+        outKeep = tempOut + '%s/%s/03_filtering/' %(genomeName, id1)
+        outTSV = '{0}valid_reads12_{1}.tsv'.format(pathFinal, id1)
+        print('%s outFiltering' %(id1))
+        if not os.path.exists(outTSV):
+            print('%s inFiltering' %(id1))
 
-    outKeep = tempOut + '%s/%s/03_filtering/' %(genomeName, id1)
-    outTSV = '{0}valid_reads12_{1}.tsv'.format(pathFinal, id1)
-    print('%s outFiltering' %(id1))
-    if not os.path.exists(outTSV):
-        print('%s inFiltering' %(id1))
+            # Get maximum molecule length
+            reads = '{0}reads12_{1}.tsv'.format(outKeep, id1)
 
-        # Get maximum molecule length
-        reads = '{0}reads12_{1}.tsv'.format(outKeep, id1)
+            # Plot insert sizes
+            #max_molecule_length['%s' %(id1)] = insert_sizes(reads, show=True, nreads=1000000)[1]
 
-        # Plot insert sizes
-        #max_molecule_length['%s' %(id1)] = insert_sizes(reads, show=True, nreads=1000000)[1]
-
-        ## Filtering mapped reads
-        #min_dist_to_re = max_molecule_length['%s' %(id1)] * 1.5 
-        #print(max_molecule_length['%s' %(id1)], min_dist_to_re)
+            ## Filtering mapped reads
+            #min_dist_to_re = max_molecule_length['%s' %(id1)] * 1.5 
+            #print(max_molecule_length['%s' %(id1)], min_dist_to_re)
 
 
-        reads = '{0}reads12_{1}.tsv'.format(outKeep, id1)
-        # this will last ~10 minutes
-        masked = filter_read_duplicates(
-            reads, 
-            )
+            reads = '{0}reads12_{1}.tsv'.format(outKeep, id1)
+            # this will last ~10 minutes
+            masked = filter_read_duplicates(
+                reads, 
+                )
 
-        # Filter dupliated data
-        # This is the only file (non-plot) we will store in a non temporal directory
-        valid_reads = '{0}valid_reads12_{1}.tsv'.format(pathFinal, id1)
-        apply_filter(reads, 
-                    valid_reads, masked, 
-                    filters=[9])
-                
+            # Filter dupliated data
+            # This is the only file (non-plot) we will store in a non temporal directory
+            valid_reads = '{0}valid_reads12_{1}.tsv'.format(pathFinal, id1)
+            apply_filter(reads, 
+                        valid_reads, masked, 
+                        filters=[9])
+                    
 
-        
-        
-        # Evaluate whole genome changes
-        ##     
-        hic_map(valid_reads, 
-            resolution=1000000, show=showInterMatrix, cmap='viridis',
-                savefig=pathFinal + 'interMatrix_%s.pdf' %id1)
+            
+            
+            # Evaluate whole genome changes
+            ##     
+            hic_map(valid_reads, 
+                resolution=1000000, show=showInterMatrix, cmap='viridis',
+                    savefig=pathFinal + 'interMatrix_%s.pdf' %id1)
 
-        # Save BAM file
-        #outbam = '{0}valid_reads12_{1}'.format(outKeep, id1)
-        #bed2D_to_BAMhic(valid_reads, 
-        #            valid=True, ncpus=nthreads, 
-        #            outbam=outbam, 
-        #            frmt='mid', masked=None)
+            # Save BAM file
+            #outbam = '{0}valid_reads12_{1}'.format(outKeep, id1)
+            #bed2D_to_BAMhic(valid_reads, 
+            #            valid=True, ncpus=nthreads, 
+            #            outbam=outbam, 
+            #            frmt='mid', masked=None)
 
-        shutil.rmtree(outPars)
-        shutil.rmtree(outMap)
-        for f in os.listdir(outKeep):
-            if f.startswith('reads12'):
-                os.remove(outKeep + f)
+            shutil.rmtree(outPars)
+            shutil.rmtree(outMap)
+            for f in os.listdir(outKeep):
+                if f.startswith('reads12'):
+                    os.remove(outKeep + f)
 
-        MASKED = copy.copy(MASKED_ref)
+            MASKED = copy.copy(MASKED_ref)
