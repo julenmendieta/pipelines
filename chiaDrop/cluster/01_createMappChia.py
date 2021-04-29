@@ -66,9 +66,9 @@ for nr in range(0, njobs):
 	cmd+= '-gi %s '%gem_index_path
 	cmd+= '-op %s '%path
 	cmd+= '-opt %s '%tempOut
-    	cmd+= '-mins %s '%minseq
-    	cmd+= '-maxs %s '%maxseq
-    	cmd+= '-t %s'%nthreads
+	cmd+= '-mins %s '%minseq
+	cmd+= '-maxs %s '%maxseq
+	cmd+= '-t %s'%nthreads
 	#cmd+= '-t %s '%jobTime  # will add it in the arrayMod.jobs so we can update it later
 	cmd+= '\n'
 	fout.write(cmd)
