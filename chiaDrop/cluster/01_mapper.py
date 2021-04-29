@@ -143,15 +143,17 @@ else:
     moveFiles = True
 
 # minimum allowed number of bp in a range
-minseq=args.minseq
+minseq=int(args.minseq)
 if minseq == None:
     minseq = 25
 # maximum allowed number of bp to be mapped (max length of read=)
-maxseq=args.maxseq
+maxseq=int(args.maxseq)
 # maxseq = 130
+if maxseq == None:
+    maxseq = 100
 
 # get number of CPU to use
-nthreads = args.threads
+nthreads = int(args.threads)
 if nthreads == None:
     # prepare for a very long journey
     nthreads = 1
