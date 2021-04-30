@@ -18,7 +18,7 @@ gem_index_path= '/home/jmendietaes/referenceGenomes/GRCh38/GCA_000001405.15_GRCh
 path = '/home/jmendietaes/data/2021/chia-drop/mapOut/'
 
 # get temporal output folder if present
-tempOut = '/datos/mapTemp/'
+tempOut = '/datos/intercambio/mapTemp/'
 #tempOut = '/home/jmendietaes/data/2021/chia-drop/mapOut/'
 
 # minimum allowed number of bp in a range
@@ -28,7 +28,7 @@ minseq = 25
 maxseq = 130
 
 # get number of CPU to use
-nthreads = 32
+nthreads = 16
 
 # Path for location of scripts
 scriptsPath = '/home/jmendietaes/programas/PhD/chiaDrop/cluster/'
@@ -88,8 +88,8 @@ cmd+='''#!/bin/bash
 #SBATCH --job-name=mappingChIA-drop
 #SBATCH -p medium
 #SBATCH --nodes=1
-#SBATCH --cpus-per-task=16
-#SBATCH --mem=10G
+#SBATCH --cpus-per-task=%s
+#SBATCH --mem=20G
 #SBATCH --array=1-%s%%5
 
 module load GLib/2.54.3-GCCcore-7.3.0
@@ -105,6 +105,6 @@ orden=`echo $orden`
 echo ${SLURM_ARRAY_TASK_ID}
 echo ${orden}
 
-python $orden''' %(njobs, runfile)
+python $orden''' %(nthreads, njobs, runfile)
 
 fout.write(cmd)
