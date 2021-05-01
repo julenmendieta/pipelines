@@ -3,7 +3,7 @@ import time
 ######################  TO CHANGE #####################
 # path to file with read1 and read 2 of each experiment
 filesPath = '/home/jmendietaes/data/2021/chia-drop/fastq/toMapp.txt'
-#realpath *dsrc > toMapp.txt
+#realpath *fastq.gz > toMapp.txt
 
 # load genome path
 #genome = '/home/jmendietaes/referenceGenomes/mm10_reordered/mm10.reordered.fa'
