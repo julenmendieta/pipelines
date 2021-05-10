@@ -1,4 +1,6 @@
 # libraries
+import matplotlib as mpl
+mpl.use('Agg')
 import argparse
 from pytadbit.mapping.full_mapper import full_mapping
 from pytadbit.parsers.genome_parser import parse_fasta
@@ -13,6 +15,7 @@ import copy
 from pytadbit.mapping.filter import _filter_duplicates_strict
 from pytadbit.mapping.filter import _filter_duplicates_loose
 import multiprocessing as mu
+import pickle
 
 # functions
 MASKED_ref = {1 : {'name': 'self-circle'       , 'reads': 0},
@@ -187,7 +190,7 @@ cellpath = tempOut + '%s/%s/' %(genomeName, id1)
 if not os.path.exists(cellpath):
     os.makedirs(cellpath)
 
-pathFinal = f'{path}/{id1}/'
+pathFinal = f'{path}/{genomeName}/{id1}/'
 if not os.path.exists(pathFinal):
     os.makedirs(pathFinal)
 
@@ -240,7 +243,8 @@ if not os.path.exists(outTSV):
     print('%s outParsing' %(id1))
     if not os.path.exists(reads) and STOPnow == False:
         print('%s inParsing' %(id1))
-        os.makedirs(outPars)
+        if not os.path.exists(outPars):
+            os.makedirs(outPars)
 
         # Load genomic sequence to map restriction sites
         genome_seq = parse_fasta(genome)
@@ -278,6 +282,9 @@ if not os.path.exists(outTSV):
         lengths = plot_iterative_mapping(reads1, reads2, total_reads,
                                     savefig=pathFinal+'iterMapping_%s.png' %id1
                                         )
+
+        with open(f'{pathFinal}readsMappedLength_{id1}.pickle', 'wb') as handle:
+            pickle.dump(lengths, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
         # Keep only uniquely mapped reads and join
         outKeep = tempOut + '%s/%s/03_filtering/' %(genomeName, id1)

@@ -82,14 +82,14 @@ fout=open('%s/arrayMappChia.cmd'%(path),'w')
 cmd=''
 cmd+='''#!/bin/bash
 
-#SBATCH --time=96:00:00
+#SBATCH --time=48:00:00
 #SBATCH -o /home/jmendietaes/jobsSlurm/outErr/%%x_%%A_%%a.out
 #SBATCH -e /home/jmendietaes/jobsSlurm/outErr/%%x_%%A_%%a.err
 #SBATCH --job-name=mappingChIA-drop
 #SBATCH -p medium
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=%s
-#SBATCH --mem=20G
+#SBATCH --mem=25G
 #SBATCH --array=1-%s%%5
 
 module load GLib/2.54.3-GCCcore-7.3.0
@@ -100,11 +100,23 @@ file=%s
 
 # Get each command from the file and run them with python
 orden=`sed "${SLURM_ARRAY_TASK_ID}q;d" $file`
+
+# get output file folder info
+fileID=`echo $orden | awk '{print $3}'`
+fileID=`basename $fileID`
+fileID=`echo $fileID | sed 's/_.*//g'`
+genomeID=`echo $orden | awk '{print $7}'`
+genomeID=`basename $genomeID`
+genomeID=`echo $genomeID | sed 's/\.fa//g'`
+outPath=`echo $orden | awk '{print $11}'`
+mkdir -p ${outPath}${genomeID}/${fileID}
+
 # will add the command for the temporal folder
-orden=`echo $orden`
+#orden=`echo $orden`
 echo ${SLURM_ARRAY_TASK_ID}
 echo ${orden}
 
-python $orden''' %(nthreads, njobs, runfile)
+python $orden >> ${outPath}/${genomeID}/${fileID}/TADbit_output.txt
+''' %(nthreads, njobs, runfile)
 
 fout.write(cmd)
