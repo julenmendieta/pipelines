@@ -1,0 +1,93 @@
+# Peak caling of merges
+# CREO QUE A PARTIR DE AQUI VOY A HACER OTRO SCRIPT, PARA ELLO TENDRE QUE GUARDAR EL BAMFILE 
+# EN ALGUN SITIO EN CONCRETO DONDE COINCIDAN LAS REPLICAS DE LA MISMA MUESTRA
+# pero tambien voy a sacar los picos de las muestras por separado
+# a MACS2 se le puede pasar los BAM en separado y el los junta
+
+################################
+# Merge BAM files if needed #
+###############################
+basePath="/home/jmendietaes/data/2021/chip/allProcessed"
+bamsPath="${basePath}/bamfiles"
+mergedBams="${basePath}/mergedBams"
+
+DATASETS=($(ls $bamsPath | grep "bam$" | sed -r 's/_S[0-9].*_R.*$//' | uniq))
+
+
+picard -Xmx${avail_mem}g MergeSamFiles \\
+            ${'INPUT='+bam_files.join(' INPUT=')} \\
+            OUTPUT=${name}.sorted.bam \\
+            SORT_ORDER=coordinate \\
+            VALIDATION_STRINGENCY=LENIENT \\
+            TMP_DIR=tmp
+        samtools index ${name}.sorted.bam
+
+
+
+
+#############################
+#PEAK CALLING
+#############################
+
+AQUI HAY QUE MIRAR MAS A FONDO Y HACER BROAD PEAK tambien
+
+
+echo -e "Starting Peak calling -----------------------------------------------\n"
+
+if [ ! -e ${basePath}/PeakCalling ]; then
+	mkdir -p ${basePath}/PeakCalling
+fi
+
+peakFile="${basePath}/PeakCalling/${filename}_peaks.narrowPeak"
+
+# check content of twelfth line of step control file
+linec=`sed "12q;d" ${stepControl}`
+if [[ ${linec} != "peakCall" ]]; then 
+	macs2 callpeak -t ${bamSortMarkDupBlackChr} -n ${filename} --outdir ${BaseFolder}PeakCalling/ -f BAMPE
+
+    # QC: number of peaks
+    pn=$(cat ${peakFile} | wc -l)
+    echo -e "NUMBER OF PEAKS \t ${pn} \n" >> ${summaryFile}
+
+    # QC: FRIP (fraction of reads in peaks)
+    echo -e "FRIP --------------------\n"
+    echo -e "total_reads \t reads_in_peaks \t FRIP \n" >> ${summaryFile}
+    total_reads=$(samtools view -c ${bamSortMarkDupBlackChr})
+
+    # reads in peaks
+    reads_in_peaks=$(bedtools sort -i ${peakFile} \
+    | bedtools merge -i stdin | bedtools intersect -u -nonamecheck \
+    -a ${bamSortMarkDupBlackChr} -b stdin -ubam | samtools view -c)
+
+    # FRiP score
+    FRiP=$(awk "BEGIN {print "${reads_in_peaks}"/"${total_reads}"}")
+    echo -e "${total_reads} \t ${reads_in_peaks} \t ${FRiP}" >> ${summaryFile}
+
+    echo -e "Peak calling - done -----------------------------------------------\n"
+    # store stage control info
+    echo "peakCall" >> ${stepControl}
+else
+    echo -e "Peak calling - already done before --------------------------------\n"
+fi
+
+
+#NUM="$(bedtools sort -i ${BaseFolder}PeakCalling/${filename}_peaks.narrowPeak -faidx $chrOrder | bedtools intersect -a stdin -b ${BaseFolder}BAM/${filename}.sort.rmdup.rmblackls.rmchr.bam -c -sorted -g $chrOrder | awk '{i+=$5}END{print i}')"
+#DEM="$(samtools view -c ${BaseFolder}BAM/${filename}.sort.rmdup.rmblackls.rmchr.bam)"
+#FRIP="$(awk "BEGIN {print "${NUM}"/"${DEM}"}")"
+#echo -e "FRIP \n" >> ${BaseFolder}summary_${filename}.txt
+#echo -e "NUM: ${NUM} \t DEM: ${DEM} \t FRIP: ${FRIP} \n" >> ${BaseFolder}summary_${filename}.txt
+
+
+# Consensus peaks => R
+
+
+# Remove intermediate files
+
+# if [ -e ${BaseFolder}BAM/${filename}.sort.rmdup.rmblackls.rmchr.bam ] && [ -e ${BaseFolder}PeakCalling/${filename}_peaks.narrowPeak ] && [ -e ${BaseFolder}BigWig/${filename}.sort.rmdup.rmblackls.rmchr.norm.bw ]; then
+# 	rm -rf ${BaseFolder}BAM/${filename}.sam
+# 	#rm -rf ${BaseFolder}BAM/${filename}.bam
+# 	#rm -rf ${BaseFolder}BAM/${filename}.sort.bam
+# 	rm -rf ${BaseFolder}BAM/${filename}.sort.rmdup.bam
+# 	rm -rf ${BaseFolder}BAM/${filename}.sort.rmdup.rmblackls.bam
+# fi
+
