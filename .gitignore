@@ -1,3 +1,4 @@
 # ignore a file type
 *.pyc
 *.DS_Store
+core\.*

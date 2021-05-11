@@ -6,7 +6,7 @@
 #SBATCH --job-name=Chip_fqToBw
 #SBATCH --cpus-per-task=12
 #SBATCH --mem=30G
-#SBATCH --time=05-10:00:00
+#SBATCH --time=02-10:00:00
 #SBATCH -p medium
 #SBATCH -o /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.out  
 #SBATCH -e /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.err 
@@ -17,7 +17,7 @@
 # for i in *fastq.gz; do echo $i | sed 's/_R._001.fastq.gz//g' ; done | sort | uniq > samplesNames.txt  
 # N=`cat /home/jmendietaes/data/2021/chip/sequencedData/mnavarroa/demux_fastq/samplesNames.txt | wc -l`
 # sbatch --array=1-${N} 01_Maren_Chip_fqToBw.sh \
-#/home/jmendietaes/data/2021/chip/sequencedData/mnavarroa/demux_fastq \
+#/home/jmendietaes/data/2021/chip/sequencedData/mnavarroa \
 #/home/jmendietaes/data/2021/chip/allProcessed \
 #/home/jmendietaes/referenceGenomes/mm10_reordered/mm10.reordered
 
@@ -31,6 +31,7 @@
 ## GLOBAL VARIABLES
 PROJECT_DIR=$1
 #PROJECT_DIR="/home/jmendietaes/data/2021/chip/NextSeq2000.RUN6.20210427"
+# In my case, the fastq files are in project folder inside demux_fastq
 
 RAW_FASTQ_DIR=$PROJECT_DIR"/demux_fastq"
 # not used, but i will store here final files
@@ -59,18 +60,24 @@ chr_genome_size=$REFERENCE_DIR".sizes"
 BlackList=$REFERENCE_DIR".blacklist.bed"
 wigToBigWig="/home/jmendietaes/programas/binPath/wigToBigWig"
 picardPath='/home/jmendietaes/programas/picard/picard.jar'
+#picardPath='$EBROOTPICARD/picard.jar'
 ##===============================================================================
 ## Required Software
 #module load Trimmomatic/0.38-Java-1.8
+#module load Trim_Galore/0.6.0
+# trim_galore will requilre fastqc and cutadapt
+# I have trim galore and cutadapt in conda
 module load FastQC/0.11.8-Java-1.8
 module load Bowtie2/2.3.4.2-foss-2018b
 module load SAMtools/1.9-foss-2018b
 module load picard/2.18.17-Java-1.8
+module load R/4.0.0-foss-2018b
 module load Java/1.8.0_192
 module load BEDTools/2.27.1-foss-2018b
-module load MACS2/2.1.0.20151222-foss-2018b-Python-2.7.15
-module load deepTools/3.2.0-foss-2018b-Python-2.7.15
-module load Homer/4.10-foss-2018b
+#module load MACS2/2.1.0.20151222-foss-2018b-Python-2.7.15
+#module load deepTools/3.2.0-foss-2018b-Python-2.7.15
+# this is for bamCoverage, but i already have it in conda and newer version
+#module load Homer/4.10-foss-2018b
 
 ##===============================================================================
 # enable debuging displaying line number and content
@@ -86,6 +93,14 @@ echo script --basic-pre-process
 echo LibraryType=PE
 echo genome = ${GenomeIndex}
 ##===============================================================================
+
+# exit when any command fails
+set -e
+
+# keep track of the last executed command
+trap 'last_command=$current_command; current_command=$BASH_COMMAND' DEBUG
+# echo an error message before exiting
+trap 'echo "\"${last_command}\" command filed with exit code $?."' EXIT
 
 ##===============================================================================
 if [ ! -e ${EDITED_DIR} ]; then
@@ -127,6 +142,10 @@ if [ ! -e ${basePath}/QC/ ] && echo exists ; then
     mkdir -p ${basePath}/QC/
 fi
 
+if [ ! -e ${stepControl} ] ; then
+    touch ${stepControl}
+fi
+
 echo -e "Starting Summary file -------------------------------------- \n"
 
 # check content of first line of step control file
@@ -156,7 +175,7 @@ if [[ ${linec} != "Summary" ]]; then
 
     echo -e "Summary file - done -------------------------------------- \n"
     # store stage control info
-    echo "Summary" >> ${stepControl}
+    echo "Summary" > ${stepControl}
 else
     echo -e "Summary file - already done before -------------------------------------- \n"
 fi
@@ -190,8 +209,8 @@ else
 fi
 
 # define new path variables
-trimedRead1="${RAW_FASTQ_DIR}/${filename}_R1_001_val_1.fq.gz"
-trimedRead2="${RAW_FASTQ_DIR}/${filename}_R2_001_val_2.fq.gz"
+trimedRead1="${EDITED_DIR}/trimming/${filename}_R1_001_val_1.fq.gz"
+trimedRead2="${EDITED_DIR}/trimming/${filename}_R2_001_val_2.fq.gz"
 
 #############
 #Aling # Mapping
@@ -277,18 +296,18 @@ bamSortRmDup="${EDITED_DIR}/BAM/${filename}.sort.rmdup.bam"
 linec=`sed "6q;d" ${stepControl}`
 if [[ ${linec} != "RmDup" ]]; then 
     # Estimate the numbers of unique molecules in a sequencing library
-    java -Xmx24G -jar ${picardPath}/picard.jar EstimateLibraryComplexity I=${bamSort} \
+    java -Xmx24G -jar ${picardPath} EstimateLibraryComplexity I=${bamSort} \
         O=${libMetricsP}/${filename}.bam.lib_comp.txt VALIDATION_STRINGENCY=SILENT
     # Check insert size distribution and read orientation
-    java -Xmx24G -jar ${picardPath}/picard.jar CollectInsertSizeMetrics I=${bamSort} \
+    java -Xmx24G -jar ${picardPath} CollectInsertSizeMetrics I=${bamSort} \
         O=${libMetricsP}/${filename}.bam.insert_size.txt H=${libMetricsP}/${filename}.bam.insert_size.pdf VALIDATION_STRINGENCY=SILENT
     # Identify duplicated reads by flaging them in a new ioutput BAM file
-    java -Xmx24G -jar ${picardPath}/picard.jar MarkDuplicates I=${bamSort} O=${bamSortMarkDup} \
+    java -Xmx24G -jar ${picardPath} MarkDuplicates I=${bamSort} O=${bamSortMarkDup} \
         METRICS_FILE=${libMetricsP}/${filename}.bam.mkdup.txt
     # remove reads marked as duplicated
     samtools view -o ${bamSortRmDup} -@ $SLURM_CPUS_PER_TASK -bh -F 1804 ${bamSortMarkDup}
     # Check insert size distribution and read orientation after removing duplicates
-    java -Xmx24G -jar ${picardPath}/picard.jar CollectInsertSizeMetrics I=${bamSortRmDup} \
+    java -Xmx24G -jar ${picardPath} CollectInsertSizeMetrics I=${bamSortRmDup} \
         O=${libMetricsP}/${filename}.rmdup.bam.insert_size.txt H=${libMetricsP}/${filename}.rmdup.bam.insert_size.pdf VALIDATION_STRINGENCY=SILENT
 
     # remove orphan reads?
@@ -300,7 +319,9 @@ if [[ ${linec} != "RmDup" ]]; then
     samtools flagstat ${bamSortMarkDup} >> ${summaryFile}
 
     echo -e "\n"  >> ${summaryFile}
-
+   
+    rm ${bamSort}
+    rm ${bamSortMarkDup}
     echo -e "Remove duplicates - done ------------------------------------------------ \n"
     # store stage control info
     echo "RmDup" >> ${stepControl}
@@ -325,6 +346,7 @@ linec=`sed "7q;d" ${stepControl}`
 if [[ ${linec} != "Blacklist" ]]; then 
     bedtools intersect -v -abam ${bamSortRmDup} -b ${BlackList} > ${bamSortMarkDupBlack}
 
+    rm ${bamSortRmDup}
     echo -e "Remove blacklist regions - done -----------------------------------------\n"
     # store stage control info
     echo "Blacklist" >> ${stepControl}
@@ -416,7 +438,7 @@ if [[ ${linec} != "BigWnorm1" ]]; then
     echo -e "BigWig norm 1 - done ---------------------------------------------\n"
     # store stage control info
     echo "BigWnorm1" >> ${stepControl}
-then
+else
     echo -e "BigWig norm 1 - already done before ------------------------------\n"
 fi
 
