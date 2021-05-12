@@ -59,16 +59,16 @@ def plotHiC(matrix1, bad_color=None, axe=None, transform=np.log2,
 ################## Functions for the stats analysis
 def running_mean(xbin,x, N):
     cumsum = np.cumsum(np.insert(x, 0, 0))
-    y=(cumsum[N:] - cumsum[:-N]) / N
-    for ll in range(N/2):
-    	print ll,len(xbin)-ll-1,xbin[-1],xbin[-2]
-    	print xbin[ll]
-    	print xbin[len(xbin)-ll-1]
+    y=(cumsum[N:] - cumsum[:-N]) // N
+    for ll in range(N//2):
+    	print(ll,len(xbin)-ll-1,xbin[-1],xbin[-2])
+    	print(xbin[ll])
+    	print(xbin[len(xbin)-ll-1])
 
     	y=np.insert( y,ll,  np.nan)
     	y=np.append( y,  np.nan)
-    print len(xbin)
-    print len(y)
+    print(len(xbin))
+    print(len(y))
     return zip(xbin,y)
 
 #def GetXY(fileINname,diff=0):
@@ -76,7 +76,7 @@ def running_mean(xbin,x, N):
 #	fileIN=open(fileINname,'r')
 #	for l in fileIN.readlines()[1:]:
 #	#mod=int(l.split()[0])
-#	#print l.split()
+#	#print(l.split())
 #		part=int(l.split()[0])+diff
 #		score=float(l.split()[1])
 #		dev=float(l.split()[2])
@@ -89,7 +89,7 @@ def GetXY(fileINname,diff=0):
 	fileIN=open(fileINname,'r')
 	for l in fileIN.readlines()[1:]:
 	#mod=int(l.split()[0])
-	#print l.split()
+	#print(l.split())
 		part=int(l.split()[0])+diff
 		score=float(l.split()[1])
 		list_dat_contac.append([part,score])
@@ -101,7 +101,7 @@ def GetXYA(fileINname,diff=0):
 	fileIN=open(fileINname,'r')
 	for l in fileIN.readlines()[1:]:
 	#mod=int(l.split()[0])
-	#print l.split()
+	#print(l.split())
 		part=int(l.split()[0])+diff
 		score=float(l.split()[1])*100.
 		dev=float(l.split()[2])
@@ -114,7 +114,7 @@ def GetXY_smooth2(fileINname,diff=0):
 	fileIN=open(fileINname,'r')
 	for l in fileIN.readlines()[1:]:
 	#mod=int(l.split()[0])
-	#print l.split()
+	#print(l.split())
 		part=int(l.split()[0])+diff
 		score=float(l.split()[9])
 		dev=float(l.split()[10])
@@ -127,7 +127,7 @@ def GetXY_smooth3(fileINname,diff=0):
 	fileIN=open(fileINname,'r')
 	for l in fileIN.readlines()[1:]:
 	#mod=int(l.split()[0])
-	#print l.split()
+	#print(l.split()
 		part=int(l.split()[0])+diff
 		score=float(l.split()[3])
 		dev=float(l.split()[4])
@@ -140,7 +140,7 @@ def GetXY_smooth4(fileINname,diff=0):
 	fileIN=open(fileINname,'r')
 	for l in fileIN.readlines()[1:]:
 	#mod=int(l.split()[0])
-	#print l.split()
+	#print(l.split())
 		part=int(l.split()[0])+diff
 		score=float(l.split()[5])
 		dev=float(l.split()[6])
@@ -237,16 +237,16 @@ def plotearStats(indir, clust, marksAll, marksBar, regionStart, regionEnd, resol
     mini = 10
     # get the number of divisions where labels would be equally spread
     start = 0
-    end = ((regionEnd - regionStart) / resol) + 1
+    end = ((regionEnd - regionStart) // resol) + 1
     plt.xlim(start, end)
     #start, end = allAxis[-3].get_xlim()
-    #print start, end
+    #print(start, end)
     binrange = range(int(start), int(end) + 1)
     posrange = range(regionStart, regionEnd + resol, resol)
     #for i in range(8, 22):
     #    divisor1 = len(binrange) / float(i)
-    #    if mini >= divisor1/int(divisor1):
-    #        mini = min(mini, divisor1/int(divisor1))
+    #    if mini >= divisor1//int(divisor1):
+    #        mini = min(mini, divisor1//int(divisor1))
     #        divisor = int(divisor1)
     divisor = 9
     # use range to select the values in bin (value used at the time to plo) and
@@ -291,8 +291,8 @@ def plotearStats(indir, clust, marksAll, marksBar, regionStart, regionEnd, resol
 #     regionEnd = reg[2]
     
 #     region = fi.split('/')[-2]
-#     fromOri = (originalRegionPos[region][1]/resol) - (reg[1] / resol)
-#     fromEnd = (reg[2] / resol) - (originalRegionPos[region][2] / resol)
+#     fromOri = (originalRegionPos[region][1]//resol) - (reg[1] // resol)
+#     fromEnd = (reg[2] // resol) - (originalRegionPos[region][2] // resol)
 
 #     colors = ["red", "blue", "black", 'green']
 #     marksAll = []
@@ -319,14 +319,14 @@ def plotearStats(indir, clust, marksAll, marksBar, regionStart, regionEnd, resol
 #         marksBar3.append((po, po, colors[3]))
     
 #     inpath = outFile + '/%s%s_Stats/' %(flag[0], flag[1])
-#     print flag
+#     print(flag)
 #     if len(marksBar3) != 0:
 #         plotearStats(inpath, 1, marksAll, [marksBar2, marksBar3, marksAll], regionStart, regionEnd, resol, title=title, 
 #                  figsize = (20, 10), diff=0, radius=50, fromOri=fromOri, fromEnd=fromEnd)
 #     else:
 #         plotearStats(inpath, 1, marksAll, [marksBar2, marksAll], regionStart, regionEnd, resol, title=title, 
 #                      figsize = (20, 10), diff=0, radius=50, fromOri=fromOri, fromEnd=fromEnd)
-#     print "#" * 80
+#     print("#" * 80)
 # pdf.close()
 
 
@@ -413,16 +413,16 @@ def plotearStatsCompare(values, indir, clust, marksAll, marksBar, regionStart, r
     mini = 10
     # get the number of divisions where labels would be equally spread
     start = 0
-    end = ((regionEnd - regionStart) / resol) + 1
+    end = ((regionEnd - regionStart) // resol) + 1
     plt.xlim(start, end)
     #start, end = allAxis[-3].get_xlim()
-    #print start, end
+    #print(start, end)
     binrange = range(int(start), int(end) + 1)
     posrange = range(regionStart, regionEnd + resol, resol)
     #for i in range(8, 22):
     #    divisor1 = len(binrange) / float(i)
-    #    if mini >= divisor1/int(divisor1):
-    #        mini = min(mini, divisor1/int(divisor1))
+    #    if mini >= divisor1//int(divisor1):
+    #        mini = min(mini, divisor1//int(divisor1))
     #        divisor = int(divisor1)
     divisor = 9
     # use range to select the values in bin (value used at the time to plo) and
@@ -456,7 +456,7 @@ def plotearStatsCompare(values, indir, clust, marksAll, marksBar, regionStart, r
                                 (np.mean(values) + std) - (np.mean(values) - std),  # y length till end
                                 color='grey',alpha=0.3)
         allAxis[-(n+1)].add_patch(rect2)
-        #print n+1, std
+        #print(n+1, std)
 
     plt.xlim(np.min(xa) + fromOri, np.max(xa) - fromEnd)
 
@@ -494,8 +494,8 @@ def plotearStatsCompare(values, indir, clust, marksAll, marksBar, regionStart, r
 #     regionStart = reg[1]
 #     regionEnd = reg[2]
 
-#     fromOri = (originalRegionPos[region][1]/resol) - (reg[1] / resol)
-#     fromEnd = (reg[2] / resol) - (originalRegionPos[region][2] / resol)
+#     fromOri = (originalRegionPos[region][1]//resol) - (reg[1] // resol)
+#     fromEnd = (reg[2] // resol) - (originalRegionPos[region][2] // resol)
 
 #     marksAll = []
 #     marksBar2 = []
@@ -528,8 +528,8 @@ def plotearStatsCompare(values, indir, clust, marksAll, marksBar, regionStart, r
 #     xc,yc=GetXY(inpath3 + 'consistency.cluster%s.dat' %clust,diff=diff)
 #     xi,yi,eMi,ePi,di=GetXY_smooth4(inpath3 + 'interactionscluster%s.dat' %clust,diff=diff)
 
-#     print len(ya)
-#     print len(ya0)
+#     print(len(ya))
+#     print(len(ya0))
 
 #     if len(ya) == len(ya0):
 #         ya = [ya0[ii] - ya[ii] for ii in range(len(ya))]
@@ -546,12 +546,12 @@ def plotearStatsCompare(values, indir, clust, marksAll, marksBar, regionStart, r
 #     allValues[region]['consi'] = yc
 #     allValues[region]['inter'] = yi
 
-#     print flag1
+#     print(flag1)
 #     plotearStatsCompare([xa, ya, xc, yc, xi, yi], outpath, 1, marksAll, [marksBar2, marksBar3, marksAll],
 #                         regionStart, regionEnd, resol, title=title, figsize = (20, 10), diff=0, radius=50,
 #                         fromOri=fromOri, fromEnd=fromEnd, ylim1 = (-40, 40), ylim2 = (-6, 6))
 
-#     print "#" * 80
+#     print("#" * 80)
 # pdf.close()
 
 
@@ -677,16 +677,16 @@ def plotearStatsBoth(indirs, clust, marksAll, marksBar, regionStart, regionEnd, 
     mini = 10
     # get the number of divisions where labels would be equally spread
     start = 0
-    end = ((regionEnd - regionStart) / resol) + 1
+    end = ((regionEnd - regionStart) // resol) + 1
     plt.xlim(start, end)
     #start, end = allAxis[-3].get_xlim()
-    #print start, end
+    #print(start, end)
     binrange = range(int(start), int(end) + 1)
     posrange = range(regionStart, regionEnd + resol, resol)
     #for i in range(8, 22):
     #    divisor1 = len(binrange) / float(i)
-    #    if mini >= divisor1/int(divisor1):
-    #        mini = min(mini, divisor1/int(divisor1))
+    #    if mini >= divisor1//int(divisor1):
+    #        mini = min(mini, divisor1//int(divisor1))
     #        divisor = int(divisor1)
     divisor = 9
     # use range to select the values in bin (value used at the time to plo) and
@@ -736,8 +736,8 @@ def plotearStatsBoth(indirs, clust, marksAll, marksBar, regionStart, regionEnd, 
 #     regionStart = reg[1]
 #     regionEnd = reg[2]
 
-#     fromOri = (originalRegionPos[region][1]/resol) - (reg[1] / resol)
-#     fromEnd = (reg[2] / resol) - (originalRegionPos[region][2] / resol)
+#     fromOri = (originalRegionPos[region][1]//resol) - (reg[1] // resol)
+#     fromEnd = (reg[2] // resol) - (originalRegionPos[region][2] // resol)
 
 #     marksAll = []
 #     marksBar2 = []
@@ -768,13 +768,13 @@ def plotearStatsBoth(indirs, clust, marksAll, marksBar, regionStart, regionEnd, 
 #     inpath3 = outFile + '/%s%s_Stats/' %(flag2[0], flag2[1])
 
 
-#     print flag1
+#     print(flag1)
 
 #     plotearStatsBoth([inpath2, inpath3], 1, [], [marksAll], regionStart, regionEnd, resol, title=title,
 #              figsize = (20, 10), diff=0, radius=50, fromOri=fromOri, fromEnd=fromEnd)
 
 
-#     print "#" * 80
+#     print("#" * 80)
 # pdf.close()
 
 
@@ -810,6 +810,7 @@ def plotDiffMtrx(mtComp, colorate=[], arrows=[], title='',
     ## Prepare colorbar for matrix
     cmap=plt.get_cmap('bwr')
     # get positions to turn white
+    print('I DIDNT CHANGED THE DIVISION WHEN MOVING TO PYTHON 3, CHECK THE DIFFERENCES')
     posi = int(round(cmap.N * whiteLim / 2))
     # get color change position
     midPos = cmap.N / 2
@@ -848,7 +849,7 @@ def plotDiffMtrx(mtComp, colorate=[], arrows=[], title='',
                 binVector[b] = whitePos
 
     else:
-        print 'To many things to colorate, not enough colors'
+        print('To many things to colorate, not enough colors')
 
     # Add arrows
     arrowVect = [float('nan')] * len(mtComp)
@@ -982,7 +983,7 @@ def aracnoPlot(groupDegree, edgeList, focus, percentaje, tags=[], xAxis=False, s
         for k in edgeList:
             x1 = k[0]
             x2 = k[1]
-            #thick = highPeaks[e[0]][e[1]] / emaxi
+            #thick = highPeaks[e[0]][e[1]] // emaxi
             if not (x1 in focus):
                 pac = mpatches.Ellipse([(x2+x1)/2.0, 0], x2-x1, plotHigh*2, angle=0, fill=False, color='black', alpha=0.8)
                 ax.add_patch(pac)
@@ -1026,7 +1027,7 @@ def aracnoPlot(groupDegree, edgeList, focus, percentaje, tags=[], xAxis=False, s
 
 
                 # Apply the filtering
-                #thick = highPeaks[e[0]][e[1]] / emaxi
+                #thick = highPeaks[e[0]][e[1]] // emaxi
                 if not (x1 in focus):
                     pac = mpatches.Ellipse([(x2+x1)/2.0, 0], x2-x1, plotHigh*2, 
                                            angle=0, fill=False, color='black', alpha=0.8)
@@ -1037,7 +1038,7 @@ def aracnoPlot(groupDegree, edgeList, focus, percentaje, tags=[], xAxis=False, s
                 x1 = k[0]
                 x2 = k[1]
                 # Apply the filtering
-                #thick = highPeaks[e[0]][e[1]] / emaxi
+                #thick = highPeaks[e[0]][e[1]] // emaxi
                 if (x1 in focus):
                     pac = mpatches.Ellipse([(x2+x1)/2.0, 0], x2-x1, plotHigh*2, 
                                            angle=0, fill=False, color='red')
@@ -1170,8 +1171,8 @@ def squarePlot(histdict, region, title = '', prevOrder='', saveFig = True, minMa
     # check if there are given ones and are bigger
     if minMax != '':
         if (minMax[0] > colorLim[0]) or (minMax[1] < colorLim[1]):
-            print 'There are values smaller/bigger than the provided range'
-            print 'Default range will be used'
+            print('There are values smaller/bigger than the provided range')
+            print('Default range will be used')
         
         # Just using the given values limit for asiggning color
         else:
@@ -1254,6 +1255,7 @@ def radialPlot(histdict, region, valRange, markOrder='', timesEach=7, nylabels=1
     if unEqualRadi == True:
         r = []
         for i in range(portions):
+            print('I DIDNT CHANGED THE DIVISION WHEN MOVING TO PYTHON 3, CHECK THE DIFFERENCES')
             r.append([v / valRange[-1] for v in valRange])
         r = np.array(r)
 
@@ -1300,10 +1302,10 @@ def radialPlot(histdict, region, valRange, markOrder='', timesEach=7, nylabels=1
                 # check if there are given ones and are bigger
                 if minMax != '':
                     if (minMax[0] > colorLim[0]) or (minMax[1] < colorLim[1]):
-                        print 'There are values smaller/bigger than the provided range'
-                        print 'Default range will be used'
+                        print('There are values smaller/bigger than the provided range')
+                        print('Default range will be used')
                         minMax = colorLim
-                        #print colorLim
+                        #print(colorLim)
                     # Just using the given values limit for asiggning color
                     else:
                         colorLim = minMax
@@ -1323,7 +1325,7 @@ def radialPlot(histdict, region, valRange, markOrder='', timesEach=7, nylabels=1
         plt.axvline(x=theta[n][0], color='black', alpha=0.3, linestyle='--')
 
     # If there is an infinite value we add an asterisk
-    #print infinites
+    #print(infinites)
     #for infi in infinites:
     #    plt.plot((theta[infi[0]][0] + theta[infi[0] + timesEach][0])/2, 
     #             (r[0][infi[1]] + r[0][infi[1] + 1])/2, 
@@ -1333,7 +1335,7 @@ def radialPlot(histdict, region, valRange, markOrder='', timesEach=7, nylabels=1
     # get position for x labels
     angles = [i[0] for i in theta]
     # we should put the label more or less in the middle portion
-    labpos = timesEach / 2
+    labpos = timesEach // 2
     angles = [ angles[n + labpos] for n in range(0, len(angles) - 1, timesEach)]
     # Add x labels  
     plt.xticks(angles, newMarks)
@@ -1362,7 +1364,7 @@ def radialPlot(histdict, region, valRange, markOrder='', timesEach=7, nylabels=1
         nytics = bins
         binrange = np.linspace(0,1,nytics,endpoint=True)[1:]
         # If the plot has to many divisions we need to show just a few axis
-        steps = (bins / nylabels) + 1
+        steps = (bins // nylabels) + 1
         if bins > nylabels :
             binrangePos = [i for i in range(0, len(binrange), steps)]
             #binrangeS = [binrange[i] if i in binrangePos else '' for i in range(0, len(binrange))]
@@ -1450,11 +1452,11 @@ def covLoading(covFiles, regiones, resol, discrete=False):
             reg = regiones[regi]
             regionStart = reg[1]
             regionEnd = reg[2]
-            longi = ((regionEnd - regionStart) / resol) + 1
+            longi = ((regionEnd - regionStart) // resol) + 1
             if len(covDict[regi][m]) != longi:
                 difference = len(covDict[regi][m]) - longi
-                print 'Region %s has %s more/less positions in file %s' \
-                %(regi, difference, m)
+                print('Region %s has %s more/less positions in file %s' \
+                %(regi, difference, m))
                 # If more in file, we remove from the end #### CHANGE WHEN CORRECT FILES ###
                 exit()
     # get coverage total average and standar deviation
@@ -1499,6 +1501,7 @@ def getBinDistribution(cdistDict, mini, modelRadius, resThres, listOfBins = '',
     std = np.std(binsRep.values())
         
     # compute model radius
+    print('I DIDNT CHANGED THE DIVISION WHEN MOVING TO PYTHON 3, CHECK THE DIFFERENCES')
     maximumDistance = resThres * (int(modelRadius/resThres) + 1)
     # Need to create this one in tha Density case to avoid white areas at the end
     maximumDistanceDensi = round(modelRadius + 1)
@@ -1538,7 +1541,7 @@ def getBinDistribution(cdistDict, mini, modelRadius, resThres, listOfBins = '',
 
         # create the valrange we use to store distance data
         valRange = list(sorted(set(valRangeTrimmed + [round(modelRadius) + 1])))
-        #print valRange
+        #print(valRange)
         # we create the value ranges we have prepared
         for mrange in valRange[1:]:
             #mrange = np.mean([v, valRange[nv + 1]])
@@ -1561,7 +1564,7 @@ def getBinDistribution(cdistDict, mini, modelRadius, resThres, listOfBins = '',
            
     # We adjust valRange and maxRadi so the last one points to the range value locating the limit
     #maxRadi2 = maxRadi2 - ((valRange[1] - valRange[0]) / 2)
-    #print valRange
+    #print(valRange)
     else:
         
         # we create the value ranges we have prepared
@@ -1576,6 +1579,7 @@ def getBinDistribution(cdistDict, mini, modelRadius, resThres, listOfBins = '',
                 # we check between which range positions should our value be located and add it
                 # if we substract the ranging starting point to our value and divide it by the range
                 #length we get the position in valRange where our value is located
+                print('I DIDNT CHANGED THE DIVISION WHEN MOVING TO PYTHON 3, CHECK THE DIFFERENCES')
                 pos = int((nb - int(mini)) / (valRange[1] - valRange[0]))
                 mrange = valRange[pos + 1]
                 #mrange = np.mean([valRange[pos], valRange[pos + 1]])
@@ -1599,7 +1603,7 @@ def getBinDistribution(cdistDict, mini, modelRadius, resThres, listOfBins = '',
         # !!!!!!! if the result is a nan, means that there wasnt enough bins in this distance, so we change 
         # it for a 0
         if isNaN(binsDistdic[piece]):
-            #print k, piece, 'removed'
+            #print(k, piece, 'removed')
             binsDistdic[piece] = 0
 
     if maxRadi == False:
@@ -1742,7 +1746,7 @@ def getMarkerDistribution(cdistDict, cdistDictMean, covDict, statsCov, marks, re
             valRange = list(sorted(set(valRangeTrimmed + [round(modelRadius) + 1])))
         else:
             valRange = valRangeTrimmed
-        #print valRange
+        #print(valRange)
         # in each marker
         for k in covDict.keys():
             histdict[k] = {}
@@ -1784,7 +1788,7 @@ def getMarkerDistribution(cdistDict, cdistDictMean, covDict, statsCov, marks, re
 
     # We adjust valRange and maxRadi so the last one points to the range value locating the limit
     #maxRadi2 = maxRadi2 - ((valRange[1] - valRange[0]) / 2)
-    #print valRange
+    #print(valRange)
     else:
         # in each marker
         for k in covDict.keys():
@@ -1808,6 +1812,7 @@ def getMarkerDistribution(cdistDict, cdistDictMean, covDict, statsCov, marks, re
                     # we check between which range positions should our value be located and add it
                     # if we substract the ranging starting point to our value and divide it by the range
                     #length we get the position in valRange where our value is located
+                    print('I DIDNT CHANGED THE DIVISION WHEN MOVING TO PYTHON 3, CHECK THE DIFFERENCES')
                     pos = int((nb - int(mini)) / (valRange[1] - valRange[0]))
                     mrange = valRange[pos + 1]
                     #mrange = np.mean([valRange[pos], valRange[pos + 1]])
@@ -1820,6 +1825,7 @@ def getMarkerDistribution(cdistDict, cdistDictMean, covDict, statsCov, marks, re
                     #histdictContinuous[k][nb] += covDict[k][nbin]
 
                 # Same with the mean distance values for a Bin in all models
+                print('I DIDNT CHANGED THE DIVISION WHEN MOVING TO PYTHON 3, CHECK THE DIFFERENCES')
                 pos = int((cdistDictMean[nbin] - int(mini)) / (valRange[1] - valRange[0]))
                 #histdictMean[k][np.mean([valRange[pos], valRange[pos + 1]])] += covDict[k][nbin]
                 mrange = valRange[pos + 1]
@@ -1881,42 +1887,43 @@ def getMarkerDistribution(cdistDict, cdistDictMean, covDict, statsCov, marks, re
                     restNeg = regiNegative - negative
                     contingencyTab = [[positive,negative],[restPos,restNeg]]
                     # get odds
-                    #print contingencyTab, k, piece
+                    #print(contingencyTab, k, piece)
                     oddsratio, pvalue = stats.fisher_exact(contingencyTab)
                     # convert to logarithm if significant and not 0
                     #if k == 'NKX61':
-                    #print contingencyTab
-                    #print piece, oddsratio, pvalue
+                    #print(contingencyTab)
+                    #print(piece, oddsratio, pvalue)
                     if pvalue <= pval and oddsratio != 0:
                         oddsratio = np.log(oddsratio)
                     else:
                         oddsratio=0
                     # assign log Odds ratio value
                     #if k == 'NKX61':
-                    #    print oddsratio
+                    #    print(oddsratio)
                     histdict2[k][piece] = oddsratio
                 elif method == 'percentage':
                     # obtain percentage of positives in our spherical shell
                     shellPositives = np.nansum([i for i in histdict2[k][piece]])
                     wholePositives = np.nansum(covDict[k]) * nmodels
                     if wholePositives != 0:
-                        #print shellPositives, wholePositives
+                        #print(shellPositives, wholePositives)
                         histdict2[k][piece] = round((shellPositives / float(wholePositives)) * 100)
                     else:
                         histdict2[k][piece] = 0
                         noData.add(k)
             elif method == 'divVolume':
                 # divide by volume and multiply result by 1000 to get higher values
+                print('I DIDNT CHANGED THE DIVISION WHEN MOVING TO PYTHON 3, CHECK THE DIFFERENCES')
                 histdict2[k][piece] = (np.nansum([i for i in histdict2[k][piece]]) / firstVolume) * 1000
 
             # if the result is a nan, means that there wasnt enough bins in this distance, so we change 
             # it for a 0
             if isNaN(histdict2[k][piece]) or histdict2[k][piece] == float('Inf'):
-                #print k, piece, 'removed'
+                #print(k, piece, 'removed')
                 histdict2[k][piece] = 0
     
-    print 'YOY SHOULD CHANGE THE PART THAT COLLAPSES RADIUS SMALLER IN DIFFERENCE THAN 1NM'
-    print 'AT LEAST SHOW A WARNING OR STOP IN THERE'
+    print('YOU SHOULD CHANGE THE PART THAT COLLAPSES RADIUS SMALLER IN DIFFERENCE THAN 1NM')
+    print('AT LEAST SHOW A WARNING OR STOP IN THERE')
     if maxRadi == False:
         return histdict2, valRange, noData, (histdict, histdictMean) # ,histdictContinuous, histdictContinuousMean)
     else:
