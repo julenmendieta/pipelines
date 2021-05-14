@@ -1,80 +1,61 @@
 import os
-from pytadbit import load_structuralmodels
 from copy import deepcopy
-from pytadbit.modelling.structuralmodels import StructuralModels
 from warnings import warn
 import sys
 import subprocess
+from taddyn.utils.modelAnalysis     import save_models
+import copy
+import cPickle
 
-def _extend_models(models0, models, keep=0):
+def extend_models(modelsBase, modelsAdd, keep=0):
     """
-    add new models to structural models
+    combine taddyn models
     """
+    
+    ## Copy base models dictionary
+    modelsFinal = copy.deepcopy(modelsBase)
 
-    new_models = {}
-    #nall  = len(models0) + len(models0._bad_models)
-    #models0.define_best_models(nall)
-    ids = set(models0[m]['rand_init'] for m in range(len(models0)))
-    # create variable for models with same seed
-    skip = []
-    if len(models) == 0:
-        print '##### No models in one case!!!! #####'
-    # check for duplicated rand_init ids
-    for m in range(len(models)):
-        # we create the list here to retrieve error if there are no models
-        # new_models = {}
-        if models[m]['rand_init'] in ids:
-            warn('WARNING: found model with same random seed number, '
-                    'SKIPPPING')
-            ## WITH LAMMPS WE HAVE ANOTHER PARAMETER FOR RANDOM INIT SO NO 
-            #SENSE ON REMOVING IN HERE
-            skip.append(m)
-            print 'Model skipped due to same rand_init'
-    inter = [mo for mo in models0] + [me for i, me in 
-                                        enumerate(models) if i not in skip]
-    for i, m in enumerate(sorted(inter, key=lambda x: x['objfun'])):
-        new_models[i] = m
-    # combine all models
-    models0 = StructuralModels(
-        nloci=models0.nloci, models=new_models, bad_models=models0._bad_models,
-        resolution=models0.resolution, original_data=models0._original_data,
-        clusters=models0.clusters, config=models0._config, zscores=models0._zscores,
-        zeros=models0._zeros, restraints=models0._restraints,
-        description=models0.description)
-    # Add new indexes
-    for i, m in enumerate(models0):
-        m['index'] = i
-    # keep the same number of best models
-    if keep != 0:
-        models0.define_best_models(keep)
-    return models0
+    ## get all rand init from previous models
+    randInit_indexes = []
+    for mo in modelsBase['models']:
+        randInit_indexes += [modelsBase['models'][mo]['rand_init']]
 
-##################################################
-if len(sys.argv) == 0:
-    pathIn = '/scratch/devel/jmendieta/Ferrer/modelling/TBdyn/reg20Norm/scale01/finalModel/'
-    pathOut = pathIn
-    flag = 'TB_reg20C4.0L-0.5U0.6M300'
-#################################################
-else:
-    pathIn = sys.argv[1]
-    pathOut = pathIn
-    # build flag
-    if len(sys.argv) == 3:
-        flag = sys.argv[2]
+    ## now add models if dont share rand_init
+    index = len(randInit_indexes)
+    duplicated = 0
+    for mo in modelsAdd['models']:
+        randinitAdd = modelsAdd['models'][mo]['rand_init']
+        if randinitAdd not in randInit_indexes:
+            modelsFinal['models'][index] = modelsAdd['models'][mo]
+            index += 1
+        else:
+            print('Model skipped due to same rand_init: %s' %(randinitAdd))
+            duplicated += 1
+    
+    if duplicated != 0:
+        print('%s models were skipped due to repteated rand_init' %(duplicated))
+    
+    return modelsFinal
 
-        print flag
 
+## Get input path
+#parser = argparse.ArgumentParser(description='')
+#parser.add_argument('-p','--path', help='modelsPath',required=True)
+#args = parser.parse_args()
+#pathIn=float(args.path)
+pathIn = sys.argv[1]
+pathOut = pathIn
+
+## Get different models in folder and merge the ones computed
+## with same parameters
 # First check the files we have
 files = os.listdir(pathIn)
 # then check if we have different conformation parameters and split
 diffMods = set()
-previousMods = set()
 for fi in files:
-    if fi[-6:] == 'models':
-        if 'Scaled01' in fi:
-            diffMods.add('_'.join(fi.split('_')[:-1]))
-        else:
-            previousMods.add(fi.split('_')[-1][:-7])
+    if fi.endswith('modelsTemp'):
+        diffMods.add('_'.join(fi.split('_')[:-1]))
+
 
 for di in diffMods:
     # Store all models in one list
@@ -86,43 +67,35 @@ for di in diffMods:
         # ii) i changed the name of the merge output from
         #...modelsAll to ...models to merge new build models
         # case i)
-        if fi[-6:] == 'models' and fi.startswith(di):
+        if fi.endswith('modelsTemp') and fi.startswith(di):
             try:
-                a = load_structuralmodels(pathIn + fi)
+                with open(pathIn + fi, "rb") as input_file:
+                    a = cPickle.load(input_file)
                 fileNames.append(fi)
                 filenameForFlag = fi
                 modelos.append(a)
             except:
-                print 'Empty file:'
-                print pathIn + fi
+                print('Empty file:')
+                print(pathIn + fi)
             
-        previousLabel = di.split('Scaled01')[-1]
-        try:
-            fi2 = fi.split('_')[-1][:-7]
-        except:
-            fi2 = 'asd83r2ndf09sd1d3'
-        # case ii)
-        if fi[-6:] == 'models' and (previousLabel == fi2):
-            print 'previous model ensemble found, combining'
-            print pathIn + fi
-            a = load_structuralmodels(pathIn + fi)
+        # nnnnnn maybe this change to modelsAll
+        # If we have previous finished models we want to combine them
+        if fi.endswith('models') and fi.startswith(di):
+            print('previous model ensemble found, combining')
+            print(pathIn + fi)
+            with open(pathIn + fi, "rb") as input_file:
+                a = cPickle.load(input_file)
             fileNames.append(fi)
             modelos.append(a)
-
+    
     # get flag
-    if len(sys.argv) == 2:  # position zero is extra
-        fi = filenameForFlag
-        try:
-            flag = '%s_%s_%s' %(pathIn.split('/')[-4], 
-                        fi.split('_')[0], 
-                        fi.split('_')[1].split('Scaled01')[1])
-        # If we do have it
-        except:
-            flag = '%s_%s_%s' %(pathIn.split('/')[-4],
-                                            fi.split('_')[0],
-                                            fi.split('_')[2].split('Scaled01')[1])
-            #flag = '%s_%s' %(pathIn.split('/')[-5], fi)
-    print flag
+    fi = filenameForFlag
+    #rint fi
+    flag = '%s_%s_%s' %(fi.split('_')[0], 
+        fi.split('_')[1], 
+        fi.split('_')[2])
+
+    print(flag)
     ## then merge them
     # check that first model has data
     full = False
@@ -147,22 +120,23 @@ for di in diffMods:
         # if we have more than one
         else:
             for i, mods2 in enumerate([m for m in modelos[i0 + 1:]]):
-                #mods1 = _extend_models(mods1, mods2, i + 2)
-                mods1 = _extend_models(mods1, mods2)
+                mods1 = extend_models(mods1, mods2)
                 if len(mods2) == 0:
-                    print fileNames[i+ i0 + 1]
+                    print('Empty model reached last combination phase')
+                    print(fileNames[i+ i0 + 1])
 
-    print len(mods1)
-    mods1.save_models(pathOut+'%s.modelsAll'%(flag))
-
-# remove all files that are in the merge
-clean = False
-if clean == True:
-    for fi in files:
-        if fi[-6:] == 'models':
+    # remove combined files before storing new
+    clean = True
+    if clean == True:
+        print('--- Deleting .model files ---')
+        for fi in fileNames:
+            print 'Delete: %s' %fi
             p = subprocess.Popen(['rm', '%s%s' %(pathIn, fi)],
-                                             stdout=subprocess.PIPE, 
-                                             stderr=subprocess.PIPE)
+                                           stdout=subprocess.PIPE, 
+                                           stderr=subprocess.PIPE)
             out, err = p.communicate()
             if len(err) != 0:
-                print fi, err
+               print fi, err
+
+    print('%s models joined' %len(mods1['models']))
+    save_models(mods1, pathOut+'%s.models'%(flag))

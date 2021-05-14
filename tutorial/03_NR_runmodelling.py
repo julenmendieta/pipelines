@@ -78,8 +78,7 @@ cell = matPath.split('/')[-1].split('_')[1]
 region = matPath.split('/')[-1].split('_')[2]
 flag = '%s_%s' %(cell, region)
 
-
-flag_name='%s_%sScaled01C%sL%sU%sM%sRes%s' %(flag, res, c, low, up, maxd, res)
+flag_name='%s_C%sL%sU%sM%sRes%s' %(flag, c, low, up, maxd, res)
 
 # if we provide an alternative output dir we change it 
 if tempOut != None:
@@ -96,9 +95,6 @@ else:
     nmodels = int(nmodels)
 if pathOut == None:
     pathOut= path + 'finalModel/'
-else:
-    if pathOut[-1] != '/':
-        pathOut += '/'
 
 # Move to lammpsOut directory so its output gets stored there
 #mkdir(lammpsOut)
@@ -177,6 +173,6 @@ models = exp.model_region(start=1,end=exp.size, n_models=nmodels, n_keep=nmodels
     store_n_steps=2) #, connectivity='FENE')
 
 
-save_models(models, pathOut+'%s_%s.models'%(flag_name, lampsFlag))
-print pathOut+'%s_%s.models'%(flag_name, lampsFlag)
+save_models(models, pathOut+'%s_%s.modelsTemp'%(flag_name, lampsFlag))
+print lammpsOut, pathOut+'%s_%s.modelsTemp'%(flag_name, lampsFlag)
 #shutil.rmtree(keep_restart_out_dir) 

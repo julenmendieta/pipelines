@@ -28,18 +28,18 @@ def tableToMatrix(dirin, regionStart, regionEnd, resol=1, dirout=""):
 
     # Tuple with the position of the matrix and value -> dict
     read_data['new_col'] = zip(read_data.ix[:,0], read_data.ix[:,1])
-    dict_HiC = dict(zip([(k / resol, l / resol) for k, l in read_data.new_col], read_data[2]))
+    dict_HiC = dict(zip([(k // resol, l // resol) for k, l in read_data.new_col], read_data[2]))
     f.close()
 
     len_chr = (regionEnd - regionStart) + resol # El ultimo bin tambien cuenta
-    axis = (len_chr/resol)
+    axis = (len_chr//resol)
     matrix = [[0 for _ in range(axis)]for _ in range(axis)]
     for i in range(axis):
         for j in range(axis):
-            matrix[i][j] += dict_HiC.get((i + (regionStart/resol), j + (regionStart/resol)),0)
+            matrix[i][j] += dict_HiC.get((i + (regionStart//resol), j + (regionStart//resol)),0)
             if j != i:
                 # Necessary to do a symetric part of the matrix
-                matrix[j][i] += dict_HiC.get((i + (regionStart/resol), j + (regionStart/resol)),0)
+                matrix[j][i] += dict_HiC.get((i + (regionStart//resol), j + (regionStart//resol)),0)
     if dirout != "":
         matrix_end=open(dirout + "Matrix_%s_%s" %(regionStart, regionEnd),'w')
         matrix_end.write('\n'.join(['\t'.join([str(cell) for cell in line]) for line in matrix]) + '\n')
@@ -66,7 +66,7 @@ def readMatrix(indir):
 
 def normWayBias(interVal, cbin, ps, extraToNorm=None,
     positionAdjust=0):
-    interVal = interVal / extraToNorm[cbin] / extraToNorm[ps]
+    interVal = interVal / extraToNorm[cbin + positionAdjust] / extraToNorm[ps + positionAdjust]
     if not np.isnan(interVal):
         return interVal
     else:
@@ -130,12 +130,12 @@ def getLocusWithGenomeIntTadbit(hic_data, resol, locusCh, regionStart, regionEnd
     chromBinEnd = hic_data.section_pos[locusCh][1]
     # If we provide a range
     if isinstance(regionStart, int):
-        binBeg = (chromBinBeg + (regionStart / resol))
-        binEnd = (chromBinBeg + (regionEnd / resol))
+        binBeg = (chromBinBeg + (regionStart // resol))
+        binEnd = (chromBinBeg + (regionEnd // resol))
         binRange = range(binBeg, binEnd + 1)
     # If instead provide the positions of interest in a list
     else:
-        print 'Remember that focus location coordinates must be related to bins'
+        print('Remember that focus location coordinates must be related to bins')
         binRange = regionStart
     
 
@@ -217,14 +217,14 @@ def getLocusWithGenomeIntTadbit(hic_data, resol, locusCh, regionStart, regionEnd
         reAd = []
         for d in delFocus:
             if interChromList[d] > 1:
-                print 'Bin %s just have inter chromosomal interactions' %d
+                print('Bin %s just have inter chromosomal interactions' %d)
                 reAd += [d]
         delFocus = list(set(delFocus) - set(reAd))
             
     if len(delFocus) != 0:
         message = 'Points removed from focus due to no interaction data, '
         message += '%s' %delFocus
-        print message
+        print(message)
     
     # update binRange
     binRange = list(set(binRange) - set(delFocus))
@@ -252,11 +252,11 @@ def getLocusWithGenomeIntMatrix(matriz1, resol, regionStart, regionEnd):
     :returns: A defaultdict with bins from the whole matrix as column
         and interactions floating or integer values
     '''
-    print 'THIS FUNCTION HASNT BIN UPDATED AS THE ONE USING TADBIT DATA'
+    print('THIS FUNCTION HASNT BIN UPDATED AS THE ONE USING TADBIT DATA')
     # If we provide a range
     if isinstance(regionStart, int):
-        binBeg = regionStart / resol
-        binEnd = regionEnd / resol
+        binBeg = regionStart // resol
+        binEnd = regionEnd // resol
         binRange = range(binBeg, binEnd + 1)
     # If instead provide the positions of interest in a list
     else:
@@ -286,7 +286,7 @@ def getLocusWithGenomeIntMatrix(matriz1, resol, regionStart, regionEnd):
     if len(delFocus) != 0:
         message = 'Points removed from focus due to no interaction data '
         message += 'in the whole matrix:\n %s' %delFocus
-        print message
+        print(message)
     
     # update binRange
     binRange = list(set(binRange) - set(delFocus))
@@ -516,7 +516,7 @@ def getNeighbourInteraction(data1, interList, locusCh, focus, dataType = 'matrix
         if topRankInterC == None:
             topRankInterC = topRank
         if interChromList == {}:
-            print 'Missing interChromList to run whole genome'
+            print('Missing interChromList to run whole genome')
 
         limit_interChr = computeRank([inte for inte in interChromList.values() 
                                         if inte != 0], topRankInterC)
@@ -538,7 +538,7 @@ def getNeighbourInteraction(data1, interList, locusCh, focus, dataType = 'matrix
     #the filtering in the interacting bin
     # Iterate over each one of the filtered bins
     if dataType == 'matrix':
-        print 'Matrices are searched whole, no distinction for interChrom'
+        print('Matrices are searched whole, no distinction for interChrom')
         highPeaks = {}
         
         for kPeak in sorted(list(thresKeys)):
