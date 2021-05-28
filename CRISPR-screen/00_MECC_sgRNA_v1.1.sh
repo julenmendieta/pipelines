@@ -15,12 +15,13 @@
 #SBATCH --job-name=CRISPR
 #SBATCH --cpus-per-task=6
 #SBATCH --mem=10G
-#SBATCH --time=05-10:00:00
+#SBATCH --time=01:00:00
 #SBATCH -p short
-#SBATCH --mail-type=END
-#SBATCH --mail-user=mcallejac@unav.es
-#SBATCH -o ./CRISPR_%a.log  # Standard output A = array ID, a = task ID
-#SBATCH -e ./CRISPR_%a.err # Standard error
+#SBATCH -o /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.out  
+#SBATCH -e /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.err 
+
+##SBATCH --mail-type=END
+##SBATCH --mail-user=mcallejac@unav.es
 #find /home/mcallejac/David_Seq/data/V300042238_L02 -type f -name "WT*" -exec ln -s {} . ';'
 #find /home/mcallejac/David_Seq/data/V300042238_L02 -type f -name "Cas9*" -exec ln -s {} . ';'
 ##sbatch --array=0-11%4 MECC_sgRNA_v1_495.sbs
@@ -30,38 +31,44 @@
 # N=`cat /home/jmendietaes/data/2021/CRISPR/sequencedData/merge4_492/samplesNames.txt | wc -l`
 # sbatch --array=1-${N} 00_MECC_sgRNA_v1.1.sh \
 #/home/jmendietaes/data/2021/CRISPR/sequencedData/merge4_492 \
-#/home/jmendietaes/data/2021/CRISPR/allProcessed \
-#/home/jmendietaes/referenceGenomes/mm10_reordered/mm10.reordered
+#/home/jmendietaes/data/2021/CRISPR/allProcessed/merge4_492 \
+#/home/jmendietaes/referenceGenomes/sgRNA_indexes/bowtie2/finalGuides.fa \
+#'CACCG(.{20})GT{2,4}AGAGC'
 
 ##===============================================================================
 ## GLOBAL VARIABLES
 # the base ones to modify
 
 # -- base path were fastqs are located
-PARENT_DIR="/home/jmendietaes/data/2021/CRISPR/sequencedData/merge4_492"
+PARENT_DIR=$1
+#PARENT_DIR="/home/jmendietaes/data/2021/CRISPR/sequencedData/merge4_492"
+final_dir=$2
+#final_dir="/home/jmendietaes/data/2021/CRISPR/allProcessed/merge4_492"
+
+## Guide REFERENCE 
+## Comment by David These are the indexes for the alignment of the sgRNAs. But we will have just one genome index for every library.
+# bowtie 1
+GenomeIndex_all=$3
+#GenomeIndex_all='/home/jmendietaes/referenceGenomes/sgRNA_indexes/bowtie1/finalGuides.fa'
+# bowtie 2
+#GenomeIndex_all='/home/jmendietaes/referenceGenomes/sgRNA_indexes/bowtie2/finalGuides.fa'
+# change module and mapping code if you swich bowtie version in here
 # -- regexp filter to extract the 20 nucleotide guides
 # bulk library design (More info about pattern in line 54)
+flanquingSeq=$4
+#flanquingSeq='CACCG(.{20})GT{2,4}AGAGC'
 #flanquingSeq='CACCG(.{20})GTTTTAGAGC'
-flanquingSeq='CACCG(.{20})GT{2,4}AGAGC'
 # Alternative filter allowing from 2 to 4 T in the end 'CACCG(.{20})GT{2,4}AGAGC'
 # new library (scRNAseq)
 #flanquingSeq='CACCG(.{20})GTTTAAGAGC'
 
 
 
-
+#######################################################################################
 # these ones shouldnt need to be modified if we are using the right folder structure
 FASTQ_DIR=$PARENT_DIR"/fastq"
 EDITED_DIR=$PARENT_DIR"/pipelineOut"
 #FASTQC_DIR=$EDITED_DIR"/fastQC"
-
-## Guide REFERENCE 
-## Comment by David These are the indexes for the alignment of the sgRNAs. But we will have just one genome index for every library.
-# bowtie 1
-GenomeIndex_all='/home/jmendietaes/referenceGenomes/sgRNA_indexes/bowtie1/finalGuides'
-# bowtie 2
-#GenomeIndex_all='/home/jmendietaes/referenceGenomes/sgRNA_indexes/bowtie2/finalGuides'
-# change module and mapping code if you swich bowtie version in here
 
 # path to the python script to extract the guide sequence
 # the script will rely on the first '(.{' symbol in the pattern to get the number of nucleotides
@@ -75,12 +82,17 @@ GenomeIndex_all='/home/jmendietaes/referenceGenomes/sgRNA_indexes/bowtie1/finalG
 extractScript="/home/jmendietaes/programas/PhD/CRISPR-screen/00_NR_CRISPR-extract.py"
 
 outGZ="False"
+
+# set python paths
+export PATH="/home/jmendietaes/programas/miniconda3/bin:$PATH"
+export PYTHONPATH=/home/jmendietaes/programas/miniconda3/bin/python3.8
+
 ##===============================================================================
 ## Required Software
 #module load FastQC/0.11.8-Java-1.8
 #module load MultiQC/1.7-foss-2018b-Python-2.7.15
-module load Bowtie/1.2.2-foss-2018b
-#module load Bowtie2/2.3.4.2-foss-2018b
+#module load Bowtie/1.2.2-foss-2018b
+module load Bowtie2/2.3.4.2-foss-2018b
 module load SAMtools/1.9-foss-2018b
 #module load Perl/5.28.0-GCCcore-7.3.0
 ##===============================================================================
@@ -124,6 +136,10 @@ if [ ! -e ${EDITED_DIR}/QC/ ] && echo exists ; then
     mkdir -p ${EDITED_DIR}/QC/
 fi
 
+if [ ! -e ${final_dir}/QC/ ] && echo exists ; then
+    mkdir -p ${final_dir}/QC/
+fi
+
 cd $EDITED_DIR
 ##===============================================================================
 ##Choose files# If we always get in list all files from folder
@@ -136,7 +152,11 @@ filename=${FILES[$SLURM_ARRAY_TASK_ID]}
 # get some paths
 read1_path="${FASTQ_DIR}/${filename}_R1.fastq.gz"
 stepControl="${EDITED_DIR}/QC/pipelineStep_${filename}.txt"
-summaryFile="${EDITED_DIR}/QC/summary_${filename}.txt"
+summaryFile="${final_dir}/QC/summary_${filename}.txt"
+
+if [ ! -e ${stepControl} ] ; then
+    touch ${stepControl}
+fi
 
 ##===============================================================================
 #############
@@ -150,6 +170,7 @@ linec=`sed "1q;d" ${stepControl}`
 if [[ ${linec} != "Summary" ]]; then 
     echo -e "STARTING \n $(date) \n" 
     echo "SAMPLE: ${filename}" 
+    echo -e "READ COUNTS \n" >> ${summaryFile}
     echo -e "sample name\tfastq name\tread count\tmillions" >> ${summaryFile}
 
     # QC: read counts if file is gziped or not
@@ -162,7 +183,6 @@ if [[ ${linec} != "Summary" ]]; then
         #Counts2="$(cat ${RAW_FASTQ_DIR}/${filename}_R2_001.fastq| echo $((`wc -l`/4)))"
     fi
 
-    echo -e "READ COUNTS \n" >> ${summaryFile}
     rc=$((Counts1/1000000))
     echo -e "${filename} \t ${filename}_R1 \t ${Counts1} \t ${rc}" >> ${summaryFile}
     
@@ -240,9 +260,9 @@ echo -e "Starting CRISPR-extract-carpools------------------- \n"
 
 # Create output dir
 if [[ ${outGZ} == "False" ]]; then
-    extr_fastq="${EDITED_DIR}/fastq_extr/${filename}_extracted.fastq"
+    extr_fastq="${EDITED_DIR}/fastq_extr/${filename}_R1_extracted.fastq"
 else
-    extr_fastq="${EDITED_DIR}/fastq_extr/${filename}_extracted.fastq.gz"
+    extr_fastq="${EDITED_DIR}/fastq_extr/${filename}_R1_extracted.fastq.gz"
 fi
 
 # Python script arguments
@@ -254,7 +274,9 @@ fi
 # check content of second line of step control file
 linec=`sed "2q;d" ${stepControl}`
 if [[ ${linec} != "Extract" ]]; then 
-    python ${extractScript} --fastq_path ${read1_path} --pattern ${flanquingSeq} --outgz ${outGZ}
+    echo -e "\nGUIDE EXTRACTION\n" >> ${summaryFile}
+    python ${extractScript} --fastq_path ${read1_path} --pattern ${flanquingSeq} --outgz ${outGZ} >> ${summaryFile}
+    mv ${FASTQ_DIR}/${filename}_R1_extracted.fastq ${EDITED_DIR}/fastq_extr/
     #perl ''${extractScript}'' ${flanquingSeq} ${fastaUnz} FALSE ${readId} >> ${EDITED_DIR}/QC/${filename}CRISPR-extract-carpools.log 2>&1
 
     echo -e "CRISPR-extract-carpools - done -------------------------------------- \n"
@@ -294,7 +316,12 @@ linec=`sed "3q;d" ${stepControl}`
 if [[ ${linec} != "Align" ]]; then 
     # For relatively short reads (e.g. less than 50 bp) Bowtie 1 is sometimes faster and/or more sensitive.
     # http://bowtie-bio.sourceforge.net/bowtie2/faq.shtml
-    bowtie2 -p $SLURM_CPUS_PER_TASK -x $GenomeIndex -U ${extr_fastq} -S ${samPath} >> ${EDITED_DIR}/BAM/${filename}bowtie2.log 2>&1
+    #bowtie -p $SLURM_CPUS_PER_TASK ${GenomeIndex_all} ${extr_fastq} -S ${samPath} --best
+
+    # The mapping takes 22 secods, mapping percentaje difference goes from 96.58 in bowtie 2 to 97.23 in bowtie
+    # but I like that bowtie 2 states number of alignments of reads in more than one ref
+    echo -e "\nALIGNMENT\n" >> ${summaryFile}
+    bowtie2 -p $SLURM_CPUS_PER_TASK -x $GenomeIndex_all -U ${extr_fastq} -S ${samPath} >> ${summaryFile} 2>&1
     
     # store stage control info
     echo "Align" >> ${stepControl}
@@ -345,18 +372,22 @@ fi
 # lastChecks: create flagstats and indxstats files and remove redundant data
 #############
 
+if [ ! -e ${final_dir}/indxstats/ ]; then
+    mkdir -p ${final_dir}/indxstats/
+fi
+
 echo -e "Starting last checks -------------------------------------- \n"
 
 # check content of fifth line of step control file
 linec=`sed "5q;d" ${stepControl}`
 if [[ ${linec} != "lastChecks" ]]; then 
 
-    echo -e "SAMTOOLS FLAGSTAT \n" >> ${summaryFile}
+    echo -e "\nSAMTOOLS FLAGSTAT\n" >> ${summaryFile}
     samtools flagstat ${bamSortPath} >> ${summaryFile}
     echo -e "\n"  >> ${summaryFile}
 
     # Indxstats = counts in this case
-    samtools idxstats ${bamSortPath} > ${EDITED_DIR}/QC/${filename}.indxstats
+    samtools idxstats ${bamSortPath} > ${final_dir}/indxstats/${filename}.indxstats
 
     # Remove intermediate files, pickup the right ones... as needed
     rm -rf ${samPath}

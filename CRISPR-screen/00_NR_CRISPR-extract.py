@@ -39,7 +39,7 @@ def filterFastqPattern(fi1, flanquingSeq='CACCG(.{20})GTTTTAGAGC',
         fout1 = io.BufferedWriter( gzip.open(outname,'wb'))
     else:
         writeF = writefastq
-        outname = fi1.split('.gz')[0] + '_extracted.fastq'
+        outname = fi1.split('.fastq')[0] + '_extracted.fastq'
         fout1 = open(outname,'w')
 
     # Some variables to extrac the flanked match from the whole match

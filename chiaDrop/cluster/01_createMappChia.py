@@ -95,6 +95,10 @@ cmd+='''#!/bin/bash
 module load GLib/2.54.3-GCCcore-7.3.0
 module load GCC
 
+# set python paths
+export PATH="/home/jmendietaes/programas/miniconda3/bin:$PATH"
+export PYTHONPATH=/home/jmendietaes/programas/miniconda3/bin/python3.8
+
 # File were we have located our array commands
 file=%s
 
