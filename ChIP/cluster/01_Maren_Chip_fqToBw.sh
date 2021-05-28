@@ -171,7 +171,7 @@ if [[ ${linec} != "Summary" ]]; then
     rc=$((Counts1/1000000))
     echo -e "${filename} \t ${filename}_R1 \t ${Counts1} \t ${rc}" >> ${summaryFile}
     rc=$((Counts2/1000000))
-    echo -e "${filename} \t ${filename}_R1 \t ${Counts2} \t ${rc} \n" >> ${summaryFile}
+    echo -e "${filename} \t ${filename}_R2 \t ${Counts2} \t ${rc} \n" >> ${summaryFile}
 
     echo -e "Summary file - done -------------------------------------- \n"
     # store stage control info
