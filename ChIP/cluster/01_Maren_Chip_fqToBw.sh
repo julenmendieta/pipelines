@@ -115,7 +115,11 @@ fi
 cd $EDITED_DIR
 
 #Choose file
-FILES=($(ls $RAW_FASTQ_DIR | grep "fastq.gz" | sed -r 's/.{16}$//' | uniq))
+# If we always get in list all files from folder
+#FILES=($(ls $RAW_FASTQ_DIR | grep "fastq.gz" | sed -r 's/.{16}$//' | uniq))
+# If we want to do only the files in samplesNames.txt file. Perfecto for re-running 
+#dead jobs
+FILES=($(cat $RAW_FASTQ_DIR/samplesNames.txt))
 filename=${FILES[$SLURM_ARRAY_TASK_ID - 1]}
 echo -e $SLURM_JOB_NODELIST 
 #https://slurm.schedmd.com/faq.html#task_prolog
@@ -123,6 +127,7 @@ echo "print =========================================="
 echo "print SLURM_JOB_ID = $SLURM_JOB_ID"
 echo "print SLURM_JOB_NODELIST = $SLURM_JOB_NODELIST"
 echo "print =========================================="
+echo $filename
 ##===============================================================================
 
 # get some paths
