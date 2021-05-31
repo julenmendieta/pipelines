@@ -33,7 +33,7 @@
 #/home/jmendietaes/data/2021/CRISPR/sequencedData/merge4_492 \
 #/home/jmendietaes/data/2021/CRISPR/allProcessed/merge4_492 \
 #/home/jmendietaes/referenceGenomes/sgRNA_indexes/bowtie2/finalGuides.fa \
-#'CACCG(.{20})GT{2,4}AGAGC'
+#'CACCG(.{20})GT{2,4}'
 
 ##===============================================================================
 ## GLOBAL VARIABLES
@@ -61,6 +61,7 @@ flanquingSeq=$4
 # Alternative filter allowing from 2 to 4 T in the end 'CACCG(.{20})GT{2,4}AGAGC'
 # new library (scRNAseq)
 #flanquingSeq='CACCG(.{20})GTTTAAGAGC'
+#flanquingSeq='CACCG(.{20})GT{2,4}'
 
 
 
@@ -147,7 +148,7 @@ cd $EDITED_DIR
 # If we want to do only the files in samplesNames.txt file. Perfecto for re-running
 #dead jobs
 FILES=($(cat $FASTQ_DIR/samplesNames.txt))
-filename=${FILES[$SLURM_ARRAY_TASK_ID]}
+filename=${FILES[$SLURM_ARRAY_TASK_ID - 1]}
 
 # get some paths
 read1_path="${FASTQ_DIR}/${filename}_R1.fastq.gz"
@@ -339,13 +340,19 @@ fi
 
 echo -e "Starting SAM to BAM -------------------------------------- \n"
 
-bamPath="${EDITED_DIR}/BAM/${filename}.bam"
-bamSortPath="${EDITED_DIR}/BAM/${filename}.sort.bam"
+samPathUniq="${EDITED_DIR}/BAM/${filename}.uniqM.sam"
+bamPath="${EDITED_DIR}/BAM/${filename}.uniqM.bam"
+bamSortPath="${EDITED_DIR}/BAM/${filename}.uniqM.sort.bam"
 # check content of forth line of step control file
 linec=`sed "4q;d" ${stepControl}`
 if [[ ${linec} != "toBam" ]]; then 
-
-    samtools view -o ${bamPath} -bhS -@ $SLURM_CPUS_PER_TASK ${samPath}
+    # first we filter out reads mapping more than twice
+    samtools view -h ${samPath} | grep -v XS:i > ${samPathUniq}
+    skipped=`samtools view ${samPath} | grep XS:i | wc -l`
+    echo -e "\nFILTER READS MAPPING MORE THAN ONCE\n" >> ${summaryFile}
+    echo "$skipped reads filtered out" >> ${summaryFile}
+    # Then we convert to bam
+    samtools view -o ${bamPath} -bhS -@ $SLURM_CPUS_PER_TASK ${samPathUniq}
     # samtools view ${EDITED_DIR}/BAM/${filename}.bam| cut -f3 | sort | uniq -c > ${EDITED_DIR}/BAM/${filename}.cnt #After, I will discard this and retrieve indxstats ONLY
     # cat ${EDITED_DIR}/BAM/${filename}.cnt| awk '{print $1;}' > file2 # I think I will ddiscard this part and retrieve the .cnt only
     # cat ${EDITED_DIR}/BAM/${filename}.cnt| awk '{print $2;}' > file1
@@ -383,7 +390,7 @@ linec=`sed "5q;d" ${stepControl}`
 if [[ ${linec} != "lastChecks" ]]; then 
 
     echo -e "\nSAMTOOLS FLAGSTAT\n" >> ${summaryFile}
-    samtools flagstat ${bamSortPath} >> ${summaryFile}
+    samtools flagstat ${bamSortPath} | head -5 | tail -1 >> ${summaryFile}
     echo -e "\n"  >> ${summaryFile}
 
     # Indxstats = counts in this case
@@ -392,6 +399,8 @@ if [[ ${linec} != "lastChecks" ]]; then
     # Remove intermediate files, pickup the right ones... as needed
     rm -rf ${samPath}
     rm -rf ${bamPath}
+    rm -rf ${samPathUniq}
+    rm -rf ${extr_fastq}
 
     # store stage control info
     echo "lastChecks" >> ${stepControl}
