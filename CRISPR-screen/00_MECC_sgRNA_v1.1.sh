@@ -15,7 +15,7 @@
 #SBATCH --job-name=CRISPR
 #SBATCH --cpus-per-task=6
 #SBATCH --mem=10G
-#SBATCH --time=01:00:00
+#SBATCH --time=00:30:00
 #SBATCH -p short
 #SBATCH -o /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.out  
 #SBATCH -e /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.err 
@@ -27,7 +27,7 @@
 ##sbatch --array=0-11%4 MECC_sgRNA_v1_495.sbs
 
 # HOW TO RUN ME
-# for i in *fastq.gz; do echo $i | sed 's/_R..fastq.gz//g' ; done | sort | uniq > samplesNames.txt
+# for i in *fastq.gz; do echo $i | sed 's/_R1_001.fastq.gz//g' ; done | sort | uniq > samplesNames.txt
 # N=`cat /home/jmendietaes/data/2021/CRISPR/sequencedData/merge4_492/samplesNames.txt | wc -l`
 # sbatch --array=1-${N} 00_MECC_sgRNA_v1.1.sh \
 #/home/jmendietaes/data/2021/CRISPR/sequencedData/merge4_492 \
@@ -63,6 +63,9 @@ flanquingSeq=$4
 #flanquingSeq='CACCG(.{20})GTTTAAGAGC'
 #flanquingSeq='CACCG(.{20})GT{2,4}'
 
+# if the files have 001 or not, we add the string or not
+extraSTR="_001"
+#extraSTR=""
 
 
 #######################################################################################
@@ -151,7 +154,7 @@ FILES=($(cat $FASTQ_DIR/samplesNames.txt))
 filename=${FILES[$SLURM_ARRAY_TASK_ID - 1]}
 
 # get some paths
-read1_path="${FASTQ_DIR}/${filename}_R1.fastq.gz"
+read1_path="${FASTQ_DIR}/${filename}_R1${extraSTR}.fastq.gz"
 stepControl="${EDITED_DIR}/QC/pipelineStep_${filename}.txt"
 summaryFile="${final_dir}/QC/summary_${filename}.txt"
 
@@ -261,9 +264,9 @@ echo -e "Starting CRISPR-extract-carpools------------------- \n"
 
 # Create output dir
 if [[ ${outGZ} == "False" ]]; then
-    extr_fastq="${EDITED_DIR}/fastq_extr/${filename}_R1_extracted.fastq"
+    extr_fastq="${EDITED_DIR}/fastq_extr/${filename}_R1${extraSTR}_extracted.fastq"
 else
-    extr_fastq="${EDITED_DIR}/fastq_extr/${filename}_R1_extracted.fastq.gz"
+    extr_fastq="${EDITED_DIR}/fastq_extr/${filename}_R1${extraSTR}_extracted.fastq.gz"
 fi
 
 # Python script arguments
@@ -277,7 +280,7 @@ linec=`sed "2q;d" ${stepControl}`
 if [[ ${linec} != "Extract" ]]; then 
     echo -e "\nGUIDE EXTRACTION\n" >> ${summaryFile}
     python ${extractScript} --fastq_path ${read1_path} --pattern ${flanquingSeq} --outgz ${outGZ} >> ${summaryFile}
-    mv ${FASTQ_DIR}/${filename}_R1_extracted.fastq ${EDITED_DIR}/fastq_extr/
+    mv ${FASTQ_DIR}/${filename}_R1${extraSTR}_extracted.fastq ${EDITED_DIR}/fastq_extr/
     #perl ''${extractScript}'' ${flanquingSeq} ${fastaUnz} FALSE ${readId} >> ${EDITED_DIR}/QC/${filename}CRISPR-extract-carpools.log 2>&1
 
     echo -e "CRISPR-extract-carpools - done -------------------------------------- \n"
@@ -347,13 +350,17 @@ bamSortPath="${EDITED_DIR}/BAM/${filename}.uniqM.sort.bam"
 linec=`sed "4q;d" ${stepControl}`
 if [[ ${linec} != "toBam" ]]; then 
     # first we filter out reads mapping more than twice
-    samtools view -h ${samPath} | grep -v XS:i > ${samPathUniq}
-    skipped=`samtools view ${samPath} | grep XS:i | wc -l`
+    samPathUniq=${samPath}
+    #samtools view -h ${samPath} | grep -v XS:i > ${samPathUniq}
+    #skipped=`samtools view ${samPath} | grep XS:i | wc -l`
+    skipped=0
     echo -e "\nFILTER READS MAPPING MORE THAN ONCE\n" >> ${summaryFile}
-    echo "$skipped reads filtered out" >> ${summaryFile}
+    echo -e "$skipped reads filtered out\n" >> ${summaryFile}
+    echo -e "Number of reads that map more than once, and their top target\n" >> ${summaryFile}
+    samtools view -h ${samPathUniq} | grep XS:i | awk '{print $3}' | sort | uniq -c >> ${summaryFile}
     # Then we convert to bam
     samtools view -o ${bamPath} -bhS -@ $SLURM_CPUS_PER_TASK ${samPathUniq}
-    # samtools view ${EDITED_DIR}/BAM/${filename}.bam| cut -f3 | sort | uniq -c > ${EDITED_DIR}/BAM/${filename}.cnt #After, I will discard this and retrieve indxstats ONLY
+    # samtools view ${EDITED_DIR}/BAM/${filename}.bam| cut -f3 | sort | uniq -c > ${EDITED_DIR}/BAM/${filename}.cnt #After, I will discard this and retrieve idxstats ONLY
     # cat ${EDITED_DIR}/BAM/${filename}.cnt| awk '{print $1;}' > file2 # I think I will ddiscard this part and retrieve the .cnt only
     # cat ${EDITED_DIR}/BAM/${filename}.cnt| awk '{print $2;}' > file1
     # paste file1 file2 > ${EDITED_DIR}/BAM/${filename}.txt
@@ -376,11 +383,11 @@ fi
 
 
 #############
-# lastChecks: create flagstats and indxstats files and remove redundant data
+# lastChecks: create flagstats and idxstats files and remove redundant data
 #############
 
-if [ ! -e ${final_dir}/indxstats/ ]; then
-    mkdir -p ${final_dir}/indxstats/
+if [ ! -e ${final_dir}/idxstats/ ]; then
+    mkdir -p ${final_dir}/idxstats/
 fi
 
 echo -e "Starting last checks -------------------------------------- \n"
@@ -393,8 +400,8 @@ if [[ ${linec} != "lastChecks" ]]; then
     samtools flagstat ${bamSortPath} | head -5 | tail -1 >> ${summaryFile}
     echo -e "\n"  >> ${summaryFile}
 
-    # Indxstats = counts in this case
-    samtools idxstats ${bamSortPath} > ${final_dir}/indxstats/${filename}.indxstats
+    # idxstats = counts in this case
+    samtools idxstats ${bamSortPath} > ${final_dir}/idxstats/${filename}.idxstats
 
     # Remove intermediate files, pickup the right ones... as needed
     rm -rf ${samPath}

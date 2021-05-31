@@ -34,8 +34,8 @@ if (length(args)==0) {
 ## TO BE Modified
 PROJECT_DIR <- args[1]
 #PROJECT_DIR<-file.path("/Users/julen/Downloads/prueba/merge4-492")
-guidesFile <- "/Users/julen/Downloads/prueba/finalGuides.txt"
-#guidesFile <- "/home/jmendietaes/data/2021/CRISPR/finalGuides.txt"
+#guidesFile <- "/Users/julen/Downloads/prueba/finalGuides.txt"
+guidesFile <- "/home/jmendietaes/data/2021/CRISPR/finalGuides.txt"
 
 # If the folder structure is ok this shouldn chance
 Counts<-file.path(PROJECT_DIR,"idxstats")
@@ -44,12 +44,14 @@ runName <- basename(PROJECT_DIR)
 
 ## Relevant info about the guides
 allGuideCodes <- c("MGLibA", "R2.Br", "As", "B.Br", "TF1.Br", "Br", "R1.Br", "B", "TF2.Br")
-guideSynonims <- vector(mode="list", length=length(allGuideCodes) + 4)
-names(guideSynonims) <- c("TF1", "TF2", "R1", "R2", allGuideCodes)
+guideSynonims <- vector(mode="list", length=length(allGuideCodes) + 5)
+names(guideSynonims) <- c("TF1", "TF2", "R1", "R2", "BBr", allGuideCodes)
 guideSynonims[[1]] <- "TF1.Br"; guideSynonims[[2]] <- "TF2.Br"
 guideSynonims[[3]] <- "R1.Br"; guideSynonims[[4]] <- "R2.Br"
+guideSynonims[[5]] <- "B.Br"
+
 for (i in 1:length(allGuideCodes)) {
-  guideSynonims[[i+4]] <- allGuideCodes[i]
+  guideSynonims[[i+5]] <- allGuideCodes[i]
 }
 
 #===============================================================================
