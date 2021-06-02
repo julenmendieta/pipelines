@@ -5,7 +5,6 @@
 ####   MECC_sgRNA_v1.sh
 ####   Counts for CrisprScreens
 ####   Maren Calleja @Cluster
-####   Updated: Julen Mendieta
 ####   Project: Crispr screens 
 ####   Wet-lab part: Ainhoa, David
 ####   Blah, blah
@@ -28,12 +27,12 @@
 ##sbatch --array=0-11%4 MECC_sgRNA_v1_495.sbs
 
 # HOW TO RUN ME
-# for i in *_R1_001.fastq.gz; do echo $i | sed 's/_R1_001.fastq.gz//g' ; done | sort | uniq > samplesNames.txt
+# for i in *fastq.gz; do echo $i | sed 's/_R1_001.fastq.gz//g' ; done | sort | uniq > samplesNames.txt
 # N=`cat /home/jmendietaes/data/2021/CRISPR/sequencedData/merge4_492/samplesNames.txt | wc -l`
 # sbatch --array=1-${N} 00_MECC_sgRNA_v1.1.sh \
-#/home/jmendietaes/data/2021/CRISPR/sequencedData/merge4-492 \
-#/home/jmendietaes/data/2021/CRISPR/allProcessed/merge4-492 \
-#/home/jmendietaes/referenceGenomes/sgRNA_indexes/bowtie2 \
+#/home/jmendietaes/data/2021/CRISPR/sequencedData/merge4_492 \
+#/home/jmendietaes/data/2021/CRISPR/allProcessed/merge4_492 \
+#/home/jmendietaes/referenceGenomes/sgRNA_indexes/bowtie2/finalGuides.fa \
 #'CACCG(.{20})GT{2,4}'
 
 ##===============================================================================
@@ -48,13 +47,11 @@ final_dir=$2
 
 ## Guide REFERENCE 
 ## Comment by David These are the indexes for the alignment of the sgRNAs. But we will have just one genome index for every library.
-## In the end we go back to one index per library, so here we pass the main folder with
-# each of the IDs named ID.fa as in the guide ID stated in every sample
-GenomeIndex_all=$3
 # bowtie 1
-#GenomeIndex_all='/home/jmendietaes/referenceGenomes/sgRNA_indexes/bowtie1'
+GenomeIndex_all=$3
+#GenomeIndex_all='/home/jmendietaes/referenceGenomes/sgRNA_indexes/bowtie1/finalGuides.fa'
 # bowtie 2
-#GenomeIndex_all='/home/jmendietaes/referenceGenomes/sgRNA_indexes/bowtie2'
+#GenomeIndex_all='/home/jmendietaes/referenceGenomes/sgRNA_indexes/bowtie2/finalGuides.fa'
 # change module and mapping code if you swich bowtie version in here
 # -- regexp filter to extract the 20 nucleotide guides
 # bulk library design (More info about pattern in line 54)
@@ -156,20 +153,6 @@ cd $EDITED_DIR
 FILES=($(cat $FASTQ_DIR/samplesNames.txt))
 filename=${FILES[$SLURM_ARRAY_TASK_ID - 1]}
 
-# get library ID to which map this file
-mapLib=(${filename//_/ })
-mapLib=${mapLib[2]}
-GenomeIndex="$GenomeIndex_all/$mapLib/$mapLib.fa"
-GenomeIndex_allGuide="$GenomeIndex_all/allGuides/finalGuides.fa"
-
-# ensure that we have this index
-if [[ ! -f ${GenomeIndex} ]]
-then
-    echo "Inferred index file does not exist"
-    echo ${GenomeIndex}
-    exit 1
-fi
-
 # get some paths
 read1_path="${FASTQ_DIR}/${filename}_R1${extraSTR}.fastq.gz"
 stepControl="${EDITED_DIR}/QC/pipelineStep_${filename}.txt"
@@ -200,7 +183,6 @@ if [[ ${linec} != "Summary" ]]; then
     else
         echo "Not gzipped files"
         echo $read1_path
-        exit 1
         #Counts1="$(cat ${RAW_FASTQ_DIR}/${filename}_R1_001.fastq | echo $((`wc -l`/4)))"
         #Counts2="$(cat ${RAW_FASTQ_DIR}/${filename}_R2_001.fastq| echo $((`wc -l`/4)))"
     fi
@@ -283,10 +265,8 @@ echo -e "Starting CRISPR-extract-carpools------------------- \n"
 # Create output dir
 if [[ ${outGZ} == "False" ]]; then
     extr_fastq="${EDITED_DIR}/fastq_extr/${filename}_R1${extraSTR}_extracted.fastq"
-    extr_unmap="${EDITED_DIR}/fastq_extr/${filename}_R1${extraSTR}_extracted_unmap.fastq"
 else
     extr_fastq="${EDITED_DIR}/fastq_extr/${filename}_R1${extraSTR}_extracted.fastq.gz"
-    extr_unmap="${EDITED_DIR}/fastq_extr/${filename}_R1${extraSTR}_extracted_unmap.fastq.gz"
 fi
 
 # Python script arguments
@@ -335,30 +315,18 @@ fi
 # SE HAN MAPEADO CON RESPECTO AL DE INTERES
 
 samPath="${EDITED_DIR}/BAM/${filename}.sam"
-samPath_unM="${EDITED_DIR}/BAM/${filename}.unMap.sam"
 # check content of third line of step control file
 linec=`sed "3q;d" ${stepControl}`
 if [[ ${linec} != "Align" ]]; then 
     # For relatively short reads (e.g. less than 50 bp) Bowtie 1 is sometimes faster and/or more sensitive.
     # http://bowtie-bio.sourceforge.net/bowtie2/faq.shtml
-    #bowtie -p $SLURM_CPUS_PER_TASK ${GenomeIndex} ${extr_fastq} -S ${samPath} --best
+    #bowtie -p $SLURM_CPUS_PER_TASK ${GenomeIndex_all} ${extr_fastq} -S ${samPath} --best
 
     # The mapping takes 22 secods, mapping percentaje difference goes from 96.58 in bowtie 2 to 97.23 in bowtie
     # but I like that bowtie 2 states number of alignments of reads in more than one ref
     echo -e "\nALIGNMENT\n" >> ${summaryFile}
-    bowtie2 -p $SLURM_CPUS_PER_TASK -x $GenomeIndex -U ${extr_fastq} \
-            -S ${samPath} --un ${extr_unmap} >> ${summaryFile} 2>&1
+    bowtie2 -p $SLURM_CPUS_PER_TASK -x $GenomeIndex_all -U ${extr_fastq} -S ${samPath} >> ${summaryFile} 2>&1
     
-    # with --un we write unmapped reads to another fastq
-    # the we try to map them to all the reference guides
-    echo -e "\nALIGNMENT of previously unmapped\n" >> ${summaryFile}
-    bowtie2 -p $SLURM_CPUS_PER_TASK -x $GenomeIndex_allGuide -U ${extr_unmap} \
-            -S ${samPath_unM} >> ${summaryFile} 2>&1
-
-    # Default mode: search for multiple alignments, report the best one
-    # Bowtie 2 does not guarantee that the alignment reported is the best possible in terms of alignment score.
-    # Increasing -R makes Bowtie 2 slower, but increases the likelihood that it will report the correct alignment 
-    # for a read that aligns many places.
     # store stage control info
     echo "Align" >> ${stepControl}
 
@@ -375,26 +343,23 @@ fi
 
 echo -e "Starting SAM to BAM -------------------------------------- \n"
 
-#samPathUniq="${EDITED_DIR}/BAM/${filename}.uniqM.sam"
-bamPath="${EDITED_DIR}/BAM/${filename}.bam"
-bamSortPath="${EDITED_DIR}/BAM/${filename}.sort.bam"
-
-bamPath_unM="${EDITED_DIR}/BAM/${filename}.unMap.bam"
-bamSortPath_unM="${EDITED_DIR}/BAM/${filename}.unMap.sort.bam"
+samPathUniq="${EDITED_DIR}/BAM/${filename}.uniqM.sam"
+bamPath="${EDITED_DIR}/BAM/${filename}.uniqM.bam"
+bamSortPath="${EDITED_DIR}/BAM/${filename}.uniqM.sort.bam"
 # check content of forth line of step control file
 linec=`sed "4q;d" ${stepControl}`
 if [[ ${linec} != "toBam" ]]; then 
     # first we filter out reads mapping more than twice
+    samPathUniq=${samPath}
     #samtools view -h ${samPath} | grep -v XS:i > ${samPathUniq}
     #skipped=`samtools view ${samPath} | grep XS:i | wc -l`
     skipped=0
     echo -e "\nFILTER READS MAPPING MORE THAN ONCE\n" >> ${summaryFile}
     echo -e "$skipped reads filtered out\n" >> ${summaryFile}
     echo -e "Number of reads that map more than once, and their top target\n" >> ${summaryFile}
-    samtools view -h ${samPath} | grep XS:i | awk '{print $3}' | sort | uniq -c >> ${summaryFile}
+    samtools view -h ${samPathUniq} | grep XS:i | awk '{print $3}' | sort | uniq -c >> ${summaryFile}
     # Then we convert to bam
-    samtools view -o ${bamPath} -bhS -@ $SLURM_CPUS_PER_TASK ${samPath}
-    samtools view -o ${bamPath_unM} -bhS -@ $SLURM_CPUS_PER_TASK ${samPath_unM}
+    samtools view -o ${bamPath} -bhS -@ $SLURM_CPUS_PER_TASK ${samPathUniq}
     # samtools view ${EDITED_DIR}/BAM/${filename}.bam| cut -f3 | sort | uniq -c > ${EDITED_DIR}/BAM/${filename}.cnt #After, I will discard this and retrieve idxstats ONLY
     # cat ${EDITED_DIR}/BAM/${filename}.cnt| awk '{print $1;}' > file2 # I think I will ddiscard this part and retrieve the .cnt only
     # cat ${EDITED_DIR}/BAM/${filename}.cnt| awk '{print $2;}' > file1
@@ -404,10 +369,8 @@ if [[ ${linec} != "toBam" ]]; then
     # ( IFS=$'\t'; echo "${head[*]}"; cat ${EDITED_DIR}/BAM/${filename}.txt ) > ${EDITED_DIR}/BAM/${filename}.final.txt
 
     samtools sort -o ${bamSortPath} ${bamPath} 
-    samtools index -b ${bamSortPath}
 
-    samtools sort -o ${bamSortPath_unM} ${bamPath_unM} 
-    samtools index -b ${bamSortPath_unM}
+    samtools index -b ${bamSortPath}
 
     # store stage control info
     echo "toBam" >> ${stepControl}
@@ -435,17 +398,15 @@ if [[ ${linec} != "lastChecks" ]]; then
 
     echo -e "\nSAMTOOLS FLAGSTAT\n" >> ${summaryFile}
     samtools flagstat ${bamSortPath} | head -5 | tail -1 >> ${summaryFile}
-    echo -e "\nSAMTOOLS FLAGSTAT OF UNMAPPED\n" >> ${summaryFile}
-    samtools flagstat ${bamSortPath_unM} | head -5 | tail -1 >> ${summaryFile}
     echo -e "\n"  >> ${summaryFile}
 
     # idxstats = counts in this case
     samtools idxstats ${bamSortPath} > ${final_dir}/idxstats/${filename}.idxstats
-    samtools idxstats ${bamSortPath_unM} > ${final_dir}/idxstats/${filename}.unMap.idxstats
 
     # Remove intermediate files, pickup the right ones... as needed
     rm -rf ${samPath}
     rm -rf ${bamPath}
+    rm -rf ${samPathUniq}
     rm -rf ${extr_fastq}
 
     # store stage control info
