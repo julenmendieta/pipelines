@@ -29,7 +29,7 @@
 
 # HOW TO RUN ME
 # for i in *_R1_001.fastq.gz; do echo $i | sed 's/_R1_001.fastq.gz//g' ; done | sort | uniq > samplesNames.txt
-# N=`cat /home/jmendietaes/data/2021/CRISPR/sequencedData/merge4_492/samplesNames.txt | wc -l`
+# N=`cat /home/jmendietaes/data/2021/CRISPR/sequencedData/merge4-492/samplesNames.txt | wc -l`
 # sbatch --array=1-${N} 00_MECC_sgRNA_v1.1.sh \
 #/home/jmendietaes/data/2021/CRISPR/sequencedData/merge4-492 \
 #/home/jmendietaes/data/2021/CRISPR/allProcessed/merge4-492 \
@@ -42,9 +42,9 @@
 
 # -- base path were fastqs are located
 PARENT_DIR=$1
-#PARENT_DIR="/home/jmendietaes/data/2021/CRISPR/sequencedData/merge4_492"
+#PARENT_DIR="/home/jmendietaes/data/2021/CRISPR/sequencedData/merge4-492"
 final_dir=$2
-#final_dir="/home/jmendietaes/data/2021/CRISPR/allProcessed/merge4_492"
+#final_dir="/home/jmendietaes/data/2021/CRISPR/allProcessed/merge4-492"
 
 ## Guide REFERENCE 
 ## Comment by David These are the indexes for the alignment of the sgRNAs. But we will have just one genome index for every library.
@@ -77,6 +77,9 @@ FASTQ_DIR=$PARENT_DIR"/fastq"
 EDITED_DIR=$PARENT_DIR"/pipelineOut"
 #FASTQC_DIR=$EDITED_DIR"/fastQC"
 
+# path to the location of my git repo
+gitPath="/home/jmendietaes/programas/PhD"
+
 # path to the python script to extract the guide sequence
 # the script will rely on the first '(.{' symbol in the pattern to get the number of nucleotides
 #left-surrounding our set of nucleotides of interest
@@ -86,13 +89,14 @@ EDITED_DIR=$PARENT_DIR"/pipelineOut"
 # first input is GZIP-ed fastq file path, then you can optionally add a regexp pattern 
 #(default is 'CACCG(.{20})GTTTTAGAGC') and 'True' if you want the output fastq file
 #to be also GZIP-ed
-extractScript="/home/jmendietaes/programas/PhD/CRISPR-screen/00_NR_CRISPR-extract.py"
+extractScript="${gitPath}/CRISPR-screen/00_NR_CRISPR-extract.py"
 
+# path to R script for final guide analysis
+RscriptP="${gitPath}/CRISPR-screen/01a_MECC_sgRNA_pre_analysis_v2.r"
+
+# path to the python mapping report script
+reportScript="${gitPath}/CRISPR-screen/01b_mergedMappingReport.py"
 outGZ="False"
-
-# set python paths
-export PATH="/home/jmendietaes/programas/miniconda3/bin:$PATH"
-export PYTHONPATH=/home/jmendietaes/programas/miniconda3/bin/python3.8
 
 ##===============================================================================
 ## Required Software
@@ -102,6 +106,10 @@ export PYTHONPATH=/home/jmendietaes/programas/miniconda3/bin/python3.8
 module load Bowtie2/2.3.4.2-foss-2018b
 module load SAMtools/1.9-foss-2018b
 #module load Perl/5.28.0-GCCcore-7.3.0
+
+# set python paths
+export PATH="/home/jmendietaes/programas/miniconda3/bin:$PATH"
+export PYTHONPATH=/home/jmendietaes/programas/miniconda3/bin/python3.8
 ##===============================================================================
 
 export PS4='$LINENO+ '
@@ -155,6 +163,7 @@ cd $EDITED_DIR
 #dead jobs
 FILES=($(cat $FASTQ_DIR/samplesNames.txt))
 filename=${FILES[$SLURM_ARRAY_TASK_ID - 1]}
+sampleRunName=`basename ${final_dir}`
 
 # get library ID to which map this file
 mapLib=(${filename//_/ })
@@ -206,7 +215,7 @@ if [[ ${linec} != "Summary" ]]; then
     fi
 
     rc=$((Counts1/1000000))
-    echo -e "${filename} \t ${filename}_R1 \t ${Counts1} \t ${rc}" >> ${summaryFile}
+    echo -e "${sampleRunName} \t ${filename} \t ${Counts1} \t ${rc}" >> ${summaryFile}
     
     echo -e "Summary file - done -------------------------------------- \n"
     # store stage control info
@@ -456,6 +465,33 @@ else
     echo -e "last checks - already done before ---------------------------- \n"
 
 fi
+
+#############
+# Rscript: prepare code to run R script
+#############
+
+if [ ! -e ${final_dir}/RSession/ ]; then
+    mkdir -p ${final_dir}/RSession/
+fi
+
+echo -e "Starting Rscript text ---------------------------------- \n"
+
+# check content of sixth line of step control file
+linec=`sed "6q;d" ${stepControl}`
+if [[ ${linec} != "Rscript" ]]; then 
+    echo "module load R/4.0.5-foss-2020b" > ${final_dir}/RSession/toRunR.txt
+    echo "Rscript --vanilla ${RscriptP} ${final_dir} > ${final_dir}/RSession/${sampleRunName}.Rout.txt" >> ${final_dir}/RSession/toRunR.txt
+    echo "python ${reportScript} -ip ${final_dir}" >> ${final_dir}/RSession/toRunR.txt
+    echo "zip -r ${final_dir}/RSession/${sampleRunName}.zip ${final_dir}/RSession" >> ${final_dir}/RSession/toRunR.txt
+
+    # store stage control info
+    echo "Rscript" >> ${stepControl}
+
+    echo -e "Rscript - done -------------------------------------- \n"
+else
+    echo -e "Rscript - already done before ---------------------------- \n"
+fi
+
 
 echo -e "FINISHED... ------------------------------------------------------\n"
 
