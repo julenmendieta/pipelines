@@ -27,12 +27,12 @@
 ##sbatch --array=0-11%4 MECC_sgRNA_v1_495.sbs
 
 # HOW TO RUN ME
-# for i in *fastq.gz; do echo $i | sed 's/_R1_001.fastq.gz//g' ; done | sort | uniq > samplesNames.txt
+# for i in *R1_001.fastq.gz; do echo $i | sed 's/_R1_001.fastq.gz//g' ; done | sort | uniq > samplesNames.txt
 # N=`cat /home/jmendietaes/data/2021/CRISPR/sequencedData/merge4_492/samplesNames.txt | wc -l`
-# sbatch --array=1-${N} 00_MECC_sgRNA_v1.1.sh \
+# sbatch --array=1-${N} 00_MECC_sgRNA_v1.1._mapAllAtOnce.sh \
 #/home/jmendietaes/data/2021/CRISPR/sequencedData/merge4_492 \
 #/home/jmendietaes/data/2021/CRISPR/allProcessed/merge4_492 \
-#/home/jmendietaes/referenceGenomes/sgRNA_indexes/bowtie2/finalGuides.fa \
+#/home/jmendietaes/referenceGenomes/sgRNA_indexes/bowtie2/allGuides/finalGuides.fa \
 #'CACCG(.{20})GT{2,4}'
 
 ##===============================================================================
@@ -51,7 +51,7 @@ final_dir=$2
 GenomeIndex_all=$3
 #GenomeIndex_all='/home/jmendietaes/referenceGenomes/sgRNA_indexes/bowtie1/finalGuides.fa'
 # bowtie 2
-#GenomeIndex_all='/home/jmendietaes/referenceGenomes/sgRNA_indexes/bowtie2/finalGuides.fa'
+#GenomeIndex_all='/home/jmendietaes/referenceGenomes/sgRNA_indexes/bowtie2/allGuides/finalGuides.fa'
 # change module and mapping code if you swich bowtie version in here
 # -- regexp filter to extract the 20 nucleotide guides
 # bulk library design (More info about pattern in line 54)
@@ -74,6 +74,9 @@ FASTQ_DIR=$PARENT_DIR"/fastq"
 EDITED_DIR=$PARENT_DIR"/pipelineOut"
 #FASTQC_DIR=$EDITED_DIR"/fastQC"
 
+# path to the location of my git repo
+gitPath="/home/jmendietaes/programas/PhD"
+
 # path to the python script to extract the guide sequence
 # the script will rely on the first '(.{' symbol in the pattern to get the number of nucleotides
 #left-surrounding our set of nucleotides of interest
@@ -83,8 +86,13 @@ EDITED_DIR=$PARENT_DIR"/pipelineOut"
 # first input is GZIP-ed fastq file path, then you can optionally add a regexp pattern 
 #(default is 'CACCG(.{20})GTTTTAGAGC') and 'True' if you want the output fastq file
 #to be also GZIP-ed
-extractScript="/home/jmendietaes/programas/PhD/CRISPR-screen/00_NR_CRISPR-extract.py"
+extractScript="${gitPath}/CRISPR-screen/00_NR_CRISPR-extract.py"
 
+# path to R script for final guide analysis
+RscriptP="${gitPath}/CRISPR-screen/old/01_MECC_sgRNA_pre_analysis_v1_mapAllAtOnce_noLibFocus.r"
+
+# path to the python mapping report script
+reportScript="${gitPath}/CRISPR-screen/01b_mergedMappingReport.py"
 outGZ="False"
 
 # set python paths
@@ -152,6 +160,7 @@ cd $EDITED_DIR
 #dead jobs
 FILES=($(cat $FASTQ_DIR/samplesNames.txt))
 filename=${FILES[$SLURM_ARRAY_TASK_ID - 1]}
+sampleRunName=`basename ${final_dir}`
 
 # get some paths
 read1_path="${FASTQ_DIR}/${filename}_R1${extraSTR}.fastq.gz"
@@ -188,7 +197,7 @@ if [[ ${linec} != "Summary" ]]; then
     fi
 
     rc=$((Counts1/1000000))
-    echo -e "${filename} \t ${filename}_R1 \t ${Counts1} \t ${rc}" >> ${summaryFile}
+    echo -e "${sampleRunName} \t ${filename}_R1 \t ${Counts1} \t ${rc}" >> ${summaryFile}
     
     echo -e "Summary file - done -------------------------------------- \n"
     # store stage control info
@@ -417,6 +426,33 @@ else
     echo -e "last checks - already done before ---------------------------- \n"
 
 fi
+
+#############
+# Rscript: prepare code to run R script
+#############
+
+if [ ! -e ${final_dir}/RSession/ ]; then
+    mkdir -p ${final_dir}/RSession/
+fi
+
+echo -e "Starting Rscript text ---------------------------------- \n"
+
+# check content of sixth line of step control file
+linec=`sed "6q;d" ${stepControl}`
+if [[ ${linec} != "Rscript" ]]; then 
+    echo "module load R/4.0.5-foss-2020b" > ${final_dir}/RSession/toRunR.txt
+    echo "Rscript --vanilla ${RscriptP} ${final_dir} > ${final_dir}/RSession/${sampleRunName}.Rout.txt" >> ${final_dir}/RSession/toRunR.txt
+    echo "python ${reportScript} -ip ${final_dir}" >> ${final_dir}/RSession/toRunR.txt
+    echo "zip -r ${final_dir}/RSession/${sampleRunName}.zip ${final_dir}/RSession" >> ${final_dir}/RSession/toRunR.txt
+
+    # store stage control info
+    echo "Rscript" >> ${stepControl}
+
+    echo -e "Rscript - done -------------------------------------- \n"
+else
+    echo -e "Rscript - already done before ---------------------------- \n"
+fi
+
 
 echo -e "FINISHED... ------------------------------------------------------\n"
 
