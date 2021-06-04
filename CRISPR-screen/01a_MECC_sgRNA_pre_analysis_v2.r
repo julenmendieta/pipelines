@@ -22,7 +22,7 @@ library(dplyr)
 library(tibble)
 #===============================================================================
 # How to run me
-#Rscript --vanilla 01_MECC_sgRNA_pre_analysis_v1.r /Users/julen/Downloads/prueba/merge4-492 > merge4-492.Rout.txt
+#Rscript --vanilla 01a_MECC_sgRNA_pre_analysis_v2.r /Users/julen/Downloads/prueba/merge4-492 > merge4-492.Rout.txt
 # test if there is at least one argument: if not, return an error
 if (length(args)==0) {
   stop("At least one argument must be supplied (input file).n", call.=FALSE)
@@ -197,49 +197,89 @@ for (glib_ in allLibs) {
   # last line of table contains the unmaped guides
   pdf(paste0(RSession, "/", runName, "_", glib, "_stats.pdf"), width=11, height=8.5)
   
-  
-  
-  stackedPlotTabl <- rbind(as.data.frame(table[nrow(table),]), as.data.frame(nonValidTable[nrow(nonValidTable),]))
-  rownames(stackedPlotTabl) <- c("Mapped_to_valid", "nonValid_to_all")
-  stackedPlotTabl <- as.data.frame(t(stackedPlotTabl))
-  stackedPlotTabl$Ids <- rownames(stackedPlotTabl)
-  stackedPlotTabl <- gather(stackedPlotTabl, reads, Unmapped, 1:2)
-  
+  # when there is only one table it doesnt work well
+  if (length(colnames(table)) == 1) {
+    stackedPlotTabl <- read.csv(text=paste(table[nrow(table),], 
+                                           nonValidTable[nrow(nonValidTable),], 
+                                           colnames(table), sep=','),  header=FALSE)
+    rownames(stackedPlotTabl) <- colnames(nonValidTable)
+    colnames(stackedPlotTabl) <- c("Mapped_to_valid", "nonValid_to_all", "Ids")
+  } else {
+    tb1 <- as.data.frame(table[nrow(table),])
+    tb2 <- as.data.frame(nonValidTable[nrow(nonValidTable),])
     
+    stackedPlotTabl <- rbind(tb1, tb2)
+    rownames(stackedPlotTabl) <- c("Mapped_to_valid", "nonValid_to_all")
+    stackedPlotTabl <- as.data.frame(t(stackedPlotTabl))
+    stackedPlotTabl$Ids <- rownames(stackedPlotTabl)
+    
+  }
+  
+  stackedPlotTabl <- gather(stackedPlotTabl, reads, Unmapped, 1:2)
+
   cols <- c("black", "darkgrey")
   par(mar=c(14,5,1,1))
   p <- ggplot(stackedPlotTabl, aes(fill=reads, y=Unmapped, x=Ids)) + 
     geom_bar(position=position_dodge(), stat="identity") +
     scale_fill_manual(values= cols) +
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
-    ggtitle(paste0("UnmappedReads_", glib)) 
+    ggtitle(paste0("Unmapped reads to valid, and then to unvalid library: ", glib)) +
+    ylab("N read")
+    
   print(p)
   
   # new stacked plot
-  mapedGuide <- t(as.data.frame(apply(table[1:nrow(table)-1,], 2, sum)))
-  rownames(mapedGuide) <- c("Mapped_to_valid")
-  mapedElse <- t(as.data.frame(apply(nonValidTable[1:nrow(nonValidTable)-1,], 2, sum)))
-  rownames(mapedElse) <- c("nonValid_to_all")
-  remaining <- as.data.frame(nonValidTable[nrow(nonValidTable),])
-  rownames(remaining) <- c("Remaining_unmap")
-  
-  stackedPlotTabl <- rbind(mapedGuide, mapedElse, remaining)
-  #rownames(stackedPlotTabl) <- c("Mapped_to_valid", "nonValid_to_all", "Remaining_unmap")
-  stackedPlotTabl <- as.data.frame(t(stackedPlotTabl))
-  stackedPlotTabl$Ids <- rownames(stackedPlotTabl)
-  stackedPlotTabl <- gather(stackedPlotTabl, reads, Unmapped, 1:3)
+  if (length(colnames(table)) == 1) {
+    stackedPlotTabl <- read.csv(text=paste(colnames(table),
+                                           "Mapped_to_valid",
+                                           paste0(sum(table[1:nrow(table)-1,]), '\n',
+                                                  colnames(table)), 
+                                           "nonValid_to_all",
+                                           paste0(sum(nonValidTable[1:nrow(nonValidTable)-1,]),
+                                                  "\n", colnames(table)),
+                                           "Remaining_unmap",
+                                           nonValidTable[nrow(nonValidTable),], 
+                                           sep=','),  header=FALSE)
+    colnames(stackedPlotTabl) <- c("Ids", "reads", "Unmapped")
+  } else {
+    mapedGuide <- t(as.data.frame(apply(table[1:nrow(table)-1,], 2, sum)))
+    rownames(mapedGuide) <- c("Mapped_to_valid")
+    mapedElse <- t(as.data.frame(apply(nonValidTable[1:nrow(nonValidTable)-1,], 2, sum)))
+    rownames(mapedElse) <- c("nonValid_to_all")
+    remaining <- as.data.frame(nonValidTable[nrow(nonValidTable),])
+    rownames(remaining) <- c("Remaining_unmap")
+    
+    stackedPlotTabl <- rbind(mapedGuide, mapedElse, remaining)
+    #rownames(stackedPlotTabl) <- c("Mapped_to_valid", "nonValid_to_all", "Remaining_unmap")
+    stackedPlotTabl <- as.data.frame(t(stackedPlotTabl))
+    stackedPlotTabl$Ids <- rownames(stackedPlotTabl)
+    stackedPlotTabl <- gather(stackedPlotTabl, reads, Unmapped, 1:3)
+  }
   par(mar=c(14,5,1,1))
   p <- ggplot(stackedPlotTabl, aes(fill=reads, y=Unmapped, x=Ids)) + 
     geom_bar( stat="identity") +
     scale_fill_manual(values= c(cols, "darkred")) +
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
-    ggtitle(paste0("ReadMappingStats_", glib)) 
+    ggtitle(paste0("N of reads mapping to valid, then rest, and then none: ", glib)) +
+    ylab("N read")
   print(p)
   
- 
+  
   # we now remove the unmaped reads list
+  if (length(ncol(table)) == 1) {
+    validTable <- data.frame(table[-nrow(table),])
+    rownames(validTable) <- rownames(table)[-nrow(table)]
+    colnames(validTable) <- colnames(table)
+    
+    nonValidTable_ <- data.frame(nonValidTable[-nrow(nonValidTable),])
+    rownames(nonValidTable_) <- rownames(nonValidTable)[-nrow(nonValidTable)]
+    colnames(nonValidTable_) <- colnames(nonValidTable)
+    nonValidTable <- nonValidTable_
+    
+  } else {
   validTable<-table[-nrow(table),]
   nonValidTable<-nonValidTable[-nrow(nonValidTable),]
+  }
   
   # Write the filtered elements for the valid
   write.table(data.frame("ID"=rownames(validTable),validTable), 
@@ -248,13 +288,34 @@ for (glib_ in allLibs) {
               row.names=FALSE, quote=FALSE, sep='\t')
  
   # remove all zeros
-  removed <- validTable[apply(validTable,1,max)==0,]
-  validTable<-validTable[apply(validTable,1,max)>0,]
-  print(paste0(dim(removed)[1], " libraries removed in valid library map for having zero counts in all samples"))
+  if (ncol(table) == 1) {
+    removed1 <- validTable[,1] == 0
+    validrows <- rownames(validTable)
+    validrows <- validrows[validTable[,1] > 0]
+    validcols <- colnames(validTable)
+    validTable<- data.frame(validTable[validTable[,1] > 0,])
+    rownames(validTable) <- validrows
+    colnames(validTable) <- validcols
+    
+    removed2 <- nonValidTable[,1] == 0
+    validrows <- rownames(nonValidTable)
+    validrows <- validrows[nonValidTable[,1] > 0]
+    validcols <- colnames(nonValidTable)
+    nonValidTable<- data.frame(nonValidTable[nonValidTable[,1] > 0,])
+    rownames(nonValidTable) <- validrows
+    colnames(nonValidTable) <- validcols
+    
+  } else {
+    removed1 <- apply(validTable,1,max)==0
+    validTable<-validTable[apply(validTable,1,max)>0,]
+    
+    removed2 <- apply(nonValidTable,1,max)==0
+    nonValidTable<-nonValidTable[apply(nonValidTable,1,max)>0,]
+    
+  }
   
-  removed <- nonValidTable[apply(nonValidTable,1,max)==0,]
-  nonValidTable<-nonValidTable[apply(nonValidTable,1,max)>0,]
-  print(paste0(dim(removed)[1], " libraries removed for having zero counts in all samples after mapping unmmaped reads to NON-valid libraries"))
+  print(paste0(sum(removed1), " libraries removed in valid library map for having zero counts in all samples"))
+  print(paste0(sum(removed2), " libraries removed for having zero counts in all samples after mapping unmmaped reads to NON-valid libraries"))
   
   # Write the filtered elements without zeros for the non-valid
   write.table(data.frame("ID"=rownames(nonValidTable),nonValidTable), 
