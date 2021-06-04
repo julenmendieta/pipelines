@@ -198,18 +198,18 @@ for (glib_ in allLibs) {
   pdf(paste0(RSession, "/", runName, "_", glib, "_stats.pdf"), width=11, height=8.5)
   
   # when there is only one table it doesnt work well
-  if (length(colnames(table)) == 1) {
+  if (ncol(table) == 1) {
     stackedPlotTabl <- read.csv(text=paste(table[nrow(table),], 
                                            nonValidTable[nrow(nonValidTable),], 
                                            colnames(table), sep=','),  header=FALSE)
     rownames(stackedPlotTabl) <- colnames(nonValidTable)
-    colnames(stackedPlotTabl) <- c("Mapped_to_valid", "nonValid_to_all", "Ids")
+    colnames(stackedPlotTabl) <- c("Unmapped to valid", "Unmapped to all", "Ids")
   } else {
     tb1 <- as.data.frame(table[nrow(table),])
     tb2 <- as.data.frame(nonValidTable[nrow(nonValidTable),])
     
     stackedPlotTabl <- rbind(tb1, tb2)
-    rownames(stackedPlotTabl) <- c("Mapped_to_valid", "nonValid_to_all")
+    rownames(stackedPlotTabl) <- c("Unmapped to valid", "Unmapped to all")
     stackedPlotTabl <- as.data.frame(t(stackedPlotTabl))
     stackedPlotTabl$Ids <- rownames(stackedPlotTabl)
     
@@ -221,10 +221,10 @@ for (glib_ in allLibs) {
   par(mar=c(14,5,1,1))
   p <- ggplot(stackedPlotTabl, aes(fill=reads, y=Unmapped, x=Ids)) + 
     geom_bar(position=position_dodge(), stat="identity") +
-    scale_fill_manual(values= cols) +
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
     ggtitle(paste0("Unmapped reads to valid, and then to unvalid library: ", glib)) +
-    ylab("N read")
+    ylab("N read") +
+    scale_fill_manual(values= cols)
     
   print(p)
   
