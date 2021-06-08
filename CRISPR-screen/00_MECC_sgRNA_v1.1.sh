@@ -36,6 +36,7 @@
 #/home/jmendietaes/referenceGenomes/sgRNA_indexes/bowtie2 \
 #'CACCG(.{20})GT{2,4}'
 
+# the files stored in samplesNames.txt are the ones that will be analysed
 ##===============================================================================
 ## GLOBAL VARIABLES
 # the base ones to modify
