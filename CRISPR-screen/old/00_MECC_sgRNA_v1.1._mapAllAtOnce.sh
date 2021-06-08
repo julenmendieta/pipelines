@@ -441,9 +441,10 @@ echo -e "Starting Rscript text ---------------------------------- \n"
 linec=`sed "6q;d" ${stepControl}`
 if [[ ${linec} != "Rscript" ]]; then 
     echo "module load R/4.0.5-foss-2020b" > ${final_dir}/RSession/toRunR.txt
-    echo "Rscript --vanilla ${RscriptP} ${final_dir} > ${final_dir}/RSession/${sampleRunName}.Rout.txt" >> ${final_dir}/RSession/toRunR.txt
     echo "python ${reportScript} -ip ${final_dir}" >> ${final_dir}/RSession/toRunR.txt
-    echo "zip -r ${final_dir}/RSession/${sampleRunName}.zip ${final_dir}/RSession" >> ${final_dir}/RSession/toRunR.txt
+    echo "Rscript --vanilla ${RscriptP} ${final_dir} > ${final_dir}/RSession/${sampleRunName}.Rout.txt" >> ${final_dir}/RSession/toRunR.txt
+    echo "cd ${final_dir}/RSession" >> ${final_dir}/RSession/toRunR.txt
+    echo "zip ${sampleRunName}.zip *" >> ${final_dir}/RSession/toRunR.txt
 
     # store stage control info
     echo "Rscript" >> ${stepControl}
