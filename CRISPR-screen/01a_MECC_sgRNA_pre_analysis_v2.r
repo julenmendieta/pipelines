@@ -268,6 +268,20 @@ for (glib_ in allLibs) {
                                            nonValidTable[nrow(nonValidTable),], 
                                            sep=','),  header=FALSE)
     colnames(stackedPlotTabl) <- c("Ids", "reads", "Unmapped")
+    
+    stackedPlotTabl[, "mapPercent"] <- ''
+    for (c in colnames(table)){
+      pos <- stackedPlotTabl[,1] == c & stackedPlotTabl[,2] == "Mapped_to_valid"
+      m1 <- stackedPlotTabl[pos, 3]
+      pos <- stackedPlotTabl[,1] == c & stackedPlotTabl[,2] == "nonValid_to_all"
+      m2 <- stackedPlotTabl[pos, 3]
+      pos <- stackedPlotTabl[,1] == c & stackedPlotTabl[,2] == "Remaining_unmap"
+      m3 <- stackedPlotTabl[pos, 3]
+      mapPercent <- round((m1 / (m1 + m2 + m3)) * 100, 2)
+      pos <- stackedPlotTabl[,1] == c & stackedPlotTabl[,2] == "Mapped_to_valid"
+      stackedPlotTabl[pos, "mapPercent"] <- mapPercent
+      
+    }
   } else {
     mapedGuide <- t(as.data.frame(apply(table[1:nrow(table)-1,], 2, sum)))
     rownames(mapedGuide) <- c("Mapped_to_valid")
@@ -281,17 +295,19 @@ for (glib_ in allLibs) {
     stackedPlotTabl <- as.data.frame(t(stackedPlotTabl))
     stackedPlotTabl$Ids <- rownames(stackedPlotTabl)
     stackedPlotTabl <- gather(stackedPlotTabl, reads, Unmapped, 1:3)
-  }
-  stackedPlotTabl[, "mapPercent"] <- ''
-  for (c in colnames(mapedGuide)){
-    m1 <- mapedGuide[,c]
-    m2 <- mapedElse[,c]
-    m3 <- remaining[,c]
-    mapPercent <- round((m1 / (m1 + m2 + m3)) * 100, 2)
-    pos <- stackedPlotTabl[,1] == c & stackedPlotTabl[,2] == "Mapped_to_valid"
-    stackedPlotTabl[pos, "mapPercent"] <- mapPercent
     
+    stackedPlotTabl[, "mapPercent"] <- ''
+    for (c in colnames(mapedGuide)){
+      m1 <- mapedGuide[,c]
+      m2 <- mapedElse[,c]
+      m3 <- remaining[,c]
+      mapPercent <- round((m1 / (m1 + m2 + m3)) * 100, 2)
+      pos <- stackedPlotTabl[,1] == c & stackedPlotTabl[,2] == "Mapped_to_valid"
+      stackedPlotTabl[pos, "mapPercent"] <- mapPercent
+      
+    }
   }
+  
   
   par(mar=c(14,5,1,1))
   p <- ggplot(stackedPlotTabl, aes(fill=reads, y=Unmapped, x=Ids, label = mapPercent)) + 
