@@ -52,7 +52,7 @@ for fi in symmaryF:
     else:
         content += 'NotChecked\tNotChecked\tNotChecked\t'
 
-    header += 'Aligned>1Info\t'
+    header += 'Aligned>1Info'
     tmptext = ''
     for dd in [d.split() for d in data[posIndex[3] + 2: posIndex[4] - 1]]:
         tmptext += f'{dd[1]}({dd[0]});'

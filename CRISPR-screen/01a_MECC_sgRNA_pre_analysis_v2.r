@@ -34,7 +34,7 @@ if (length(args)==0) {
 ## TO BE Modified
 PROJECT_DIR <- args[1]
 #PROJECT_DIR<-file.path("/Users/julen/Downloads/prueba/merge4-492")
-#guidesFile <- "/Users/julen/Downloads/prueba/finalGuides.txt"
+#guidesFile <- "/Users/julen/Downloads/CRISPR/finalGuides.txt"
 guidesFile <- "/home/jmendietaes/data/2021/CRISPR/finalGuides.txt"
 
 # If the folder structure is ok this shouldn chance
@@ -120,6 +120,33 @@ for (glib_ in allLibs) {
   gcountreports <- unique(gsub("\\.unMap.idxstats", '', gcountreports, perl=TRUE))
   gcountreports <- unique(gsub("\\.idxstats", '', gcountreports, perl=TRUE))
   
+  ## get % of guide extraction
+  statsFile <- paste0(PROJECT_DIR, '/RSession/', runName, "_sequencingStats.tsv")
+  statsTable <- read.table(statsFile, sep='\t', header = TRUE)
+  statsTable <- statsTable[c(1, 4)]
+  # remove the percentaje symbol
+  statsTable$Percentaje<-gsub("%","",as.character(statsTable$Percentaje))
+  # kee only the IDs from this library
+  statsTable <- statsTable[grepl(paste0("_", glib_, "_"), statsTable$SampleID), ]
+  statsTable2 <- data.frame(statsTable)
+  rownames(statsTable) <- statsTable$SampleID
+  statsTable <- transform(statsTable, Percentaje = as.numeric(Percentaje))
+
+  # plot guide presence percentajes
+  pdf(paste0(RSession, "/", runName, "_", glib, "_stats.pdf"), width=11, height=8.5)
+  
+  par(mar=c(15, 4.1, 4.1, 2.1), cex=1)
+  # Basic barplot
+  p<-ggplot(data=statsTable, aes(x=SampleID, y=Percentaje, label = Percentaje)) +
+    geom_bar(stat="identity") + 
+    ggtitle(paste0("Percentaje of recovered guide patterns (even if no valid guide inside): ", glib)) +
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+    ylim(0, 100) +
+    geom_text(size = 3, position = position_stack(vjust = 0.5))
+  print(p)
+  
+ 
+  
   ## Load info of guide smapped to main library
   # read mapped files in memory
   for (reporte in gcountreports){
@@ -194,8 +221,6 @@ for (glib_ in allLibs) {
   
   
   ## Plot
-  # last line of table contains the unmaped guides
-  pdf(paste0(RSession, "/", runName, "_", glib, "_stats.pdf"), width=11, height=8.5)
   
   # when there is only one table it doesnt work well
   if (ncol(table) == 1) {
@@ -203,26 +228,28 @@ for (glib_ in allLibs) {
                                            nonValidTable[nrow(nonValidTable),], 
                                            colnames(table), sep=','),  header=FALSE)
     rownames(stackedPlotTabl) <- colnames(nonValidTable)
-    colnames(stackedPlotTabl) <- c("Unmapped to valid", "Unmapped to all", "Ids")
+    colnames(stackedPlotTabl) <- c("Unmapped to valid", "Unmapped to non-valid", "Ids")
   } else {
     tb1 <- as.data.frame(table[nrow(table),])
     tb2 <- as.data.frame(nonValidTable[nrow(nonValidTable),])
     
     stackedPlotTabl <- rbind(tb1, tb2)
-    rownames(stackedPlotTabl) <- c("Unmapped to valid", "Unmapped to all")
+    rownames(stackedPlotTabl) <- c("Unmapped to valid", "Unmapped to non-valid")
     stackedPlotTabl <- as.data.frame(t(stackedPlotTabl))
     stackedPlotTabl$Ids <- rownames(stackedPlotTabl)
     
   }
   
   stackedPlotTabl <- gather(stackedPlotTabl, reads, Unmapped, 1:2)
+  stackedPlotTabl$reads <- factor(stackedPlotTabl$reads,
+                                  levels = c("Unmapped to valid", "Unmapped to non-valid"))
 
   cols <- c("black", "darkgrey")
   par(mar=c(14,5,1,1))
   p <- ggplot(stackedPlotTabl, aes(fill=reads, y=Unmapped, x=Ids)) + 
     geom_bar(position=position_dodge(), stat="identity") +
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
-    ggtitle(paste0("Unmapped reads to valid, and then to unvalid library: ", glib)) +
+    ggtitle(paste0("Reads unmapped to valid, and then to unvalid library: ", glib)) +
     ylab("N read") +
     scale_fill_manual(values= cols)
     
@@ -255,15 +282,26 @@ for (glib_ in allLibs) {
     stackedPlotTabl$Ids <- rownames(stackedPlotTabl)
     stackedPlotTabl <- gather(stackedPlotTabl, reads, Unmapped, 1:3)
   }
+  stackedPlotTabl[, "mapPercent"] <- ''
+  for (c in colnames(mapedGuide)){
+    m1 <- mapedGuide[,c]
+    m2 <- mapedElse[,c]
+    m3 <- remaining[,c]
+    mapPercent <- round((m1 / (m1 + m2 + m3)) * 100, 2)
+    pos <- stackedPlotTabl[,1] == c & stackedPlotTabl[,2] == "Mapped_to_valid"
+    stackedPlotTabl[pos, "mapPercent"] <- mapPercent
+    
+  }
+  
   par(mar=c(14,5,1,1))
-  p <- ggplot(stackedPlotTabl, aes(fill=reads, y=Unmapped, x=Ids)) + 
+  p <- ggplot(stackedPlotTabl, aes(fill=reads, y=Unmapped, x=Ids, label = mapPercent)) + 
     geom_bar( stat="identity") +
     scale_fill_manual(values= c(cols, "darkred")) +
+    geom_text(size = 3, position = position_stack(vjust = 0.5), col='white') +
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
     ggtitle(paste0("N of reads mapping to valid, then rest, and then none: ", glib)) +
     ylab("N read")
   print(p)
-  
   
   # we now remove the unmaped reads list
   if (length(ncol(table)) == 1) {
@@ -339,7 +377,7 @@ for (glib_ in allLibs) {
   
   #pdf(paste0(RSession, "/Density_", glib, "_NonValid.pdf"), width=11, height=8.5)
   plot(density(unlist(log2(nonValidTable+1))), 
-       main = paste0("Density ", glib, ": unmapped reads that mapped to all libraries"),
+       main = paste0("Density ", glib, ": unmapped reads that mapped to non-valid libraries"),
        col=cols[2], lwd = 3)
   #dev.off()
   
