@@ -89,7 +89,7 @@ gitPath="/home/jmendietaes/programas/PhD"
 extractScript="${gitPath}/CRISPR-screen/00_NR_CRISPR-extract.py"
 
 # path to R script for final guide analysis
-RscriptP="${gitPath}/CRISPR-screen/old/01_MECC_sgRNA_pre_analysis_v1_mapAllAtOnce_noLibFocus.r"
+RscriptP="${gitPath}/CRISPR-screen/02b_MECC_sgRNA_pre_analysis_v2_mapAllAtOnce_noLibFocus.r"
 
 # path to the python mapping report script
 reportScript="${gitPath}/CRISPR-screen/01b_mergedMappingReport.py"

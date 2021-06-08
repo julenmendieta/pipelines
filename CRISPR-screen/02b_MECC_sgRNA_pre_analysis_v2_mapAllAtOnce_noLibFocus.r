@@ -80,6 +80,29 @@ setwd (PROJECT_DIR)
 # first we get all the files in folder and their associated libraries
 countreports <- dir(file.path(Counts), pattern = "*.idxstats")
 
+## get % of guide extraction
+statsFile <- paste0(PROJECT_DIR, '/RSession/', runName, "_sequencingStats.tsv")
+statsTable <- read.table(statsFile, sep='\t', header = TRUE)
+statsTable <- statsTable[c(1, 4)]
+# remove the percentaje symbol
+statsTable$Percentaje<-gsub("%","",as.character(statsTable$Percentaje))
+# kee only the IDs from this library
+rownames(statsTable) <- statsTable$SampleID
+statsTable <- transform(statsTable, Percentaje = as.numeric(Percentaje))
+
+# plot guide presence percentajes
+pdf(paste0(RSession, "/", runName, "_stats.pdf"), width=11, height=8.5)
+
+par(mar=c(15, 4.1, 4.1, 2.1), cex=1)
+# Basic barplot
+p<-ggplot(data=statsTable, aes(x=SampleID, y=Percentaje, label = Percentaje)) +
+  geom_bar(stat="identity") + 
+  ggtitle("Percentaje of recovered guide patterns (even if no valid guide inside): ") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  ylim(0, 100) +
+  geom_text(size = 3, position = position_stack(vjust = 0.5))
+print(p)
+
 ## Load info of guide smapped to main library
 # read mapped files in memory
 for (reporte in countreports){
@@ -118,8 +141,6 @@ write.table(data.frame("ID"=rownames(table),table), paste0(RSession, "/", runNam
   
 ## Plot
 # last line of table contains the unmaped guides
-pdf(paste0(RSession, "/", runName, "_stats.pdf"), width=11, height=8.5)
-  
 par(mar=c(14,5,1,1))
 barplot(as.matrix(table[nrow(table),]), las=2, cex.names = 1.5, 
         main = "UnmappedReads allLibrary") 
