@@ -103,8 +103,9 @@ if (! sum(allLibs %in% c(allGuideCodes, names(guideSynonims))) == length(allLibs
 for (glib_ in allLibs) {
   # get the real ID in case he file had a synonim
   glib = guideSynonims[[glib_]]
+  noDotLib <- gsub("\\.", "", glib, perl=TRUE)
   print("")
-  print(paste0('---------------------- ', glib, ' ----------------------'))
+  print(paste0('---------------------- ', noDotLib, ' ----------------------'))
   
   # Load the list that relates guides to each library
   #guidesInfo <- read.table(guidesFile, stringsAsFactors = FALSE, header = TRUE) 
@@ -133,13 +134,13 @@ for (glib_ in allLibs) {
   statsTable <- transform(statsTable, Percentaje = as.numeric(Percentaje))
 
   # plot guide presence percentajes
-  pdf(paste0(RSession, "/", runName, "_", glib, "_stats.pdf"), width=11, height=8.5)
+  pdf(paste0(RSession, "/", runName, "_", noDotLib, "_stats.pdf"), width=11, height=8.5)
   
   par(mar=c(15, 4.1, 4.1, 2.1), cex=1)
   # Basic barplot
   p<-ggplot(data=statsTable, aes(x=SampleID, y=Percentaje, label = Percentaje)) +
     geom_bar(stat="identity") + 
-    ggtitle(paste0("Percentaje of recovered guide patterns (even if no valid guide inside): ", glib)) +
+    ggtitle(paste0("Percentaje of recovered guide patterns (even if no valid guide inside): ", noDotLib)) +
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
     ylim(0, 100) +
     geom_text(size = 3, position = position_stack(vjust = 0.5))
@@ -167,10 +168,13 @@ for (glib_ in allLibs) {
   
   # Use the multimerge function to merge them together into a single table.
   table<- multimerge(countable_list)
-  colnames(table)
-  colnames(table) <- gsub (".idxstats_counts","", colnames(table))
+  colnames(table) <- gsub ("_S.*.idxstats_counts","", colnames(table))
+  # This step is to remove the dot from old library naming
+  colnames(table) <- gsub ("\\.","", colnames(table))
+  
   # turn values to numbers
   table <- data.frame(apply(table, 2, function(x) as.numeric(x)), row.names = rownames(table))
+  colnames(table) <- gsub("\\.","", colnames(table))
   # delete lists form environment
   rm(list = ls(pattern = ".idxstats"))
   # Replace NAs for zeros
@@ -178,7 +182,7 @@ for (glib_ in allLibs) {
   # Write table with alignment info to all Libraries
   dir.create(RSession, showWarnings = FALSE)
   write.table(data.frame("ID"=rownames(table),table), paste0(RSession, "/", runName, "_", 
-                                                             glib, "_crisprTable_raw_MapLib.tsv"), 
+                                                             noDotLib, "_crisprTable_raw_MapLib.tsv"), 
               row.names=FALSE, quote=FALSE, sep='\t')
   
   
@@ -205,10 +209,13 @@ for (glib_ in allLibs) {
   
   # Use the multimerge function to merge them together into a single table.
   nonValidTable<- multimerge(countable_list)
-  colnames(nonValidTable)
-  colnames(nonValidTable) <- gsub (".unMap.idxstats_counts","", colnames(nonValidTable))
+  colnames(nonValidTable) <- gsub ("_S.*.unMap.idxstats_counts","", colnames(nonValidTable))
+  # This step is to remove the dot from old library naming
+  colnames(nonValidTable) <- gsub ("\\.","", colnames(nonValidTable))
+  
   # turn values to numbers
   nonValidTable <- data.frame(apply(nonValidTable, 2, function(x) as.numeric(x)), row.names = rownames(nonValidTable))
+  colnames(nonValidTable) <- gsub ("\\.","", colnames(nonValidTable))
   # delete lists form environment
   rm(list = ls(pattern = ".idxstats"))
   # Replace NAs for zeros
@@ -216,7 +223,7 @@ for (glib_ in allLibs) {
   # Write table with alignment info to all Libraries
   dir.create(RSession, showWarnings = FALSE)
   write.table(data.frame("ID"=rownames(nonValidTable),nonValidTable), paste0(RSession, "/", runName, "_", 
-                                                             glib, "_crisprTable_raw_unMapLib.tsv"), 
+                                                                     noDotLib, "_crisprTable_raw_unMapLib.tsv"), 
               row.names=FALSE, quote=FALSE, sep='\t')
   
   
@@ -249,7 +256,7 @@ for (glib_ in allLibs) {
   p <- ggplot(stackedPlotTabl, aes(fill=reads, y=Unmapped, x=Ids)) + 
     geom_bar(position=position_dodge(), stat="identity") +
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
-    ggtitle(paste0("Reads unmapped to valid, and then to unvalid library: ", glib)) +
+    ggtitle(paste0("Reads unmapped to valid, and then to unvalid library: ", noDotLib)) +
     ylab("N read") +
     scale_fill_manual(values= cols)
     
