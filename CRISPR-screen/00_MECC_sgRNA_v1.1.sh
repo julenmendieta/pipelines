@@ -34,9 +34,14 @@
 #/home/jmendietaes/data/2021/CRISPR/sequencedData/merge4-492 \
 #/home/jmendietaes/data/2021/CRISPR/allProcessed/merge4-492 \
 #/home/jmendietaes/referenceGenomes/sgRNA_indexes/bowtie2 \
-#'CACCG(.{20})GT{2,4}'
+#'CACCG(.{20})GT'
 
 # the files stored in samplesNames.txt are the ones that will be analysed
+# for lib in ../../Lib*; do cd $lib/fastq; N=`cat samplesNames.txt | \
+# wc -l`; path1=`realpath $lib` ; path2=`basename $path1`; \
+# path2="/home/jmendietaes/data/2021/CRISPR/allProcessed/$path2"; \
+# echo "sbatch --array=1-${N} 00_MECC_sgRNA_v1.1.sh ${path1} ${path2} \
+# /home/jmendietaes/referenceGenomes/sgRNA_indexes/bowtie2 'CACCG(.{20})GT'"; done
 ##===============================================================================
 ## GLOBAL VARIABLES
 # the base ones to modify
@@ -66,6 +71,8 @@ flanquingSeq=$4
 # new library (scRNAseq)
 #flanquingSeq='CACCG(.{20})GTTTAAGAGC'
 #flanquingSeq='CACCG(.{20})GT{2,4}'
+# UTILIZAR ESTE DE AQUI
+#flanquingSeq='CACCG(.{20})GT'
 
 # if the files have 001 or not, we add the string or not
 extraSTR="_001"
@@ -455,7 +462,9 @@ if [[ ${linec} != "lastChecks" ]]; then
 
     # Remove intermediate files, pickup the right ones... as needed
     rm -rf ${samPath}
+    rm -rf ${samPath_unM}
     rm -rf ${bamPath}
+    rm -rf ${bamPath_unM}
     rm -rf ${extr_fastq}
 
     # store stage control info
