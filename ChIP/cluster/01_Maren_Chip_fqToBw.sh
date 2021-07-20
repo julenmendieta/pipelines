@@ -69,7 +69,7 @@ picardPath='/home/jmendietaes/programas/picard/picard.jar'
 # I have trim galore and cutadapt in conda
 module load FastQC/0.11.8-Java-1.8
 module load Bowtie2/2.3.4.2-foss-2018b
-module load SAMtools/1.9-foss-2018b
+module load SAMtools/1.12-GCC-10.2.0
 module load picard/2.18.17-Java-1.8
 module load R/4.0.0-foss-2018b
 module load Java/1.8.0_192
@@ -237,6 +237,10 @@ if [[ ${linec} != "Align" ]]; then
     echo -e "Alignment - done -------------------------------------- \n"
     # store stage control info
     echo "Align" >> ${stepControl}
+
+    # remove temporal trimmed fastq files
+    rm ${trimedRead1}
+    rm ${trimedRead2}
 else
     echo -e "Alignment - already done before ------------------------------ \n"
 fi
@@ -375,7 +379,7 @@ bamSortMarkDupBlackChr="${bamsPath}/${filename}.sort.rmdup.rmblackls.rmchr.bam"
 linec=`sed "8q;d" ${stepControl}`
 if [[ ${linec} != "Remove" ]]; then 
 	samtools view -h ${bamSortMarkDupBlack} | \
-    awk '(!index($1, "random")) && (!index($1, "chrUn")) && ($1 != "chrM") && ($1 != "chrEBV")' | \
+    awk '(!index($3, "random")) && (!index($3, "chrUn")) && ($3 != "chrM") && ($3 != "chrEBV")' | \
     samtools view -Sb - > ${bamSortMarkDupBlackChr}
 
     # QC: Show final reads
@@ -404,7 +408,7 @@ echo -e "Starting Index BAM ----------------------------------------------------
 # check content of ninth line of step control file
 linec=`sed "9q;d" ${stepControl}`
 if [[ ${linec} != "IndexBam" ]]; then 
-	samtools index ${bamSortMarkDupBlackChr} 
+	samtools index ${bamSortMarkDupBlackChr} -@ $SLURM_CPUS_PER_TASK
     echo -e "Index BAM - done ------------------------------------------------------\n"
     # store stage control info
     echo "IndexBam" >> ${stepControl}

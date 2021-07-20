@@ -33,7 +33,7 @@
 #/home/jmendietaes/data/2021/CRISPR/sequencedData/merge4_492 \
 #/home/jmendietaes/data/2021/CRISPR/allProcessed/merge4_492 \
 #/home/jmendietaes/referenceGenomes/sgRNA_indexes/bowtie2/allGuides/finalGuides.fa \
-#'CACCG(.{20})GT{2,4}'
+#'CACCG(.{20})GT'
 
 ##===============================================================================
 ## GLOBAL VARIABLES

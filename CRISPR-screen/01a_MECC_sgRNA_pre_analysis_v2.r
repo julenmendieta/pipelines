@@ -43,12 +43,13 @@ RSession<-file.path(PROJECT_DIR,"RSession")
 runName <- basename(PROJECT_DIR)
 
 ## Relevant info about the guides
-allGuideCodes <- c("MGLibA", "R2.Br", "As", "B.Br", "TF1.Br", "Br", "R1.Br", "B", "TF2.Br")
+allGuideCodes <- c("MGLibA", "R2.Br", "As", "B.Br", "TF1.Br", "Br", "R1.Br", "B", 
+"TF2.Br", "R2Br", "BBr", "TF1Br", "R1Br")
 guideSynonims <- vector(mode="list", length=length(allGuideCodes) + 5)
 names(guideSynonims) <- c("TF1", "TF2", "R1", "R2", "BBr", allGuideCodes)
-guideSynonims[[1]] <- "TF1.Br"; guideSynonims[[2]] <- "TF2.Br"
-guideSynonims[[3]] <- "R1.Br"; guideSynonims[[4]] <- "R2.Br"
-guideSynonims[[5]] <- "B.Br"
+guideSynonims[[1]] <- "TF1Br"; guideSynonims[[2]] <- "TF2Br"
+guideSynonims[[3]] <- "R1Br"; guideSynonims[[4]] <- "R2Br"
+guideSynonims[[5]] <- "BBr"
 
 for (i in 1:length(allGuideCodes)) {
   guideSynonims[[i+5]] <- allGuideCodes[i]
