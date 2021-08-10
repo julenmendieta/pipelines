@@ -63,7 +63,20 @@ for (idx in 1:length(PeakFiles)) {
         isNarrow <- TRUE
         header <- c(header,"summit")
     }
-    peaks <- read.table(PeakFiles[idx], sep="\t", header=FALSE)
+
+    # We want to know the files with zero peaks (for example controls)
+    # so if the file is empty, and to avoid crash, we create an empty peak table
+    filesize = file.info(PeakFiles[idx])$size
+    if (filesize != 0) {
+        peaks <- read.table(PeakFiles[idx], sep="\t", header=FALSE)
+    } else {
+        if (grepl( "narrowPeak", PeakFiles[idx], fixed = TRUE)) {
+            peaks <- data.frame(matrix(0, nrow = 1, ncol = 10))
+        } else {
+            peaks <- data.frame(matrix(0, nrow = 1, ncol = 9))
+        }
+    }
+    
     colnames(peaks) <- header
 
     ## GET SUMMARY STATISTICS

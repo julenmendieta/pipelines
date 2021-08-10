@@ -6,7 +6,7 @@
 #SBATCH --job-name=prePeak_QC
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=50G
-#SBATCH --time=1-01:00:00
+#SBATCH --time=1-00:00:00
 #SBATCH -p medium
 #SBATCH -o /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.out  
 #SBATCH -e /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.err 
@@ -48,6 +48,9 @@ export PATH="/home/jmendietaes/programas/miniconda3/bin:$PATH"
 module load SAMtools/1.12-GCC-10.2.0
 
 ##===============================================================================
+# enable debuging displaying line number and content
+# export PS4='$LINENO+ '
+# set -x 
 
 # exit when any command fails
 set -e
@@ -55,11 +58,28 @@ set -e
 # keep track of the last executed command
 trap 'last_command=$current_command; current_command=$BASH_COMMAND' DEBUG
 # echo an error message before exiting
-trap 'echo "\"${last_command}\" command filed with exit code $?."' EXIT
+trap 'echo "\"${last_command}\" command failed with exit code $?."' EXIT
 
 ##===============================================================================
 
-
+# function to check if the given first file doesnt exist or is older than 
+# the second input file
+fileNotExistOrOlder () {
+    # check if the file exists of it was created with a previous bam version 
+    analyse="no"
+    if [ ! -e $1 ]; then
+        analyse="yes"
+    # only proceed if the output file is older than the bam file
+    # in this way if we resequenced and kept the name the analysis 
+    # will be repeated
+    else
+        for tfile in $2; do
+            if [[ $1 -ot ${tfile} ]] ; then
+                analyse="yes"
+            fi
+        done
+    fi
+}
 # #########################################
 # # Correlate signal at gene positions
 # ########################################
@@ -106,6 +126,7 @@ trap 'echo "\"${last_command}\" command filed with exit code $?."' EXIT
 # The red vertical line shows the dominant peak at the true peak shift, 
 # with a small bump at the blue vertical line representing the read length
 # More than one red line implies weak signal
+# https://hbctraining.github.io/In-depth-NGS-Data-Analysis-Course/sessionV/lessons/CC_metrics_extra.html
 
 
 # Phantompeakqualtools
@@ -139,7 +160,11 @@ RUN_SPP="${scriptsPath}/ChIP/cluster/02_NR_run_spp.R"
 for bam in $allbams; do
     label=`basename ${bam} | cut -d '.' -f 1 | cut -d '_' -f 1,2,3`
 
-    if [ ! -e ${outpath}/phantompeak/extraData/${label}.spp.out ]; then
+    # check if the file exists of it was created with a previous bam version 
+    fileNotExistOrOlder "${outpath}/phantompeak/extraData/${label}.spp.out" "${bam}"
+    # this outputs analyse as yes or no in lowercase
+
+    if [[ ${analyse} == "yes" ]]; then
 
         Rscript -e "library(caTools); source(\"$RUN_SPP\")" -c="${bam}" \
         -savp="${outpath}/phantompeak/${label}.spp.pdf" \
@@ -193,30 +218,48 @@ allCell=`for filename in ${allLabels}; do
 
 ## then we go for each cell
 for cell in `echo ${allCell} | tr ' ' '\n' `; do
+    echo $cell
     cellChip=`echo ${allLabels} | tr ' ' '\n' | grep ${cell}`
     cellChip=`for filename in ${cellChip}; do 
             mapLib=(${filename//_/ }); mapLib=${mapLib[1]}; mapLib=(${mapLib//-/ }); 
             echo ${mapLib[0]}; done | grep -v input | grep -v IgG | sort | uniq`
-    cellControls=$(echo ${allbams} | tr ' ' '\n' | grep "${cell}_" | grep -e input -e IgG)
-    ## Compare all the bamfiles from same cell and chip
-    for chip in ${cellChip}; do
-        chipbams=`echo ${allbams} | tr ' ' '\n' | grep "${cell}_${chip}"`
-        labels=$(for file in ${chipbams} ${cellControls}; do basename $file | cut -d '.' -f 1 | cut -d '_' -f 1,2,3; done)
+    # Dont know why but in submited jobs this might fail when there are no controls
+    # so i need a back up plan
+    cellControls=`echo ${allbams} | tr ' ' '\n' | grep "${cell}_" | \
+                    { grep -e "input" -e "IgG" || :; }`
 
-        # CHECK: might want to change this in the future        
-        # for now we use the first control to normalise signal (by sort should be IgG)
+    # proceed only if we have controls
+    if [[ ! $cellControls == "" ]] ; then
+        ## Compare all the bamfiles from same cell and chip
+        for chip in ${cellChip}; do
+            echo $chip
+            chipbams=`echo ${allbams} | tr ' ' '\n' | grep "${cell}_${chip}"`
+            labels=$(for file in ${chipbams} ${cellControls}; do basename $file | cut -d '.' -f 1 | cut -d '_' -f 1,2,3; done)
+            
+            # CHECK: might want to change this in the future        
+            # for now we use the first control to normalise signal (by sort should be IgG)
+            useControl=`echo ${cellControls} | cut -d ' ' -f 1`
+            
+            outRaw=${outpath}/fingerPrint/${cell}_${chip}_${fingerprint_bins}bp_fingerprint.raw.txt
+            # check if the file exists of it was created with a previous bam version 
+            fileNotExistOrOlder "${outRaw}" "${chipbams} ${cellControls}"
+            # this outputs analyse as yes or no in lowercase
 
-        plotFingerprint \
-            --bamfiles ${chipbams} ${cellControls} \
-            --plotFile ${outpath}/fingerPrint/${chip}_${fingerprint_bins}bp_fingerprint.pdf \
-            --labels ${labels} \
-            --outRawCounts ${outpath}/fingerPrint/${chip}_${fingerprint_bins}bp_fingerprint.raw.txt \
-            --outQualityMetrics ${outpath}/fingerPrint/${chip}_${fingerprint_bins}bp_fingerprint.qcmetrics.txt \
-            --skipZeros \
-            --JSDsample `${cellControls} | cut -d ' ' -f 1` \
-            --numberOfProcessors ${SLURM_CPUS_PER_TASK} \
-            --numberOfSamples $fingerprint_bins
-    done
+            if [[ ${analyse} == "yes" ]]; then
+
+                plotFingerprint \
+                    --bamfiles ${chipbams} ${cellControls} \
+                    --plotFile ${outpath}/fingerPrint/${cell}_${chip}_${fingerprint_bins}bp_fingerprint.pdf \
+                    --labels ${labels} \
+                    --outRawCounts ${outRaw} \
+                    --outQualityMetrics ${outpath}/fingerPrint/${cell}_${chip}_${fingerprint_bins}bp_fingerprint.qcmetrics.txt \
+                    --skipZeros \
+                    --JSDsample ${useControl} \
+                    --numberOfProcessors ${SLURM_CPUS_PER_TASK} \
+                    --numberOfSamples $fingerprint_bins
+            fi
+        done
+    fi
 done
 
 
@@ -233,24 +276,32 @@ fi
 allBamFiles=`ls  ${bamsPath}/*bam`
 labels=$(for file in ${allBamFiles}; do basename $file | cut -d '.' -f 1 | cut -d '_' -f 1,2,3; done)
 
-multiBamSummary bins --bamfiles ${allBamFiles} \
-                -o ${outpath}/chipCorrelation/allVSall/chipCorrelations.npz \
-                --labels $labels --binSize 10000 \
-                --numberOfProcessors ${SLURM_CPUS_PER_TASK}
+outMatrix=${outpath}/chipCorrelation/allVSall/chipCorrelations.npz
+# check if the file exists of it was created with a previous bam version 
+fileNotExistOrOlder "${outMatrix}" "${allBamFiles}"
+# this outputs analyse as yes or no in lowercase
 
-plotCorrelation --corData ${outpath}/chipCorrelation/allVSall/chipCorrelations.npz \
-                --corMethod spearman \
-                --whatToPlot heatmap \
-                --plotFile ${outpath}/chipCorrelation/allVSall/allChipCorrelations.pdf \
-                --skipZeros \
-                --plotTitle "Correlation heatmap between ChIP samples" \
-                --plotFileFormat pdf \
-                --outFileCorMatrix ${outpath}/chipCorrelation/allVSall/allChipCorrelation_matrix.tsv 
+if [[ ${analyse} == "yes" ]]; then
+    multiBamSummary bins --bamfiles ${allBamFiles} \
+                    -o ${outMatrix} \
+                    --labels $labels --binSize 10000 \
+                    --numberOfProcessors ${SLURM_CPUS_PER_TASK}
 
-plotCorrelation --corData ${outpath}/chipCorrelation/allVSall/chipCorrelations.npz \
-                --corMethod spearman \
-                --whatToPlot heatmap \
-                --plotFile ${outpath}/chipCorrelation/allVSall/allChipScatterPlot.pdf \
-                --skipZeros \
-                --plotTitle "Correlation scatterplot between ChIP samples" \
-                --plotFileFormat pdf
+    plotCorrelation --corData ${outMatrix} \
+                    --corMethod spearman \
+                    --whatToPlot heatmap \
+                    --plotFile ${outpath}/chipCorrelation/allVSall/allChipCorrelations.pdf \
+                    --skipZeros \
+                    --plotTitle "Correlation heatmap between ChIP samples" \
+                    --plotFileFormat pdf \
+                    --colorMap viridis \
+                    --outFileCorMatrix ${outpath}/chipCorrelation/allVSall/allChipCorrelation_matrix.tsv 
+
+    plotCorrelation --corData ${outMatrix} \
+                    --corMethod spearman \
+                    --whatToPlot scatterplot \
+                    --plotFile ${outpath}/chipCorrelation/allVSall/allChipScatterPlot.pdf \
+                    --skipZeros \
+                    --plotTitle "Correlation scatterplot between ChIP samples" \
+                    --plotFileFormat pdf
+fi

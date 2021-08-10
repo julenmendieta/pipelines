@@ -60,6 +60,12 @@ for (idx in 1:length(HomerFiles)) {
     anno.dat <- read.csv(HomerFiles[idx], sep="\t", header=TRUE)
     anno.dat <- anno.dat[,c("Annotation","Distance.to.TSS","Nearest.PromoterID")]
 
+    # we want to see files with no peaks, so leave all as NA 
+    if (nrow(anno.dat) == 0) {
+    anno.dat <- read.csv(text="Annotation,Distance.to.TSS,Nearest.PromoterID
+    NA,NA,NA")
+    } 
+
     ## REPLACE UNASSIGNED FEATURE ENTRIES WITH SENSIBLE VALUES
     unassigned <- which(is.na(as.character(anno.dat$Distance.to.TSS)))
     anno.dat$Distance.to.TSS[unassigned] <- 1000000

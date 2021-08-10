@@ -62,7 +62,37 @@ module load Homer/4.10-foss-2018b
 # fore featureCounts
 #module load Subread/1.6.3-foss-2018b
 
+##===============================================================================
 
+# exit when any command fails
+set -e
+
+# keep track of the last executed command
+trap 'last_command=$current_command; current_command=$BASH_COMMAND' DEBUG
+# echo an error message before exiting
+trap 'echo "\"${last_command}\" command failed with exit code $?."' EXIT
+
+##===============================================================================
+
+# function to check if the given first file doesnt exist or is older than 
+# the second input file
+fileNotExistOrOlder () {
+    # check if the file exists of it was created with a previous bam version 
+    analyse="no"
+    if [ ! -e $1 ]; then
+        analyse="yes"
+    # only proceed if the output file is older than the bam file
+    # in this way if we resequenced and kept the name the analysis 
+    # will be repeated
+    else
+        for tfile in $2; do
+            if [[ $1 -ot ${tfile} ]] ; then
+                analyse="yes"
+                echo $1" older than"${tfile}
+            fi
+        done
+    fi
+}
 
 #############################
 #PEAK CALLING: MACS2
@@ -75,7 +105,7 @@ echo -e "Starting Peak calling -----------------------------------------------\n
 # Create output dir
 if [ ! -e ${outpath}/peakCalling/MACS2/logs ]; then
     mkdir -p ${outpath}/peakCalling/MACS2/logs
-    mkdir -p ${outpath}/peakCalling/MACS2/peaks
+    mkdir -p ${outpath}/peakCalling/MACS2/peaks/summary
 fi
 
 cd ${outpath}/peakCalling/MACS2/peaks
@@ -91,17 +121,24 @@ cd ${outpath}/peakCalling/MACS2/peaks
 ## we go for each cell
 for bam in ${allbams}; do
     cell=$(basename $bam | cut -d '.' -f 1 | cut -d '_' -f 1)
-    cellControls=$(echo ${allbams} | tr ' ' '\n' | grep "${cell}_" | grep -e input -e IgG)
+    cellControls=`echo ${allbams} | tr ' ' '\n' | grep "${cell}_" | \
+                    { grep -e "input" -e "IgG" || :; }`
     label=$(basename $bam | cut -d '.' -f 1 | cut -d '_' -f 1,2,3)
     # for now we use the first control to normalise signal (by sort should be IgG)
     controlbam=`echo ${cellControls} | cut -d ' ' -f 1`
+    summaryFile="${outpath}/peakCalling/MACS2/peaks/summary/summary_${label}.txt"
 
-    total_reads=$(samtools view -c ${bam})
+    total_reads="empty"
 
     # narrow peaks
     peaktype='narrowPeak'
 
-    if [ ! -e ${outpath}/peakCalling/MACS2/peaks/${label}_peaks_${peaktype}.xls ]; then
+    # check if the file exists of it was created with a previous bam version 
+    fileNotExistOrOlder "${outpath}/peakCalling/MACS2/peaks/${label}_peaks_${peaktype}.xls" "${bam} ${controlbam}"
+    # this outputs analyse as yes or no in lowercase
+
+    if [[ ${analyse} == "yes" ]]; then
+        total_reads=$(samtools view -c ${bam})
 
         macs2 callpeak \
                 -t ${bam} \
@@ -128,7 +165,15 @@ for bam in ${allbams}; do
     # broad peaks
     peaktype="broadPeak"
 
-    if [ ! -e ${outpath}/peakCalling/MACS2/peaks/${label}_peaks_${peaktype}.xls ]; then
+    # check if the file exists of it was created with a previous bam version 
+    fileNotExistOrOlder "${outpath}/peakCalling/MACS2/peaks/${label}_peaks_${peaktype}.xls" "${bam} ${controlbam}"
+    # this outputs analyse as yes or no in lowercase
+
+    if [[ ${analyse} == "yes" ]]; then
+        if [[ $total_reads == "empty" ]]; then
+            total_reads=$(samtools view -c ${bam})
+        fi
+
         macs2 callpeak \
                 -t ${bam} \
                 -c ${controlbam} \
@@ -138,7 +183,8 @@ for bam in ${allbams}; do
                 -n $label \
                 --keep-dup all \
                 --outdir ${outpath}/peakCalling/MACS2/peaks 2> ${outpath}/peakCalling/MACS2/logs/${label}_macs2_${peaktype}.log
-
+        
+        # -q 0.05 as default (at least for broad)
         mv ${outpath}/peakCalling/MACS2/peaks/${label}_peaks.xls ${outpath}/peakCalling/MACS2/peaks/${label}_peaks_${peaktype}.xls
 
         npeaks=$(cat ${outpath}/peakCalling/MACS2/peaks/${label}_peaks.${peaktype} | wc -l)
@@ -164,6 +210,8 @@ for bam in ${allbams}; do
     # awk -v FRiP=$FRiP -v OFS='\t' '{print ip, FRiP}' | cat $frip_score_header - > ${ip}_${peaktype}s.FRiP_mqc.tsv
 done
 
+echo -e "Peak calling - finished -----------------------------------------------\n"
+
 
 ###############################
 # HOMER: annotate peaks
@@ -173,22 +221,36 @@ done
 # http://homer.ucsd.edu/homer/ngs/annotation.html
 
 # Create output dir
-if [ ! -e ${outpath}/HOMER ]; then
-    mkdir -p ${outpath}/HOMER
+if [ ! -e ${outpath}/HOMER/peakAnnotation ]; then
+    mkdir -p ${outpath}/HOMER/peakAnnotation
 fi
 
+echo -e "Starting HOMER annotation -----------------------------------------------\n"
 
-for bam in allbams; do
+
+for bam in ${allbams}; do
     for peaktype in 'narrowPeak' 'broadPeak'; do
-        label=$(basename $bam | cut -d '.' -f 1 | cut -d '_' -f 1,2,3; done)
-        annotatePeaks.pl \
-                ${outpath}/peakCalling/MACS2/peaks/${label}_peaks.${peaktype} \
-                ${speciesGenome} \
-                -gid \
-                -cpu ${SLURM_CPUS_PER_TASK} \
-                > ${outpath}/HOMER/${label}_${peaktype}.annotatePeaks.txt
+
+        label=$(basename $bam | cut -d '.' -f 1 | cut -d '_' -f 1,2,3)
+        annotationOut=${outpath}/HOMER/peakAnnotation/${label}_${peaktype}.annotatePeaks.txt
+        peakIn=${outpath}/peakCalling/MACS2/peaks/${label}_peaks.${peaktype}
+        
+        # check if the file exists or it was created with a previous peaks version 
+        fileNotExistOrOlder "${annotationOut}" "${peakIn}"
+        # this outputs analyse as yes or no in lowercase
+        if [[ ${analyse} == "yes" ]]; then
+            annotatePeaks.pl \
+                    ${peakIn} \
+                    ${speciesGenome} \
+                    -gid \
+                    -cpu ${SLURM_CPUS_PER_TASK} \
+                    -annStats ${outpath}/HOMER/peakAnnotation/${label}_${peaktype}.annotateStats.txt
+                    > ${annotationOut}
+        fi
     done
 done
+
+echo -e "HOMER annotation - Finished -----------------------------------------------\n"
 
 ###############################
 # QC: MACS2 quality check plots
@@ -198,38 +260,58 @@ if [ ! -e ${outpath}/peakCalling/MACS2/QC ]; then
     mkdir -p ${outpath}/peakCalling/MACS2/QC
 fi
 
+echo -e "Starting peak QC -----------------------------------------------\n"
+
+
 allCell=`for filename in ${allLabels}; do 
             mapLib=(${filename//_/ }); 
             echo ${mapLib[0]}; done | sort | uniq`
 
 for cell in ${allCell}; do
     for peaktype in 'narrowPeak' 'broadPeak'; do
-    
+        echo "${cell}_${peaktype}_macs2"
+        peaksPath=${outpath}/peakCalling/MACS2/peaks
         # get comma separated string with all the peak files to compare
-        peakfiles=$(find ${outpath}/peakCalling/MACS2/peaks/${cell}_*peaks.${peaktype} -printf "${outpath}/peakCalling/MACS2/peaks/%f,")
-        labels=$(find ${outpath}/peakCalling/MACS2/peaks/${cell}_*peaks.${peaktype} -printf "%f ")
+        peakfiles=$(find ${peaksPath}/${cell}_*peaks.${peaktype} -printf "${peaksPath}/%f,")
+        labels=$(find ${peaksPath}/${cell}_*peaks.${peaktype} -printf "%f " -exec basename {} \; )
         labels=$(for la in $labels; do echo $la | sed "s/_peaks.${peaktype}//g"; done | tr '\n' ',' )
 
-        # https://github.com/nf-core/chipseq
-        Rscript ${scriptsPath}/ChIP/cluster/02_NR_plot_macs_qc.R \
-                -i ${peakfiles} \
-                -s ${labels} \
-                -o ${outpath}/peakCalling/MACS2/QC \
-                -p macs_peak # out prefix
+        # check if the file exists or it was created with a previous peaks version 
+        peakfilesSpace=$(find ${peaksPath}/${cell}_*peaks.${peaktype} -printf "${peaksPath}/%f ")
+        fileNotExistOrOlder "${outpath}/peakCalling/MACS2/QC/${cell}_${peaktype}_macs2.plots.pdf" "${peakfilesSpace}"
+        # this outputs analyse as yes or no in lowercase
+        if [[ ${analyse} == "yes" ]]; then
+            # https://github.com/nf-core/chipseq
+            Rscript ${scriptsPath}/ChIP/cluster/02_NR_plot_macs_qc.R \
+                    -i ${peakfiles} \
+                    -s ${labels} \
+                    -o ${outpath}/peakCalling/MACS2/QC \
+                    -p "${cell}_${peaktype}_macs2" # out prefix
+        fi
 
-
-        # get comma separated string with all the peak annotation files to compare
-        annotfiles=$(find ${outpath}/HOMER/${cell}_*${peaktype}.annotatePeaks.txt -printf "${outpath}/HOMER/%f,")
-        labels=$(find ${outpath}/HOMER/${cell}_*${peaktype}.annotatePeaks.txt -printf "%f ")
+        # get comma separated string with all the peak annotation files to compare (avoid controls)
+        annotPath=${outpath}/HOMER/peakAnnotation
+        annotfiles=$(find ${annotPath}/${cell}_*${peaktype}.annotatePeaks.txt | \
+                    { grep -v -e "input" -v -e "IgG" || :; } | tr '\n' ',' )
+        labels=$(find ${annotPath}/${cell}_*${peaktype}.annotatePeaks.txt -exec basename {} \; | \
+                    { grep -v -e "input" -v -e "IgG" || :; } )
         labels=$(for la in $labels; do echo $la | sed "s/_${peaktype}.annotatePeaks.txt//g"; done | tr '\n' ',' )
 
-        Rscript ${scriptsPath}/ChIP/cluster/02_NR_plot_homer_annotatepeaks.R \
-                -i ${annotfiles} \
-                -s ${labels} \
-                -o ${outpath}/peakCalling/MACS2/QC \
-                -p macs_annotatePeaks
+        # check if the file exists or it was created with a previous peaks version 
+        annotfilesSpace=$(find ${annotPath}/${cell}_*${peaktype}.annotatePeaks.txt -printf "${annotPath}/%f ")
+        fileNotExistOrOlder "${outpath}/peakCalling/MACS2/QC/${cell}_${peaktype}_macs2_annotatePeaks.plots.pdf" "${annotfilesSpace}"
+        # this outputs analyse as yes or no in lowercase
+        if [[ ${analyse} == "yes" ]]; then
+            Rscript ${scriptsPath}/ChIP/cluster/02_NR_plot_homer_annotatepeaks.R \
+                    -i ${annotfiles} \
+                    -s ${labels} \
+                    -o ${outpath}/peakCalling/MACS2/QC \
+                    -p "${cell}_${peaktype}_macs2_annotatePeaks"
+        fi
     done
 done
+
+echo -e "peak QC - Finished -----------------------------------------------\n"
 
 
 #########################
@@ -238,95 +320,133 @@ done
 #########################
 
 ## We first do it in the whole dataset as a trial, but in the future ill do it only between the biological replicates
-if [ ! -e ${outpath}/PeakCalling/MACS2/consensusPeaks ]; then
-	mkdir -p ${outpath}/PeakCalling/MACS2/consensusPeaks
+if [ ! -e ${outpath}/peakCalling/MACS2/consensusPeaks ]; then
+	mkdir -p ${outpath}/peakCalling/MACS2/consensusPeaks
 fi
+
+echo -e "Starting consensus peak analysis -------------------------------------\n"
+
 
 chip="allmerged"
 for peaktype in narrowPeak broadPeak; do
-    # hay que usar estos
-    if ${peaktype} == "narrowPeak"; then
+    # select the columns to peak in each peak calling case
+    if [ ${peaktype} == "narrowPeak" ]; then
         mergecols=`seq 2 10 | tr '\n' ','`
         expandparam='--is_narrow_peak'
-    elif ${peaktype} == "broadPeak"; then
+    elif [ ${peaktype} == "broadPeak" ]; then
         mergecols=`seq 2 9 | tr '\n' ','`
         expandparam=''
     fi
 
-    peakFiles=$(ls ${outpath}/peakCalling/MACS2/peaks/*.${peaktype})
-    fileLabels=$(for f in $peakFiles; do echo $f |sed "s/_peaks.${peaktype}//g"; done | tr '\n' ',')
+    # get all non empty peak files (avoid controls)
+    peakFiles=$(find -L ${outpath}/peakCalling/MACS2/peaks/*.${peaktype} -maxdepth 1  -type f ! -size 0 | \
+                { grep -v -e "input" -v -e "IgG" || :; } )
+    fileLabels=$(for f in $peakFiles; do echo ${f##*/} |sed "s/_peaks.${peaktype}//g"; done | tr '\n' ',')
 
-
+    # check if the file exists or it was created with a previous peaks version 
     prefix="${chip}_${peaktype}_consensusPeaks"
+    RoutPlot=${outpath}/peakCalling/MACS2/consensusPeaks/${prefix}.boolean.intersect.plot.pdf
+    fileNotExistOrOlder "${RoutPlot}" "${peakFiles}"
+    # this outputs analyse as yes or no in lowercase
+    if [[ ${analyse} == "yes" ]]; then
 
-    sort -T '.' -k1,1 -k2,2n ${peakFiles} \
-        | mergeBed -c $mergecols -o collapse > ${outpath}/peakCalling/MACS2/consensusPeaks/${prefix}.txt
+        sort -T '.' -k1,1 -k2,2n ${peakFiles} \
+            | mergeBed -c $mergecols -o collapse > ${outpath}/peakCalling/MACS2/consensusPeaks/${prefix}.txt
 
-    python ${scriptsPath}/ChIP/cluster/02_NR_macs2_merged_expand.py ${outpath}/peakCalling/MACS2/consensusPeaks/${prefix}.txt \
-        ${fileLabels} \
-        ${outpath}/peakCalling/MACS2/consensusPeaks/${prefix}.boolean.txt \
-        $expandparam
+        python ${scriptsPath}/ChIP/cluster/02_NR_macs2_merged_expand.py ${outpath}/peakCalling/MACS2/consensusPeaks/${prefix}.txt \
+            ${fileLabels} \
+            ${outpath}/peakCalling/MACS2/consensusPeaks/${prefix}.boolean.txt \
+            $expandparam
 
-    awk -v FS='\t' -v OFS='\t' 'FNR > 1 { print $1, $2, $3, $4, "0", "+" }' \
-        ${outpath}/peakCalling/MACS2/consensusPeaks/${prefix}.boolean.txt > ${outpath}/peakCalling/MACS2/consensusPeaks/${prefix}.bed
-    echo -e "GeneID\tChr\tStart\tEnd\tStrand" > ${outpath}/peakCalling/MACS2/consensusPeaks/${prefix}.saf
-    awk -v FS='\t' -v OFS='\t' 'FNR > 1 { print $4, $1, $2, $3,  "+" }' \
-        ${outpath}/peakCalling/MACS2/consensusPeaks/${prefix}.boolean.txt >> ${outpath}/peakCalling/MACS2/consensusPeaks/${prefix}.saf
-    Rscript ${scriptsPath}/ChIP/cluster/02_NR_plot_peak_intersect.r \
-        -i ${outpath}/peakCalling/MACS2/consensusPeaks/${prefix}.boolean.intersect.txt \
-        -o ${outpath}/peakCalling/MACS2/consensusPeaks/${prefix}.boolean.intersect.plot.pdf
+        consensusPeakBed=${outpath}/peakCalling/MACS2/consensusPeaks/${prefix}.bed
+        awk -v FS='\t' -v OFS='\t' 'FNR > 1 { print $1, $2, $3, $4, "0", "+" }' \
+            ${outpath}/peakCalling/MACS2/consensusPeaks/${prefix}.boolean.txt > ${consensusPeakBed}
+        echo -e "GeneID\tChr\tStart\tEnd\tStrand" > ${outpath}/peakCalling/MACS2/consensusPeaks/${prefix}.saf
+        awk -v FS='\t' -v OFS='\t' 'FNR > 1 { print $4, $1, $2, $3,  "+" }' \
+            ${outpath}/peakCalling/MACS2/consensusPeaks/${prefix}.boolean.txt >> ${outpath}/peakCalling/MACS2/consensusPeaks/${prefix}.saf
+        Rscript ${scriptsPath}/ChIP/cluster/02_NR_plot_peak_intersect.r \
+            -i ${outpath}/peakCalling/MACS2/consensusPeaks/${prefix}.boolean.intersect.txt \
+            -o ${RoutPlot}
+    fi
     
 done
 
-# Now we do it within the biological replicates 
-# create file with ChIP names in bams folder
-# for filename in *bam; do mapLib=(${filename//_/ }); mapLib=${mapLib[1]}; mapLib=(${mapLib//-/ }); echo ${mapLib[0]}; done | grep -v input | grep -v IgG | sort | uniq > chipMarcs.txt
-# markFile="/home/jmendietaes/data/2021/chip/allProcessed/bamfiles/valid/chipMarcs.txt"
-# PROTS=($(cat $bamsPath/chipMarcs.txt))
-
-# if [ ! -e ${outpath}/PeakCalling/MACS2/consensusPeaks ]; then
-# 	mkdir -p ${outpath}/PeakCalling/MACS2/consensusPeaks
-# fi
-
-# for peaktype in narrowPeak broadPeak; do
-#     # hay que usar estos
-#     if ${peaktype} == "narrowPeak"; then
-#         mergecols=`seq 2 10 | tr '\n' ','`
-#         expandparam='--is_narrow_peak'
-#     elif ${peaktype} == "broadPeak"; then
-#         mergecols=`seq 2 9 | tr '\n' ','`
-#         expandparam=''
-#     fi
-
-#     for Ig_prot in ${PROTS}; do
-#         protBams=$(find ${bamsPath}/*_${Ig_prot}*bam -printf "%f ")
-#         protNames=$(for p in $protBams; do basename $p | sed 's/\.sort\.rmdup.*//g'; done)
-
-#         peakFiles=$(for p in $protNames; do echo ${outpath}/MACS2/${p}_peaks.${peaktype}; done)
-#         fileLabels=$(for f in $peakFiles; do echo $f |sed "s/_peaks.${peaktype}//g"; done | tr '\n' ',')
+echo -e "consensus peak analysis - Finished ------------------------------\n"
 
 
-#         prefix = "${Ig_prot}.consensus_peaks"
 
-#         sort -T '.' -k1,1 -k2,2n ${peakFiles} \
-#             | mergeBed -c $mergecols -o collapse > ${outpath}/peakCalling/MACS2/consensusPeaks/${prefix}.txt
+## Same by comparing samples of same chip
+echo -e "Starting same-chip peak comparison -------------------------------------\n"
 
-#         python ${scriptsPath}/ChIP/cluster/02_NR_macs2_merged_expand.py ${outpath}/peakCalling/MACS2/consensusPeaks/${prefix}.txt \
-#             ${fileLabels} \
-#             ${outpath}/peakCalling/MACS2/consensusPeaks/${prefix}.boolean.txt \
-#             $expandparam
+sameChipCons=${outpath}/peakCalling/MACS2/consensusPeaks/bySameChip
+if [ ! -e ${sameChipCons} ]; then
+	mkdir -p ${sameChipCons}
+fi
 
-#     awk -v FS='\t' -v OFS='\t' 'FNR > 1 { print $1, $2, $3, $4, "0", "+" }' \
-#         ${outpath}/peakCalling/MACS2/consensusPeaks/${prefix}.boolean.txt > ${outpath}/peakCalling/MACS2/consensusPeaks/${prefix}.bed
-#     echo -e "GeneID\tChr\tStart\tEnd\tStrand" > ${outpath}/peakCalling/MACS2/consensusPeaks/${prefix}.saf
-#     awk -v FS='\t' -v OFS='\t' 'FNR > 1 { print $4, $1, $2, $3,  "+" }' \
-#         ${outpath}/peakCalling/MACS2/consensusPeaks/${prefix}.boolean.txt >> ${outpath}/peakCalling/MACS2/consensusPeaks/${prefix}.saf
-#     Rscript ${scriptsPath}/ChIP/cluster/02_NR_plot_peak_intersect.r \
-#         -i ${outpath}/peakCalling/MACS2/consensusPeaks/${prefix}.boolean.intersect.txt \
-#         -o ${outpath}/peakCalling/MACS2/consensusPeaks/${prefix}.boolean.intersect.plot.pdf
+for peaktype in narrowPeak broadPeak; do
+    # select the columns to peak in each peak calling case
+    if [ ${peaktype} == "narrowPeak" ]; then
+        mergecols=`seq 2 10 | tr '\n' ','`
+        expandparam='--is_narrow_peak'
+    elif [ ${peaktype} == "broadPeak" ]; then
+        mergecols=`seq 2 9 | tr '\n' ','`
+        expandparam=''
+    fi
+
+    # get list with all checked chip
+    allChip=$(\
+    for filename in ${bamsPath}/*bam; do 
+        mapLib=(${filename//_/ }); 
+        mapLib=${mapLib[1]}; 
+        mapLib=(${mapLib//-/ }); 
+        echo ${mapLib[0]}; done | \
+        grep -v input | grep -v IgG | sort | uniq)
+
     
-# done
-# Consensus peaks => R
+    # compare the ones for which we either have replicates or other conditions
+    for chip in ${allChip}; do
+        # here we check if we have more than one file for that chip
+        peakFiles=$(find -L ${outpath}/peakCalling/MACS2/peaks/*.${peaktype} -maxdepth 1  -type f ! -size 0 | \
+                { grep -e ${chip} || :; } )
+        fileLabels=$(for f in $peakFiles; do echo ${f##*/} |sed "s/_peaks.${peaktype}//g"; done | tr '\n' ',')
+        prefix="${chip}_${peaktype}_consensusPeaks"
+
+
+        nfiles=$(echo $peakFiles | wc -w)
+        if [[ ${nfiles} -gt 1 ]]; then    
+
+            RoutPlot=${sameChipCons}/${prefix}.boolean.intersect.pdf
+            fileNotExistOrOlder "${RoutPlot}" "${peakFiles}"
+            # this outputs analyse as yes or no in lowercase
+            if [[ ${analyse} == "yes" ]]; then
+
+                sort -T '.' -k1,1 -k2,2n ${peakFiles} \
+                | mergeBed -c $mergecols -o collapse > ${sameChipCons}/${prefix}.txt
+
+                python ${scriptsPath}/ChIP/cluster/02_NR_macs2_merged_expand.py ${sameChipCons}/${prefix}.txt \
+                    ${fileLabels} \
+                    ${sameChipCons}/${prefix}.boolean.txt \
+                    $expandparam
+
+                consensusPeakBed=${sameChipCons}/${prefix}.bed
+                awk -v FS='\t' -v OFS='\t' 'FNR > 1 { print $1, $2, $3, $4, "0", "+" }' \
+                    ${sameChipCons}/${prefix}.boolean.txt > ${consensusPeakBed}
+                echo -e "GeneID\tChr\tStart\tEnd\tStrand" > ${sameChipCons}/${prefix}.saf
+                awk -v FS='\t' -v OFS='\t' 'FNR > 1 { print $4, $1, $2, $3,  "+" }' \
+                    ${sameChipCons}/${prefix}.boolean.txt >> ${sameChipCons}/${prefix}.saf
+                Rscript ${scriptsPath}/ChIP/cluster/02_NR_plot_peak_intersect.r \
+                    -i ${sameChipCons}/${prefix}.boolean.intersect.txt \
+                    -o ${RoutPlot}
+            fi
+        
+        fi
+
+    done
+
+done
+
+
+echo -e "same-chip peak comparison - Finished ---------------------------\n"
 
 
 
@@ -338,63 +458,323 @@ if [ ! -e ${outpath}/HOMER/consensusPeaks ]; then
 	mkdir -p ${outpath}/HOMER/consensusPeaks
 fi
 
+echo -e "Starting consensus peak annotations ------------------------------\n"
+
+
 chip="allmerged"
 for peaktype in narrowPeak broadPeak; do
 
     prefix="${chip}_${peaktype}_consensusPeaks"
+    consensusPeakBed=${outpath}/peakCalling/MACS2/consensusPeaks/${prefix}.bed
 
-    annotatePeaks.pl \
-            ${outpath}/peakCalling/MACS2/consensusPeaks/${prefix}.bed \
-            ${speciesGenome} \
-            -gid \
-            -cpu ${SLURM_CPUS_PER_TASK} \
-            > ${outpath}/HOMER/consensusPeaks/${prefix}.annotatePeaks.txt
+    # check if the file exists or it was created with a previous peaks version 
+    boolAnotMatr=${outpath}/HOMER/consensusPeaks/${prefix}.boolean.annotatePeaks.txt
+    fileNotExistOrOlder "${boolAnotMatr}" "${consensusPeakBed}"
+    # this outputs analyse as yes or no in lowercase
+    if [[ ${analyse} == "yes" ]]; then
 
-    cut -f2- ${outpath}/HOMER/consensusPeaks/${prefix}.annotatePeaks.txt | \
-        awk 'NR==1; NR > 1 {print $0 | "sort -T '.' -k1,1 -k2,2n"}' | \
-        cut -f6- > ${outpath}/HOMER/consensusPeaks/tmp.txt
-    paste ${outpath}/peakCalling/MACS2/consensusPeaks/${prefix}.boolean.txt \
-        ${outpath}/HOMER/consensusPeaks/tmp.txt > ${outpath}/HOMER/consensusPeaks/${prefix}.boolean.annotatePeaks.txt
+        annotatePeaks.pl \
+                ${consensusPeakBed} \
+                ${speciesGenome} \
+                -gid \
+                -cpu ${SLURM_CPUS_PER_TASK} \
+                -annStats ${outpath}/HOMER/consensusPeaks/${prefix}.annotateStats.txt \
+                > ${outpath}/HOMER/consensusPeaks/${prefix}.annotatePeaks.txt
+
+        cut -f2- ${outpath}/HOMER/consensusPeaks/${prefix}.annotatePeaks.txt | \
+            awk 'NR==1; NR > 1 {print $0 | "sort -T '.' -k1,1 -k2,2n"}' | \
+            cut -f6- > ${outpath}/HOMER/consensusPeaks/tmp.txt
+        paste ${outpath}/peakCalling/MACS2/consensusPeaks/${prefix}.boolean.txt \
+            ${outpath}/HOMER/consensusPeaks/tmp.txt > ${boolAnotMatr}
+    fi
 done
+
+echo -e "consensus peak annotations - Finished ---------------------\n"
+
+
+## Same by comparing samples of same chip
+
+echo -e "Starting consensus same-chip peak annotations -----------------------\n"
+
+sameChipHomer=${outpath}/HOMER/consensusPeaks/bySameChip
+if [ ! -e ${sameChipHomer} ]; then
+	mkdir -p ${sameChipHomer}
+fi
+
+
+# get all analysed ChIP
+more1Chip=$(\
+    for filename in ${sameChipCons}/*bed; do 
+        filename=$(basename ${filename})
+        mapLib=(${filename//_/ }); 
+        echo ${mapLib[0]}; done | \
+        sort | uniq)
+
+for chip in ${more1Chip}; do
+    for peaktype in narrowPeak broadPeak; do
+
+        prefix="${chip}_${peaktype}_consensusPeaks"
+        consensusPeakBed=${sameChipCons}/${prefix}.bed
+
+        # check if the file exists or it was created with a previous peaks version 
+        boolAnotMatr=${sameChipHomer}/${prefix}.boolean.annotatePeaks.txt
+        fileNotExistOrOlder "${boolAnotMatr}" "${consensusPeakBed}"
+        # this outputs analyse as yes or no in lowercase
+        if [[ ${analyse} == "yes" ]]; then
+
+            annotatePeaks.pl \
+                    ${consensusPeakBed} \
+                    ${speciesGenome} \
+                    -gid \
+                    -cpu ${SLURM_CPUS_PER_TASK} \
+                    -annStats ${sameChipHomer}/${prefix}.annotateStats.txt \
+                    > ${sameChipHomer}/${prefix}.annotatePeaks.txt
+
+            cut -f2- ${sameChipHomer}/${prefix}.annotatePeaks.txt | \
+                awk 'NR==1; NR > 1 {print $0 | "sort -T '.' -k1,1 -k2,2n"}' | \
+                cut -f6- > ${sameChipHomer}/tmp.txt
+            paste ${sameChipCons}/${prefix}.boolean.txt \
+                ${sameChipHomer}/tmp.txt > ${boolAnotMatr}
+        fi
+    done
+done
+
+echo -e "consensus same-chip peak annotations - Finished ---------------\n"
+
+
 ###########################################################
 # Count reads in consensus peaks with featureCounts
 ##########################################################
 
-# this only for the consensus between replicates, here no sense
-# featureCounts \
-#         -F SAF \
-#         -O \
-#         --fracOverlap 0.2 \
-#         -T $task.cpus \
-#         $pe_params \
-#         -a $saf \
-#         -o ${prefix}.featureCounts.txt \
-#         ${bam_files.join(' ')}
+featureCpath=${outpath}/peakCalling/MACS2/consensusPeaks/featureCounts
+if [ ! -e ${featureCpath} ]; then
+	mkdir -p ${featureCpath}
+fi
+cd {featureCpath}
+
+
+chip="allmerged"
+for peaktype in narrowPeak broadPeak; do
+    prefix="${chip}_${peaktype}_consensusPeaks"
+    peakFiles=$(find -L ${outpath}/peakCalling/MACS2/peaks/*.${peaktype} -maxdepth 1  -type f ! -size 0 | \
+                { grep -v -e "input" -v -e "IgG" || :; } )
+    fileLabels=$(for f in $peakFiles; do echo ${f##*/} |sed "s/_peaks.${peaktype}//g"; done)
+    # get a list with the bam files in the same order as peak files
+    bamfiles=$(for f in ${fileLabels}; do find -L ${bamsPath}/${f}*bam -printf "${bamsPath}/%f "; 
+                    done | tr '\n' ' ')
+
+    # check if the file exists or it was created with a previous peaks version 
+    featureOut=${featureCpath}/${prefix}.featureCounts.txt
+    fileNotExistOrOlder "${featureOut}" "${peakFiles}"
+    # this outputs analyse as yes or no in lowercase
+    if [[ ${analyse} == "yes" ]]; then
+        # this only for the consensus between replicates, here no sense
+        featureCounts \
+                -F SAF \
+                -O \
+                --fracOverlap 0.2 \
+                -T ${SLURM_CPUS_PER_TASK} \
+                -p --donotsort \
+                -a ${outpath}/peakCalling/MACS2/consensusPeaks/${prefix}.saf \
+                -o ${featureOut} \
+                ${bamfiles}
+    fi
+done
+
+
+## Same by comparing samples of same chip
+
+featureCPairpath=${outpath}/peakCalling/MACS2/consensusPeaks/bySameChip/featureCounts
+if [ ! -e ${featureCPairpath} ]; then
+	mkdir -p ${featureCPairpath}
+fi
+cd ${featureCPairpath}
+
+
+for chip in ${more1Chip}; do
+    for peaktype in narrowPeak broadPeak; do
+        prefix="${chip}_${peaktype}_consensusPeaks"
+        peakFiles=$(find -L ${outpath}/peakCalling/MACS2/peaks/*.${peaktype} -maxdepth 1  -type f ! -size 0 | \
+                    { grep "${chip}" || :; } )
+        fileLabels=$(for f in $peakFiles; do echo ${f##*/} |sed "s/_peaks.${peaktype}//g"; done)
+        # get a list with the bam files in the same order as peak files
+        bamfiles=$(for f in ${fileLabels}; do find -L ${bamsPath}/${f}*bam -printf "${bamsPath}/%f "; 
+                        done | tr '\n' ' ')
+
+        # check if the file exists or it was created with a previous peaks version 
+        featureOut=${featureCPairpath}/${prefix}.featureCounts.txt
+        fileNotExistOrOlder "${featureOut}" "${peakFiles}"
+        # this outputs analyse as yes or no in lowercase
+        if [[ ${analyse} == "yes" ]]; then
+            # this only for the consensus between replicates, here no sense
+            featureCounts \
+                    -F SAF \
+                    -O \
+                    --fracOverlap 0.2 \
+                    -T ${SLURM_CPUS_PER_TASK} \
+                    -p --donotsort \
+                    -a ${outpath}/peakCalling/MACS2/consensusPeaks/bySameChip/${prefix}.saf \
+                    -o ${featureOut} \
+                    ${bamfiles} 
+        fi
+    done
+done
+
+###########################################################
+# Read count to CPM
+###########################################################
+
+chip="allmerged"
+for peaktype in narrowPeak broadPeak; do
+    prefix="${chip}_${peaktype}_consensusPeaks"
+    
+    bamfiles=$(head -n 2 ${featureCpath}/${prefix}.featureCounts.txt | tail -n 1 |\
+                tr '\t' '\n' | grep bam$)
+    nbamfiles=$(echo $bamfiles | wc -w)
+    # featureCount files start with this columns before the bam read counts
+    #Geneid	Chr	Start	End	Strand	Length
+    prevFields=6
+    lengthCol=5
+
+    # set the output file path and copy the content of original
+    featureCPM=${featureCpath}/${prefix}.featureCounts.CPM.txt
+
+    echo -e "FileName\tSampleName\tCellType\tStatus" > ${featureCpath}/sampleInfo.txt
+    for bam in ${bamfiles}; do
+        sname=`basename $bam  | sed 's/.sort.rmdup.rmblackls.rmchr.bam//g'`
+        #sname=$bam
+        cell=(${sname//_/ }) ; cell=${cell[0]}
+        status=(${sname//_/ }) ; status=${status[1]}; status=(${status//-/ }); status=${status[0]}
+        echo -e ${bam}"\t"${sname}"\t"${cell}"\t"${status} >> ${featureCpath}/sampleInfo.txt
+    done
+
+    # check if the file exists or it was created with a previous featureCounts version 
+    fileNotExistOrOlder "${featureCPM}" "${featureCpath}/${prefix}.featureCounts.txt"
+    # this outputs analyse as yes or no in lowercase
+    if [[ ${analyse} == "yes" ]]; then
+        # this only for the consensus between replicates, here no sense
+        Rscript ${scriptsPath}/ChIP/cluster/02_NR_metric_CPMfromFeatureCounts.r \
+                    -i ${featureCpath}/${prefix}.featureCounts.txt \
+                    -o ${featureCPM} \
+                    -s ${featureCpath}/sampleInfo.txt \
+                    -l ${lengthCol} \
+                    -d ${prevFields} \
+                    -S "allProcessed.bamfiles.valid." \
+                    -E ".sort.rmdup.rmblackls.rmchr.bam" 
+
+    fi
+done
+
+## Same by comparing samples of same chip
+
+for chip in ${more1Chip}; do
+    for peaktype in narrowPeak broadPeak; do
+        prefix="${chip}_${peaktype}_consensusPeaks"
+        
+        bamfiles=$(head -n 2 ${featureCPairpath}/${prefix}.featureCounts.txt | tail -n 1 |\
+                    tr '\t' '\n' | grep bam$)
+        nbamfiles=$(echo $bamfiles | wc -w)
+        # featureCount files start with this columns before the bam read counts
+        #Geneid	Chr	Start	End	Strand	Length
+        prevFields=6
+        lengthCol=5
+
+        # set the output file path and copy the content of original
+        featureCPM=${featureCPairpath}/${prefix}.featureCounts.CPM.txt
+
+        echo -e "FileName\tSampleName\tCellType\tStatus" > ${featureCPairpath}/sampleInfo.txt
+        for bam in ${bamfiles}; do
+            sname=`basename $bam  | sed 's/.sort.rmdup.rmblackls.rmchr.bam//g'`
+            #sname=$bam
+            cell=(${sname//_/ }) ; cell=${cell[0]}
+            status=(${sname//_/ }) ; status=${status[1]}; status=(${status//-/ }); status=${status[0]}
+            echo -e ${bam}"\t"${sname}"\t"${cell}"\t"${status} >> ${featureCPairpath}/sampleInfo.txt
+        done
+
+        # check if the file exists or it was created with a previous featureCounts version 
+        fileNotExistOrOlder "${featureCPM}" "${featureCPairpath}/${prefix}.featureCounts.txt"
+        # this outputs analyse as yes or no in lowercase
+        if [[ ${analyse} == "yes" ]]; then
+            # this only for the consensus between replicates, here no sense
+            Rscript ${scriptsPath}/ChIP/cluster/02_NR_metric_CPMfromFeatureCounts.r \
+                        -i ${featureCPairpath}/${prefix}.featureCounts.txt \
+                        -o ${featureCPM} \
+                        -s ${featureCPairpath}/sampleInfo.txt \
+                        -l ${lengthCol} \
+                        -d ${prevFields} \
+                        -S "allProcessed.bamfiles.valid." \
+                        -E ".sort.rmdup.rmblackls.rmchr.bam" 
+
+        fi
+    done
+done
+
 
 
 ###########################################################
 # Differential analysis with DESeq2
 ###########################################################
 
-# Esto parte del ${prefix}.featureCounts.txt del paso anterior
-# featurecounts_deseq2.r \\
-#         --featurecount_file $counts \\
-#         --bam_suffix '$bam_ext' \\
-#         --outdir ./ \\
-#         --outprefix $prefix \\
-#         --outsuffix '' \\
-#         --cores $task.cpus \\
-#         $vst
+# if [ ! -e ${outpath}/DESeq2/MACS2 ]; then
+# 	mkdir -p ${outpath}/DESeq2/MACS2
+# fi
+
+# chip="allmerged"
+# for peaktype in narrowPeak broadPeak; do
+#     prefix="${chip}_${peaktype}_consensusPeaks" 
+
+#     featureOut=${featureCpath}/${prefix}.featureCounts.txt
+
+
+#     Rscript ${scriptsPath}/ChIP/cluster/02_NR_featurecounts_deseq2.r \
+#             --featurecount_file ${featureOut} \
+#             --bam_suffix '.sort.rmdup.rmblackls.rmchr.bam' \
+#             --outdir ${outpath}/DESeq2/ \
+#             --outprefix $prefix \
+#             --outsuffix '' \
+#             --cores ${SLURM_CPUS_PER_TASK}
+
 #     sed 's/deseq2_pca/deseq2_pca_${task.index}/g' <$deseq2_pca_header >tmp.txt
 #     sed -i -e 's/DESeq2 /${antibody} DESeq2 /g' tmp.txt
 #     cat tmp.txt ${prefix}.pca.vals.txt > ${prefix}.pca.vals_mqc.tsv
 #     sed 's/deseq2_clustering/deseq2_clustering_${task.index}/g' <$deseq2_clustering_header >tmp.txt
 #     sed -i -e 's/DESeq2 /${antibody} DESeq2 /g' tmp.txt
 #     cat tmp.txt ${prefix}.sample.dists.txt > ${prefix}.sample.dists_mqc.tsv
+# done
 
+
+# ## Same by comparing samples of same chip
+# if [ ! -e ${outpath}/DESeq2/MACS2/bySameChip ]; then
+# 	mkdir -p ${outpath}/DESeq2/MACS2/bySameChip
+# fi
+
+# for chip in ${more1Chip}; do
+#     for peaktype in narrowPeak broadPeak; do
+#         prefix="${chip}_${peaktype}_consensusPeaks" 
+
+#         featureOut=${featureCpath}/${prefix}.featureCounts.txt
+
+
+#         Rscript ${scriptsPath}/ChIP/cluster/02_NR_featurecounts_deseq2.r \
+#                 --featurecount_file ${featureOut} \
+#                 --bam_suffix '.sort.rmdup.rmblackls.rmchr.bam' \
+#                 --outdir ${outpath}/DESeq2/ \
+#                 --outprefix $prefix \
+#                 --outsuffix '' \
+#                 --cores ${SLURM_CPUS_PER_TASK}
+
+#         sed 's/deseq2_pca/deseq2_pca_${task.index}/g' <$deseq2_pca_header >tmp.txt
+#         sed -i -e 's/DESeq2 /${antibody} DESeq2 /g' tmp.txt
+#         cat tmp.txt ${prefix}.pca.vals.txt > ${prefix}.pca.vals_mqc.tsv
+#         sed 's/deseq2_clustering/deseq2_clustering_${task.index}/g' <$deseq2_clustering_header >tmp.txt
+#         sed -i -e 's/DESeq2 /${antibody} DESeq2 /g' tmp.txt
+#         cat tmp.txt ${prefix}.sample.dists.txt > ${prefix}.sample.dists_mqc.tsv
+#     done
+# done
 
 ###########################################################
 # IGV
 ###########################################################
 
 
+exit 0
