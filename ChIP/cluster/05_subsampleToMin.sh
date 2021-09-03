@@ -1,0 +1,106 @@
+#!/bin/bash
+# -*- ENCODING: UTF-8 -*-
+
+##===============================================================================
+## SLURM VARIABLES
+#SBATCH --job-name=SubsToMin
+#SBATCH --cpus-per-task=16
+#SBATCH --mem=32G
+#SBATCH --time=05:00:00
+#SBATCH -p short
+#SBATCH -o /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.out  
+#SBATCH -e /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.err 
+
+# HOW TO RUN ME
+#sbatch /home/jmendietaes/programas/PhD/ChIP/cluster/05_subsampleToMin.sh \
+#/home/jmendietaes/data/2021/chip/allProcessed \
+
+# PURPOSE
+# to subsample Mye or DM bam files to the one that has less reads to then
+# store it in the subsampled folder
+
+# Make sure bamCounts.txt is updated
+# this will overwrite it
+# echo '' > ${bamCounts}
+# for i in *bam; do 
+#     fileSize=$(du -k ${i} | cut -f1); 
+#     fileLen=$(samtools view -c ${i});
+#     echo -e "${fileSize}\t${i}\t${fileLen}" >> bamCounts.txt ; 
+# done ; for i in mergedReplicates/*bam; do 
+#     fileSize=$(du -k ${i} | cut -f1); 
+#     fileLen=$(samtools view -c ${i});
+#     echo -e "${fileSize}\t${i}\t${fileLen}" >> bamCounts.txt ; 
+# done
+
+basePath=$1
+#basePath="/home/jmendietaes/data/2021/chip/allProcessed"
+
+
+bamsPath="${basePath}/bamfiles/valid"
+subOut="${bamsPath}/subsampled"
+bamCounts="${bamsPath}/bamCounts.txt"
+
+# modules
+module load Sambamba/0.7.0
+
+
+# Create output dir
+if [ ! -e ${subOut} ]; then
+    mkdir -p ${subOut}
+fi
+
+# function to join elements from array
+function join_by { local IFS="$1"; shift; echo "$*"; }
+
+
+
+chips=$(for fi in `cut -f 2 ${bamCounts} | tail -n +2`; do 
+        filename=$(basename ${fi}); 
+        mapLib=(${filename//_/ }); 
+        mapLib=${mapLib[1]}; 
+        mapLib=(${mapLib//-/ }) ; 
+        echo ${mapLib[0]};
+    done | sort| uniq)
+
+# To show files and number of reads
+#for chip in $chips; do echo $chip; grep $chip ${bamCounts} | cut -f 2,3; echo ; done
+
+# for now we only subsample DM and Mye
+for chip in $chips; do
+    echo $chip
+    chipFiles=$(grep $chip bamCounts.txt| cut -f 2 | \
+                    grep -v mergedReplicates | grep "Mye\|DM")
+
+    if [[ $(echo $chipFiles | wc -w) == 2 ]]; then
+        # get minimum number of reads
+        minRead=$(for chi in $chipFiles; do grep $chi ${bamCounts} | cut -f 3; done | sort -n | head -n 1)
+
+        # define new names per file 
+        for file1 in ${chipFiles}; do
+            mapLib=(${file1//_/ }); 
+            # we only had one _
+            if [[ ${#mapLib[@]} == 2 ]]; then
+                mapLib=(${file1//\./ }); 
+                mapLib[0]=${mapLib[0]}"-sub${minRead}"
+                subsName=$(join_by . ${mapLib[@]})
+            # we had more than one
+            else
+                mapLib[1]=${mapLib[1]}"-sub${minRead}"
+                subsName=$(join_by _ ${mapLib[@]})
+            fi
+
+            # get proportion and subsample
+            nReads=$(grep $file1 ${bamCounts} | cut -f 3)
+            if [[ ${nReads} == ${minRead} ]]; then
+                cp ${bamsPath}/${file1} ${subOut}/${subsName}
+                cp ${bamsPath}/${file1}.bai ${subOut}/${subsName}.bai
+            else
+                fractionOfReads=$(echo "print(${minRead}/${nReads})" | python3)
+                sambamba view -h -t $SLURM_CPUS_PER_TASK -s $fractionOfReads -f bam --subsampling-seed=12345 ${bamsPath}/${file1} -o ${subOut}/${subsName}
+            fi
+
+
+        done
+    fi
+done
+
