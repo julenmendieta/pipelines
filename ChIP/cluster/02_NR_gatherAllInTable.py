@@ -46,59 +46,64 @@ def createMergedTable(inpath, CPMpath, tableOut):
 
     # here we will get all the parameters to call the motif analysis
     for fi in os.listdir(inpath):
-        if fi.endswith('boolean.annotatePeaks.txt'):
-            with open(f'{inpath}/{fi}', 'r') as f:
-                header = f.readline().strip().split('\t')
-            chip = fi.split('_')[0]
-            print(chip)
-            print(fi)
+        if not (fi.startswith('IgG_') or fi.startswith('input_')):
+            if fi.endswith('boolean.annotatePeaks.txt'):
+                with open(f'{inpath}/{fi}', 'r') as f:
+                    header = f.readline().strip().split('\t')
+                chip = fi.split('_')[0]
+                print(chip)
+                print(fi)
 
-            ## File 1
-            # load annotation file
-            df = pd.read_csv(f'{inpath}/{fi}', sep='\t')
+                ## File 1
+                # load annotation file
+                df = pd.read_csv(f'{inpath}/{fi}', sep='\t')
 
-            # get info about number of cells
-            chipCell = []
-            for li in list(df.columns):
-                if li.endswith('.bool') and li != '.bool':
-                    chipCell += [li.split('.')[0]]
-                
-            ## File 2
-            # get equivalent files with CPM and counts
-            featureFiles = [fi2 for fi2 in os.listdir(CPMpath) if fi2.startswith(fi.split('.')[0])]
+                # get info about number of cells
+                chipCell = []
+                for li in list(df.columns):
+                    if li.endswith('.bool') and li != '.bool':
+                        chipCell += [li.split('.')[0]]
+                    
+                ## File 2
+                # get equivalent files with CPM and counts
+                featureFiles = [fi2 for fi2 in os.listdir(CPMpath) if fi2.startswith(fi.split('.')[0])]
 
-            # load CPM file
-            fileCPM = [fi2 for fi2 in featureFiles if fi2.endswith('featureCounts.CPM.txt')][0]
-            print(fileCPM)
-            df2 = pd.read_csv(f'{CPMpath}/{fileCPM}', sep='\t')
-            # update column names
-            cellNchange = {}
-            for cell in chipCell:
-                cellNchange[cell] = f'{cell}.cpm'
-            df2 = df2.rename(columns=cellNchange)
+                # load CPM file
+                fileCPM = [fi2 for fi2 in featureFiles if fi2.endswith('featureCounts.CPM.txt')][0]
+                print(fileCPM)
+                df2 = pd.read_csv(f'{CPMpath}/{fileCPM}', sep='\t')
+                # update column names
+                cellNchange = {}
+                for cell in chipCell:
+                    cellNchange[cell] = f'{cell}.cpm'
+                # if I added controls, update also their names
+                for cell in df2.columns: 
+                    if ('_IgG' in cell) or ('input_' in cell):
+                        cellNchange[cell] = f'{cell}.cpm'
+                df2 = df2.rename(columns=cellNchange)
 
-            ## File 3
-            # Load raw reads file
-            fileCounts = [fi2 for fi2 in featureFiles if fi2.endswith('featureCounts.txt')][0]
-            print(fileCounts)
-            df3 = pd.read_csv(f'{CPMpath}/{fileCounts}', sep='\t', skiprows=1)
-            df3 = df3.rename(columns={"Geneid": "interval_id"})
+                ## File 3
+                # Load raw reads file
+                fileCounts = [fi2 for fi2 in featureFiles if fi2.endswith('featureCounts.txt')][0]
+                print(fileCounts)
+                df3 = pd.read_csv(f'{CPMpath}/{fileCounts}', sep='\t', skiprows=1)
+                df3 = df3.rename(columns={"Geneid": "interval_id"})
 
-            # keep only the column with the range ID and the counts and change names
-            keepCol = [df3.columns[0]] + list(df3.columns[6:])
-            df3 = df3.loc[:,keepCol]
-            cellNchange = dict([(k, f"{'_'.join(k.split('/')[-1].split('.')[0].split('_')[:3])}.rcount") for k in keepCol[1:]])
-            df3 = df3.rename(columns=cellNchange)
+                # keep only the column with the range ID and the counts and change names
+                keepCol = [df3.columns[0]] + list(df3.columns[6:])
+                df3 = df3.loc[:,keepCol]
+                cellNchange = dict([(k, f"{'_'.join(k.split('/')[-1].split('.')[0].split('_')[:3])}.rcount") for k in keepCol[1:]])
+                df3 = df3.rename(columns=cellNchange)
 
 
-            ## Merge all
-            df_new = pd.merge(df, df3, on="interval_id")
-            df_new = pd.merge(df_new, df2, on="interval_id")
+                ## Merge all
+                df_new = pd.merge(df, df3, on="interval_id")
+                df_new = pd.merge(df_new, df2, on="interval_id")
 
-            # store table
-            fiout = fi[:-3] + 'extended.txt'
-            df_new.to_csv(path_or_buf=f'{tableOut}/{fiout}', sep='\t', na_rep='', 
-                         float_format=None, header=True, index=False, mode='w')
+                # store table
+                fiout = fi[:-3] + 'extended.txt'
+                df_new.to_csv(path_or_buf=f'{tableOut}/{fiout}', sep='\t', na_rep='', 
+                             float_format=None, header=True, index=False, mode='w')
 
 
 ############################################
