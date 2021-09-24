@@ -16,10 +16,10 @@ def goThroughConcatemerFilePairwise_noMultiTSV(hic_data, line, concatemers,
    
     # store each apparition of a fragment in a concatemer
     #we store the bin of the mapping start position
-    fragment1 = (int(line[2]) / resol) + hic_data.section_pos[line[1]][0]
+    fragment1 = (int(line[2]) // resol) + hic_data.section_pos[line[1]][0]
     concatemers[fragment1] += 1
     
-    fragment2 = (int(line[8]) / resol) + hic_data.section_pos[line[7]][0]
+    fragment2 = (int(line[8]) // resol) + hic_data.section_pos[line[7]][0]
     concatemers[fragment2] += 1
     
     # New concatemer seen
@@ -93,7 +93,7 @@ def getConcatemersPerBin_noMultiTSV(hic_data, tsvFile, resol, locusCh=False,
 
 # this should substitute goThroughConcatemerFilePairwise_noMultiTSV
 # Obtain multiContacts from file just in a pairwise manner
-def goThroughReads(section_pos, line, interPerBin,
+def goThroughReads_yesDiag(section_pos, line, interPerBin,
                                 resol, nRead=0):
     '''
     Function to obtain interaction frecuencies per bin from 
@@ -118,14 +118,52 @@ def goThroughReads(section_pos, line, interPerBin,
    
     # store each apparition of a fragment in a concatemer
     #we store the bin of the mapping start position
-    fragment1 = (int(line[1]) / resol) + section_pos[line[0]][0]
+    fragment1 = (int(line[1]) // resol) + section_pos[line[0]][0]
     interPerBin[fragment1] += 1
     
-    fragment2 = (int(line[3]) / resol) + section_pos[line[2]][0]
+    fragment2 = (int(line[3]) // resol) + section_pos[line[2]][0]
     interPerBin[fragment2] += 1
     
     # New concatemer seen
     nRead += 1
+    
+    return interPerBin, nRead
+
+
+# Obtain multiContacts from file just in a pairwise manner. Remove diagonal
+def goThroughReads_noDiag(section_pos, line, interPerBin,
+                                resol, nRead=0):
+    '''
+    Function to obtain interaction frecuencies per bin from 
+        normal TSV with no multiContact data spected
+        
+    :param section_pos: Dictionary with the chromosomes
+        reference name as keys and a list or tuple of
+        the range of bins in which they lie. Ej.:
+        {'chr1':(0, 5000)}. Is 0 index, and last bin 
+        from range, is not included inside, so next
+        chromosome could be {'chr2':(5000, 10000)}
+    :param line: list or tuple with:
+        [chr1, startPos1, chr2, startPos2]
+    :param interPerBin: defaultdict(int) with the number
+        of times each bin interacts
+    :param resol: Resolution at wich we are going to be 
+        normalising our data
+    :param 0 nRead: Integer indicating number of reads 
+        counted
+    
+    '''
+   
+    # store each apparition of a fragment in a concatemer
+    # we store the bin of the mapping start position
+    fragment1 = (int(line[1]) // resol) + section_pos[line[0]][0]
+    fragment2 = (int(line[3]) // resol) + section_pos[line[2]][0]
+    
+    if fragment1 != fragment2:
+        interPerBin[fragment1] += 1
+        interPerBin[fragment2] += 1
+        # New concatemer seen
+        nRead += 1
     
     return interPerBin, nRead
 
@@ -140,8 +178,8 @@ def getSectionPos(infile, resol):
     total = 0
     section_pos = OrderedDict()
     for crm in sections:
-        section_pos[crm] = (total, total + (sections[crm] / resol + 1))
-        total += (sections[crm] / resol + 1)
+        section_pos[crm] = (total, total + (sections[crm] // resol + 1))
+        total += (sections[crm] // resol + 1)
         
     bamfile.close()
     return section_pos
@@ -151,7 +189,8 @@ def getSectionPos(infile, resol):
 # Open tsv and obtain contact frecuencies in a pairwise manner
 def getInteractionsPerBin(infile, resol, locusCh=False,
                          regRange = False, returnNread = False,
-                         filter_exclude=(1, 2, 3, 4, 6, 7, 8, 9, 10)):
+                         filter_exclude=(1, 2, 3, 4, 6, 7, 8, 9, 10),
+                         diagonal=True):
     '''
     Function to get the number of concatemers were a bin of interest is 
         appearing (is bin based, so all fragments which start inside of
@@ -173,39 +212,34 @@ def getInteractionsPerBin(infile, resol, locusCh=False,
     :param (1, 2, 3, 4, 6, 7, 8, 9, 10) filter exclude: filters to define the
         set of valid pair of reads. Just valid for TADbit style BAMfiles. If
         working with already filtered non TADbit BAM set filter_exclude = ()
+    :param True diagonal: True if you want to count diagonal interactions
     '''
     
     # change filter exclude to binary
     if not isinstance(filter_exclude, int):
         filter_exclude = filters_to_bin(filter_exclude)
-    # variable to store id
-    prev = ''
+
+    if diagonal:
+        goThroughReads = goThroughReads_yesDiag
+    else:
+        goThroughReads = goThroughReads_noDiag
+
     interPerBin = defaultdict(int)
     
     nRead = 0
     
     if infile.endswith('.bam'):
         # get section positions 
-        bamfile = AlignmentFile(infile, 'rb')
-        bam_refs = bamfile.references
-        bam_lengths = bamfile.lengths
-
-        sections = OrderedDict(list(zip(bam_refs,
-                                   [x for x in bam_lengths])))
-        total = 0
-        section_pos = OrderedDict()
-        for crm in sections:
-            section_pos[crm] = (total, total + (sections[crm] / resol + 1))
-            total += (sections[crm] / resol + 1)
-            
-            
+        section_pos = getSectionPos(infile, resol)
+        
         # check if this BAM file is not TADbit style
+        bamfile = AlignmentFile(infile, 'rb')
         if 'Hicup' in bamfile.text:
-            print 'It seems this BAM file was produced outside TADbit, make \
-sure it has already been filtered'
+            print('It seems this BAM file was produced outside TADbit, make \
+sure it has already been filtered')
             if filter_exclude != ():
-                print 'Consider changing filter_exclude so its value is () \
-or you might get no reads'
+                print('Consider changing filter_exclude so its value is () \
+or you might get no reads')
                 
         bamfile.close()
 
@@ -246,8 +280,8 @@ or you might get no reads'
             total = 0
             section_pos = OrderedDict()
             for crm in sections:
-                section_pos[crm] = (total, total + (sections[crm] / resol + 1))
-                total += (sections[crm] / resol + 1)
+                section_pos[crm] = (total, total + (sections[crm] // resol + 1))
+                total += (sections[crm] // resol + 1)
 
             # iterate over reads
             line = line.split()
@@ -341,6 +375,7 @@ def frecuenciesNorm(hic_data, resol, regRange, concatemersBin, multResult=100,
                     # if both are zero 
                     norm_data[bin1, bin2] = (hic_data[bin1, bin2] / float(divider)) * multResult
                     norm_data[bin2, bin1] = norm_data[bin1, bin2]
+
 
     else:
         for ke in keep:

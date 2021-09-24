@@ -98,7 +98,7 @@ cmd+='''#!/bin/bash
 
 module load GLib/2.54.3-GCCcore-7.3.0
 module load GCC
-module load SAMtools/1.9-foss-2018b
+module load SAMtools/1.12-GCC-10.2.0
 
 # set python paths
 export PATH="/home/jmendietaes/programas/miniconda3/bin:$PATH"
