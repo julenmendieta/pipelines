@@ -13,7 +13,11 @@
     ## - PACKAGES BELOW NEED TO BE AVAILABLE TO LOAD WHEN RUNNING R
 
 ############################
-# modified to suit my file format
+# modified to suit my file format:
+# line 70 has check.names = FALSE to keep original file names (I have one with +) 
+# line 72 changed '.' by '/' since now names keep '/'
+# line 90 changed the way of selecting groups. I keep first element before '_'
+#       that in my case is the cell name
 ############################
 
 ################################################
@@ -63,9 +67,9 @@ if (is.null(opt$bam_suffix)){
 ################################################
 ################################################
 
-count.table <- read.delim(file=opt$featurecount_file,header=TRUE,skip=1)
+count.table <- read.delim(file=opt$featurecount_file,header=TRUE,skip=1,check.names = FALSE)
 colnames(count.table) <- gsub(opt$bam_suffix,"",colnames(count.table))
-colnames(count.table) <- as.character(lapply(colnames(count.table), function (x) tail(strsplit(x,'.',fixed=TRUE)[[1]],1)))
+colnames(count.table) <- as.character(lapply(colnames(count.table), function (x) tail(strsplit(x,'/',fixed=TRUE)[[1]],1)))
 rownames(count.table) <- count.table$Geneid
 interval.table <- count.table[,1:6]
 count.table <- count.table[,7:ncol(count.table),drop=FALSE]
@@ -82,7 +86,9 @@ if (file.exists(opt$outdir) == FALSE) {
 setwd(opt$outdir)
 
 samples.vec <- sort(colnames(count.table))
-groups <- sub("_[^_]+$", "", samples.vec)
+# JULEN: changed it to get as group the cell type
+groups <- sub("_.*$", "", samples.vec)
+
 print(unique(groups))
 if (length(unique(groups)) == 1) {
     quit(save = "no", status = 0, runLast = FALSE)

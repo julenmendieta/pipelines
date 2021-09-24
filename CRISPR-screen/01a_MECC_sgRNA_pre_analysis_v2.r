@@ -44,7 +44,8 @@ runName <- basename(PROJECT_DIR)
 
 ## Relevant info about the guides
 allGuideCodes <- c("MGLibA", "R2.Br", "As", "B.Br", "TF1.Br", "Br", "R1.Br", "B", 
-"TF2.Br", "R2Br", "BBr", "TF1Br", "R1Br")
+"TF2.Br", "R2Br", "BBr", "TF1Br", "R1Br", "LibP1", "LibP2", "OP1", "OP2", "OP3",
+"OP4")
 guideSynonims <- vector(mode="list", length=length(allGuideCodes) + 5)
 names(guideSynonims) <- c("TF1", "TF2", "R1", "R2", "BBr", allGuideCodes)
 guideSynonims[[1]] <- "TF1Br"; guideSynonims[[2]] <- "TF2Br"
