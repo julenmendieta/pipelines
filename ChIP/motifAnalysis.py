@@ -47,7 +47,7 @@ def runMotif(motifCheck_cmd):
     
 def motifsInAll(outpath, chip, df, size,
                 seqlen, rnd, species, mtfLens, background,
-               inParams):
+               inParams, nCPU=1):
     # create temporal file with all the peaks    
     outMotif = f'{outpath}/allPeakfile/{chip}/allPeak'
     if size == True:
@@ -80,8 +80,9 @@ def motifsInAll(outpath, chip, df, size,
     return inParams
 
         
-def motifsBySubset(outpath, foldChanges, chip, cell1, cell2, df_new, posu, posd,
-                                  seqlen, rnd, species, mtfLens, background, inParams):
+def motifsBySubset(outpath, size, foldChanges, chip, cell1, cell2, df_new, posu, posd,
+                                  seqlen, rnd, species, mtfLens, background, inParams,
+                                  nCPU=1):
     ### create temporal file with subset 1       
     outMotif1 = f'{outpath}/by_FoldChange/{chip}/{cell1}-Yes-{foldChanges[0]}_{cell2}-No-{foldChanges[1]}_cellBg'
     outMotif1_noBg = f'{outpath}/by_FoldChange/{chip}/{cell1}-Yes-{foldChanges[0]}_{cell2}-No-{foldChanges[1]}_defaultBg'
