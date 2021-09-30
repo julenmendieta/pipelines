@@ -6,7 +6,7 @@
 #SBATCH --job-name=Chip_fqToBw
 #SBATCH --cpus-per-task=12
 #SBATCH --mem=30G
-#SBATCH --time=02-10:00:00
+#SBATCH --time=01-10:00:00
 #SBATCH -p medium
 #SBATCH -o /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.out  
 #SBATCH -e /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.err 
@@ -15,7 +15,7 @@
 ##SBATCH --mail-user=user@mail.es
 # HOW TO RUN ME
 # for i in *fastq.gz; do echo $i | sed 's/_R._001.fastq.gz//g' ; done | sort | uniq > samplesNames.txt  
-# N=`cat /home/jmendietaes/data/2021/chip/sequencedData/mnavarroa/demux_fastq/samplesNames.txt | wc -l`
+# N=`cat samplesNames.txt | wc -l`
 # sbatch --array=1-${N} /home/jmendietaes/programas/PhD/ChIP/cluster/01_Maren_Chip_fqToBw.sh \
 #/home/jmendietaes/data/2021/chip/sequencedData/mnavarroa \
 #/home/jmendietaes/data/2021/chip/allProcessed \
