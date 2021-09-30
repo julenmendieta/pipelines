@@ -5,6 +5,10 @@ import subprocess
 import lxml.html as lh
 import codecs
 
+from scipy.stats import ks_2samp
+from collections import defaultdict
+import re
+import pandas as pd
 # plot related libraries
 from matplotlib import pyplot as plt
 import seaborn as sns
@@ -293,6 +297,180 @@ def getHomerHtmlInfo(newResults):
 
     return nameS, pvalS, logpvalS, percInTargetS
     
+## some functions to filter motifs by expression and name
+def motifPassByExpre(cell, rnaTable, motif, motifToGene, minExp):
+    '''
+    Function that returns True or False indicating if protein of the motif is expressed or not
+    :param cell: name of the cell or list with the name of the cells whose maximum expression we 
+        will take
+    :param rnaTable: ddataframe with expression values. Gene Id column must be named Gene
+    :param motif: full motif ID
+    :param motifToGene: dictionary indicatinf to which gene name the names in the motifs must
+        be associated with. First we split by ( and check whole name, if no match we split
+        by - and keep the first position, if no match again we split by : and keep all position.In 
+        the last scenario all genes separated by : must be expressed. If after all the name is not 
+        in motifToGene the program will crash
+    :param minExp: minimum expression value to count a gene as expressed
+    
+    '''
+    # get expression dictionary
+    # cell can be a list of cells
+    if isinstance(cell, list):
+        expreDict = dict((k, v) for k,v in zip(rnaTable['Gene'], rnaTable[cell].max(axis=1)))
+    else:
+        expreDict = dict((k, v) for k,v in zip(rnaTable['Gene'], rnaTable[cell]))
+
+    # get motif if criteria passed
+    # split by (, and check, then by -, keep first, and the by : and check both names)
+    motifn = motif.split('(')[0].lower()
+    if motifn not in motifToGene:
+        motifn = motifn.split('-')[0]
+        if motifn not in motifToGene:
+            motifn = motifn.split(':')
+    keep = False
+    if isinstance(motifn, list):
+        keep = True
+        for mo in motifn:
+            # get added expression of genes inside
+            expe = sum([expreDict.get(m, 0) for m in motifToGene[mo]])
+            if expe >= minExp:
+                keep = keep * True
+            else:
+                keep = False
+    else:
+        expe = sum([expreDict.get(m, 0) for m in motifToGene[motifn]])
+        if expe >= minExp:
+            keep = True
+        else:
+            keep = False
+            
+    return keep
+
+#[g for g in rnaTable['Gene'] if 'atf' in g]
+#rnaTable[rnaTable['Gene'] == 'Atf2']
+
+def mergeMotifByFamilies(allMotifGenes, rnaTable=None, cell=False, minPval = 0.01,
+                        returnFamilies=False):
+    '''
+    This function will check motifs that different by a number and merge them if their 
+        expression value distribution is not different to the other members
+        
+    :param allMotifGenes: dictionary with motif names as key and a list of genes in value
+    :param rnaTable: ddataframe with expression values. Gene Id column must be named Gene
+    :param cell: name of the cell or list with the name of the cells whose maximum expression we 
+        will take
+    :param 0.01 minPval: minimum p-value for the KS test
+    '''
+
+    # now we will merge motifs by families
+    allmotifs = allMotifGenes.keys()
+    motifFamilies = defaultdict(list)
+    for mo in allmotifs:
+        family = re.sub("\\d[a-z]?$", "", mo)
+        motifFamilies[family] += [mo]
+
+    finalMotifGenes = {}
+    familyMembers = {}
+    # we go again, compare genes expression, and if same we merge
+    for family in motifFamilies:
+        if len( motifFamilies[family]) == 1:
+            finalMotifGenes[motifFamilies[family][0]] = allMotifGenes[motifFamilies[family][0]]
+            familyMembers[motifFamilies[family][0]] = [motifFamilies[family][0]]
+        else:
+            toMerge = []
+            allGenes = []
+            for mo in motifFamilies[family]:
+                # get the expression of the genes in the other TF
+                otherGenes = []
+                for mt in [m for m in motifFamilies[family] if m != mo]:
+                    otherGenes += list(allMotifGenes[mt])
+                otherGenes = set(otherGenes)
+                pos = rnaTable['Gene'].isin(otherGenes)
+                geneExpOt = list(rnaTable.loc[pos, cell])
+
+                # get expression in the specific TF
+                genes = list(allMotifGenes[mo])
+                pos = rnaTable['Gene'].isin(genes)
+                geneExp = list(rnaTable.loc[pos, cell])
+
+                if isinstance(rnaTable, pd.DataFrame):
+                    # check by Kolmogorov-Smirnoff test if they are qual
+                    nelems = len(geneExp)
+                    nOther = len(otherGenes)
+                    criticVal = 1.63*np.sqrt((nelems+nOther)/(nelems*nOther))
+
+                    # first we try for greater than normal distribution centred in zero
+                    kval_g, pval_g = ks_2samp(geneExpOt, 
+                                    geneExp, alternative='two-sided')
+                    if (kval_g > criticVal) and (pval_g <= minPval):
+                        print(f'{mo} from family {family} has different expression distribution')
+                        finalMotifGenes[mo] = set(allMotifGenes[mo])
+                        familyMembers[mo] = [mo]
+                    else:
+                        toMerge += [mo]
+                        allGenes += [genes]
+                else:
+                    toMerge += [mo]
+                    allGenes += [genes]
+
+            # now we merge the ones that have to be merged
+            genes = set(sum([list(allMotifGenes[t]) for t in toMerge], []))
+            if len(toMerge) == 1:
+                finalMotifGenes[toMerge[0]] = genes
+                familyMembers[toMerge[0]] = [toMerge[0]]
+            else:
+                finalMotifGenes[f'{family}_family'] = genes
+                familyMembers[f'{family}_family'] = toMerge
+
+
+    if returnFamilies:
+        return finalMotifGenes, familyMembers
+    else:
+        return finalMotifGenes
+        
+
+def getMotifToGene():
+    motifToGene = {'AMYB':['MYBL1'], 'AP-1':['Jun', 'Fos'], 'AP1':['Jun', 'Fos'], 'Atf1':['Atf1'], 
+              'Atf2':['Atf2'], 'Atf2':['Atf2'], 'Atf4':['Atf4'], 'Atf7':['Atf7'],
+              'BATF':['Batf'], 'BMYB':['Mybl2'], 'BORIS':['Ctcf'], 'Bach1':['Bach1'],
+              'Bach2':['Bach2'], 'Bcl11a':['Bcl11a'], 'Bcl6':['Bcl6'], 'CDX4':['CDX4'],
+              'CEBP':['Cebpe', 'Cebpa'], 'CRE':['Creb1'], 'CREB5':['Creb5'], 'CTCF':['Ctcf'], 
+              'Cdx2':['Cdx2'], 'Chop':['Cebpe', 'Cebpa'], 'E2A':['Tcf3'], 'EHF':['EHF'],
+              'ELF1':['Elf1'], 'ELF3':['Elf3'], 'Elf4':['Elf4'], 'ELF5':['Elf5'], 'ERG':['Erg'], 'ETS':['Ets1', 'Ets2'],
+              'ETS1':['Ets1'], 'E-box':['noGene'], 'RUNX':['Runx1', 'Runx2', 'Runx3'], 'ETV1':['Etv1'],
+              'ETV4':['Etv4'], 'EWS':['Ewsr1'], 'FLI1':['Fli1'], 'Elk1':['Elk1'], 'Elk4':['Elk4'], 'Etv2':['Etv2'],
+              'FOXK1':['Foxk1'], 'FOXP1':['Foxp1'], 'Fos':['Fos'], 'Fosl2':['Fosl2'], 'Foxa2':['Hnf3b', 'Foxa2'],
+              'Foxf1':['Foxf1', 'FKHL5', 'FREAC1'], 'Foxh1': ['Foxh1', 'Fast1'], 'Foxo3':['Foxo3'],
+              'Fra1':['Fra1', 'Fosl1'], 'Fra2':['Fra2', 'Fosl2'], 'GABPA':['Gabpa'], 'GATA':['Gata1', 'Gata2',
+                                                                                            'Gata3', 'Gata4', 'Gata5',
+                                                                                            'Gata6'],
+              'IR3':['Ir3'], 'IR4':['Ir4'], 'GATA3':['Gata3'], 'DR4':['tnfrsf10A', 'Trailr1'], 'SCL':['Tal1'],
+              'GFY':['Gfy'], 'Gata1':['Gata1'], 'Gata2':['Gata2'], 'Gata4':['Gata4'], 'Gata6':['Gata6'],
+              'HLF':['Hlf'], 'HOXB13':['Hoxb13'], 'Hoxa11':['Hoxa11'], 'Hoxa13':['Hoxa13'], 'Hoxc9':['Hoxc9'],
+              'Hoxd10':['Hoxd10'], 'Hoxd11':['Hoxd11'], 'Hoxd13':['Hoxd13'], 'IRF1':['Irf1'], 'IRF2':['Irf2'],
+              'IRF3':['Irf3'], 'IRF4':['Irf4'], 'IRF8':['Irf8'], 'ISRE': ['Irf1', 'Irf2', 'Irf3', 'Irf4', 'Irf5',
+                                                                          'Irf6', 'Irf7', 'Irf8', 'Irf9'],
+              'Jun':['Jun'], 'JunB':['Junb'], 'JunD':['Jund'], 'KLF1':['Klf1'], 'KLF14':['Klf14'], 'KLF3':['Klf3'],
+              'KLF5':['Klf5'], 'KLF6':['Klf6'], 'MITF':['Mitf'], 'MYB':['Myb'], 'MafF':['Maff'], 'MafK':['MafK'],
+              'NF-E2':['Nfe2'], 'NF1':['Nf1'], 'NFE2L2':['Nfe2l2'], 'NFIL3':['Nfil3'], 'Nrf2':['Nrf2'],
+              'Oct6':['Oct6', 'Pou3f1'], 'PRDM1':['Prdm1'], 'Pu.1':['Sp1'], 'IRF': ['Irf1', 'Irf2', 'Irf3', 'Irf4', 'Irf5',
+                                                                          'Irf6', 'Irf7', 'Irf8', 'Irf9'],
+              'REST-NRSF':['Prickle1'], 'RUNX1':['Runx1'],'RUNX2':['Runx2'], 'Ronin':['Ronin', 'Thap11'],
+              'SPDEF':['Spdef', 'Pdef'], 'STAT1':['Stat1'], 'Stat3':['Stat3'], 'STAT4':['Stat4'], 
+               'STAT5':['Stat5'], 'STAT6':['Stat6'],
+              'Smad4':['Smad4'], 'Sox6':['Sox6'], 'Sp2':['Sp2'], 'Sp5':['Sp5'], 'SpiB':['Spib'], 
+               'Stat3+il21':['il21'], 'TEAD': ['Tead1', 'Tead2', 'Tead3', 'Tead4'], 'TEAD1':['Tead1'],
+               'TEAD3':['Tead3'], 'TEAD4': ['Tead4'], 'TRPS1':['Trps1'], 'Unknown':['noGene'], 
+               'YY1':['Yy1'], 'ZEB1':['Zeb1'], 'ZNF143|STAF':['Znf143', 'Staf'], 'c-Jun-CRE':['Jun'],
+               'Atf3':['atf3'], 'ETS:E-box':['Ets1', 'Ets2']
+              }
+    # convert all to lowercase
+    motifToGene2 = {}
+    for k in motifToGene:
+        motifToGene2[k.lower()] = [m.lower() for m in motifToGene[k]]
+        
+    motifToGene = motifToGene2
+    return motifToGene
 
 ####################### PLOTS ########################
 def plotMotifOccurrence(nameS, percInTargetS, pvalS=False, 

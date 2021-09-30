@@ -15,7 +15,7 @@
 # HOW TO RUN ME
 # create file with ChIP names in bams folder
 # for filename in *bam; do mapLib=(${filename//_/ }); mapLib=${mapLib[1]}; mapLib=(${mapLib//-/ }); echo ${mapLib[0]}; done | sort | uniq > chipMarcs.txt
-# N=`cat /home/jmendietaes/data/2021/chip/allProcessed/bamfiles/valid/chipMarcs.txt | wc -l`
+# N=`cat chipMarcs.txt | wc -l`
 #sbatch --array=1-${N} /home/jmendietaes/programas/PhD/ChIP/cluster/04_correlateChIP.sh \
 #/home/jmendietaes/data/2021/chip/allProcessed/bamfiles/valid \
 #/home/jmendietaes/data/2021/chip/allProcessed/furtherAnalysis/chipCorrelation
@@ -31,7 +31,7 @@ outMatrixP=$2
 tempFolder="${outMatrixP}/tempSubs_$((1 + $RANDOM % 1000000))"
 
 # wether we want to compute the metrics adding all the control files in the comparison
-CompareWithControl="YES"  # "YES" or "NO"
+CompareWithControl="NO"  # "YES" or "NO"
 
 # load modules
 module load SAMtools/1.12-GCC-10.2.0
@@ -87,7 +87,9 @@ subSampleBams () {
     if [[ ${minValPre} != ${minVal} ]]; then
         echo "Subsampling all files files"
         # clear previous files
-        rm ${tempFolder}"/temp2_*"${Ig_prot}"bam*"
+        if [[ -e ${tempFolder}"/temp2_*"${Ig_prot}"*bam*" ]] ; then
+            rm ${tempFolder}"/temp2_*"${Ig_prot}"*bam*"
+        fi
         # They are different, so we need to subsample all again
         # subsample
         i=0
@@ -147,33 +149,19 @@ for p in ${protBams}; do
         symbols="${symbols} <" 
     elif [[ ${pp} == DM*  ]]; then
         symbols="${symbols} >" 
+    elif [[ ${pp} == GMPvitro*  ]]; then
+        symbols="${symbols} s" 
+    elif [[ ${pp} == MEPvitro*  ]]; then
+        symbols="${symbols} p" 
+    elif [[ ${pp} == LSKvitro*  ]]; then
+        symbols="${symbols} D" 
     else
         symbols="${symbols} o" 
     fi 
 done
 
-# only run in non-control samples
-if [[ $Ig_prot != 'IgG' && $Ig_prot != 'input' ]]; then 
-    # get IgG controls
-    iggBams=$(ls ${bamsPath}/*_IgG*bam | tr '\n' ' ')
-    # get inputs
-    inputBams=$(ls ${bamsPath}/*_input*bam | tr '\n' ' ')
-    # concatenate
-    compareBams="${protBams} ${iggBams} ${inputBams}"
-elif [[ $Ig_prot != 'IgG' ]]; then
-    # get inputs
-    inputBams=$(ls ${bamsPath}/*_input*bam | tr '\n' ' ')
-    # concatenate
-    compareBams="${protBams} ${inputBams}"
-elif [[ $Ig_prot != 'input' ]]; then
-    # get IgG controls
-    iggBams=$(ls ${bamsPath}/*_IgG*bam | tr '\n' ' ')
-    # concatenate
-    compareBams="${protBams} ${iggBams}"
-fi
 
-
-## compare basm without controls
+## compare bams without controls
 labels=`for i in $protBams; do basename ${i} | cut -d '.' -f 1 | cut -d '_' -f 1,2,3; done | tr '\n' ' '`
 
 # check if this comparison was already done (leave plots in case there were code changes)
@@ -207,6 +195,27 @@ plotPCA --corData ${matrixOut} -o ${outMatrixP}/${Ig_prot}_${minVal}Read_coverag
 
 ## compare bams with controls
 if [[ $CompareWithControl == 'YES' ]]; then
+
+    # only run in non-control samples
+    if [[ $Ig_prot != 'IgG' && $Ig_prot != 'input' ]]; then 
+        # get IgG controls
+        iggBams=$(ls ${bamsPath}/*_IgG*bam | tr '\n' ' ')
+        # get inputs
+        inputBams=$(ls ${bamsPath}/*_input*bam | tr '\n' ' ')
+        # concatenate
+        compareBams="${protBams} ${iggBams} ${inputBams}"
+    elif [[ $Ig_prot != 'IgG' ]]; then
+        # get inputs
+        inputBams=$(ls ${bamsPath}/*_input*bam | tr '\n' ' ')
+        # concatenate
+        compareBams="${protBams} ${inputBams}"
+    elif [[ $Ig_prot != 'input' ]]; then
+        # get IgG controls
+        iggBams=$(ls ${bamsPath}/*_IgG*bam | tr '\n' ' ')
+        # concatenate
+        compareBams="${protBams} ${iggBams}"
+    fi
+
     # prepare additional parameters
     labels=`for i in $compareBams; do basename ${i} | cut -d '.' -f 1 | cut -d '_' -f 1,2,3; done | tr '\n' ' '`
 
