@@ -53,7 +53,10 @@ if (nintersects > 70) {
     sets <- sort(unique(unlist(strsplit(names(comb.vec),split='&'))), decreasing = TRUE)
 }
 
-pdf(opt$output_file,onefile=F,height=10,width=20)
+height <- max((length(sets) * 0.2) + 5.5, 8.5)
+propor <- 5.5/height
+
+pdf(opt$output_file,onefile=F,height=height,width=20)
 
 upset(
     fromExpression(comb.vec),
@@ -64,7 +67,7 @@ upset(
     sets.bar.color = "#56B4E9",
     point.size = 3,
     line.size = 1,
-    mb.ratio = c(0.55, 0.45),
+    mb.ratio = c(propor, 1-propor),
     order.by = "freq",
     number.angles = 30,
     text.scale = c(1.5, 1.5, 1.5, 1.5, 1.5, 1.2)

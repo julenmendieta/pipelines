@@ -15,7 +15,7 @@
 # HOW TO RUN ME
 # create file with ChIP names in bams folder
 # for filename in *bam; do mapLib=(${filename//_/ }); mapLib=${mapLib[1]}; mapLib=(${mapLib//-/ }); echo ${mapLib[0]}; done | sort | uniq > chipMarcs.txt
-# N=`cat /home/jmendietaes/data/2021/chip/allProcessed/bamfiles/valid/chipMarcs.txt | wc -l`
+# N=`cat chipMarcs.txt | wc -l`
 #sbatch --array=1-${N} /home/jmendietaes/programas/PhD/ChIP/cluster/04_correlateChIP.sh \
 #/home/jmendietaes/data/2021/chip/allProcessed/bamfiles/valid \
 #/home/jmendietaes/data/2021/chip/allProcessed/furtherAnalysis/chipCorrelation
@@ -31,7 +31,7 @@ outMatrixP=$2
 tempFolder="${outMatrixP}/tempSubs_$((1 + $RANDOM % 1000000))"
 
 # wether we want to compute the metrics adding all the control files in the comparison
-CompareWithControl="YES"  # "YES" or "NO"
+CompareWithControl="NO"  # "YES" or "NO"
 
 # load modules
 module load SAMtools/1.12-GCC-10.2.0
@@ -147,6 +147,12 @@ for p in ${protBams}; do
         symbols="${symbols} <" 
     elif [[ ${pp} == DM*  ]]; then
         symbols="${symbols} >" 
+    elif [[ ${pp} == GMPvitro*  ]]; then
+        symbols="${symbols} s" 
+    elif [[ ${pp} == MEPvitro*  ]]; then
+        symbols="${symbols} p" 
+    elif [[ ${pp} == LSKvitro*  ]]; then
+        symbols="${symbols} D" 
     else
         symbols="${symbols} o" 
     fi 
