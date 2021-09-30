@@ -87,7 +87,9 @@ subSampleBams () {
     if [[ ${minValPre} != ${minVal} ]]; then
         echo "Subsampling all files files"
         # clear previous files
-        rm ${tempFolder}"/temp2_*"${Ig_prot}"bam*"
+        if [[ -e ${tempFolder}"/temp2_*"${Ig_prot}"*bam*" ]] ; then
+            rm ${tempFolder}"/temp2_*"${Ig_prot}"*bam*"
+        fi
         # They are different, so we need to subsample all again
         # subsample
         i=0
@@ -158,28 +160,8 @@ for p in ${protBams}; do
     fi 
 done
 
-# only run in non-control samples
-if [[ $Ig_prot != 'IgG' && $Ig_prot != 'input' ]]; then 
-    # get IgG controls
-    iggBams=$(ls ${bamsPath}/*_IgG*bam | tr '\n' ' ')
-    # get inputs
-    inputBams=$(ls ${bamsPath}/*_input*bam | tr '\n' ' ')
-    # concatenate
-    compareBams="${protBams} ${iggBams} ${inputBams}"
-elif [[ $Ig_prot != 'IgG' ]]; then
-    # get inputs
-    inputBams=$(ls ${bamsPath}/*_input*bam | tr '\n' ' ')
-    # concatenate
-    compareBams="${protBams} ${inputBams}"
-elif [[ $Ig_prot != 'input' ]]; then
-    # get IgG controls
-    iggBams=$(ls ${bamsPath}/*_IgG*bam | tr '\n' ' ')
-    # concatenate
-    compareBams="${protBams} ${iggBams}"
-fi
 
-
-## compare basm without controls
+## compare bams without controls
 labels=`for i in $protBams; do basename ${i} | cut -d '.' -f 1 | cut -d '_' -f 1,2,3; done | tr '\n' ' '`
 
 # check if this comparison was already done (leave plots in case there were code changes)
@@ -213,6 +195,27 @@ plotPCA --corData ${matrixOut} -o ${outMatrixP}/${Ig_prot}_${minVal}Read_coverag
 
 ## compare bams with controls
 if [[ $CompareWithControl == 'YES' ]]; then
+
+    # only run in non-control samples
+    if [[ $Ig_prot != 'IgG' && $Ig_prot != 'input' ]]; then 
+        # get IgG controls
+        iggBams=$(ls ${bamsPath}/*_IgG*bam | tr '\n' ' ')
+        # get inputs
+        inputBams=$(ls ${bamsPath}/*_input*bam | tr '\n' ' ')
+        # concatenate
+        compareBams="${protBams} ${iggBams} ${inputBams}"
+    elif [[ $Ig_prot != 'IgG' ]]; then
+        # get inputs
+        inputBams=$(ls ${bamsPath}/*_input*bam | tr '\n' ' ')
+        # concatenate
+        compareBams="${protBams} ${inputBams}"
+    elif [[ $Ig_prot != 'input' ]]; then
+        # get IgG controls
+        iggBams=$(ls ${bamsPath}/*_IgG*bam | tr '\n' ' ')
+        # concatenate
+        compareBams="${protBams} ${iggBams}"
+    fi
+
     # prepare additional parameters
     labels=`for i in $compareBams; do basename ${i} | cut -d '.' -f 1 | cut -d '_' -f 1,2,3; done | tr '\n' ' '`
 
