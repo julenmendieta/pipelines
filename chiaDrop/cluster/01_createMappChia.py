@@ -1,8 +1,12 @@
 import time
 
+# How to run me
+# realpath *fastq.gz > toMapp.txt in the location with the fastqs
+#and assign it filesPath
+# python /home/jmendietaes/programas/PhD/chiaDrop/cluster/01_createMappChia.py
 ######################  TO CHANGE #####################
 # path to file with read1 and read 2 of each experiment
-filesPath = '/home/jmendietaes/data/2021/chia-drop/fastq/toMapp.txt'
+filesPath = '/home/jmendietaes/data/2021/chia-drop/sequenceData/fastq_filter/toMapp.txt'
 #realpath *fastq.gz > toMapp.txt
 
 # load genome path
@@ -25,7 +29,7 @@ tempOut = '/datos/intercambio/mapTemp/'
 minseq = 25
 
 # maximum allowed number of bp to be mapped (max length of read=)
-maxseq = 130
+maxseq = 134
 
 # get number of CPU to use
 nthreads = 16

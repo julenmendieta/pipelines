@@ -29,8 +29,8 @@
 
 # HOW TO RUN ME
 # for i in *_R1_001.fastq.gz; do echo $i | sed 's/_R1_001.fastq.gz//g' ; done | sort | uniq > samplesNames.txt
-# N=`cat /home/jmendietaes/data/2021/CRISPR/sequencedData/merge4-492/samplesNames.txt | wc -l`
-# sbatch --array=1-${N} 00_MECC_sgRNA_v1.1.sh \
+# N=`cat samplesNames.txt | wc -l`
+# sbatch --array=1-${N} /home/jmendietaes/programas/PhD/CRISPR-screen/00_MECC_sgRNA_v1.1.sh \
 #/home/jmendietaes/data/2021/CRISPR/sequencedData/merge4-492 \
 #/home/jmendietaes/data/2021/CRISPR/allProcessed/merge4-492 \
 #/home/jmendietaes/referenceGenomes/sgRNA_indexes/bowtie2 \
@@ -73,6 +73,8 @@ flanquingSeq=$4
 #flanquingSeq='CACCG(.{20})GT{2,4}'
 # UTILIZAR ESTE DE AQUI
 #flanquingSeq='CACCG(.{20})GT'
+# Si se secuencias junto con ChIP (75bp)
+# flanquingSeq='CACCG(.{18})'
 
 # if the files have 001 or not, we add the string or not
 extraSTR="_001"

@@ -48,7 +48,10 @@ for fi in symmaryF:
 
     header += 'UnAlignedNonV\tAlignedOnceNonV\tAligned>1NonV\t'
     if posIndex[2] != 0:
-        content += '\t'.join([f'{int(d.split()[0]):,}' for d in data[posIndex[2] + 4: posIndex[2] + 7]]) + '\t'
+        if data[posIndex[2] + 2] ==  '0 reads\n':
+            content += '0\t0\t0\t'
+        else:
+            content += '\t'.join([f'{int(d.split()[0]):,}' for d in data[posIndex[2] + 4: posIndex[2] + 7]]) + '\t'
     else:
         content += 'NotChecked\tNotChecked\tNotChecked\t'
 

@@ -16,7 +16,7 @@ from pytadbit.mapping.filter import _filter_duplicates_strict
 from pytadbit.mapping.filter import _filter_duplicates_loose
 import multiprocessing as mu
 import pickle
-
+import subprocess
 # functions
 MASKED_ref = {1 : {'name': 'self-circle'       , 'reads': 0},
           2 : {'name': 'dangling-end'      , 'reads': 0},
@@ -163,19 +163,20 @@ if nthreads == None:
 ###########################################################################
 ## code start
 # get mapping ranges removing from each border
-rangePos = [(1, r) for r in range(maxseq, 25, -20)] + [(r, maxseq) for r in range(25, maxseq, 20)]
+#rangePos = [(1, r) for r in range(maxseq, 25, -20)] + [(r, maxseq) for r in range(25, maxseq, 20)]
 # get mapping ranges removing from both borders
-mid = [(1+s1, maxseq-s1) for s1 in range(25, maxseq, 20)]
-mid = [m for m in mid if m[0] < m[1] and m[1] - m[0] > minseq]
-rangePos += mid
-rangePos = tuple([r for r in rangePos if abs(r[0]-r[1]) >= (minseq - 1)])
+#mid = [(1+s1, maxseq-s1) for s1 in range(25, maxseq, 20)]
+#mid = [m for m in mid if m[0] < m[1] and m[1] - m[0] > minseq]
+#rangePos += mid
+#rangePos = tuple([r for r in rangePos if abs(r[0]-r[1]) >= (minseq - 1)])
 
-# test to see if is the same
+# Shorter range of mapping, no overlaps
 old=1
 rangePos=[]
 for r1 in range(minseq+1, maxseq, minseq):
     rangePos += [(old, r1)]
     old=r1
+rangePos[-1] = (rangePos[-1][0], maxseq)
 
 # wont plot anything in case there are issues, only store
 showInterMatrix=False

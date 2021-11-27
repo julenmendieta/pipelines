@@ -18,14 +18,18 @@
 # N=`cat chipMarcs.txt | wc -l`
 #sbatch --array=1-${N} /home/jmendietaes/programas/PhD/ChIP/cluster/04_correlateChIP.sh \
 #/home/jmendietaes/data/2021/chip/allProcessed/bamfiles/valid \
-#/home/jmendietaes/data/2021/chip/allProcessed/furtherAnalysis/chipCorrelation
+#/home/jmendietaes/data/2021/chip/allProcessed/furtherAnalysis/chipCorrelation \
+#[PATH/TO/BED] 
 
+# If [PATH/TO/BED]  is empty, the correlaton will be done in the 
+# whole dataset. The files inside must be named as [protein].bed
 
 # script to compute correlation of BAMs for the same ChIP
 bamsPath=$1
 #bamsPath="/home/jmendietaes/data/2021/chip/allProcessed/bamfiles/valid"
 outMatrixP=$2
 #outMatrixP="/home/jmendietaes/data/2021/chip/allProcessed/furtherAnalysis/chipCorrelation"
+bedPath=$3
 
 # generate specific temporal folder for this job
 tempFolder="${outMatrixP}/tempSubs_$((1 + $RANDOM % 1000000))"
@@ -138,6 +142,16 @@ fi
 PROTS=($(cat $bamsPath/chipMarcs.txt))
 Ig_prot=${PROTS[$SLURM_ARRAY_TASK_ID - 1]}
 
+# if we provided a bed file identify it and set that mode on
+if [ -z "$bedPath" ]; then
+    bedMode='NO'
+else
+    bedMode='YES'
+    bedFile="${bedPath}/${Ig_prot}.bed"
+fi
+
+echo $bedMode
+
 # get space separated paths of selected files
 protBams=$(ls ${bamsPath}/*_${Ig_prot}*bam | tr '\n' ' ')
 
@@ -179,15 +193,23 @@ if [[ ! (-e ${matrixOut}) ||  `echo $labels` != `echo $doneComp` ]]; then
     subSampleBams "${protBams}"
 
     ## Then we compute the matrix
-    multiBamSummary bins --bamfiles ${subProtBams} -o ${matrixOut} \
-                    --labels ${labels} --numberOfProcessors ${SLURM_CPUS_PER_TASK}
+    if [[ ${bedMode} == 'NO' ]]; then
+        multiBamSummary bins --bamfiles ${subProtBams} -o ${matrixOut} \
+                        --labels ${labels} --numberOfProcessors ${SLURM_CPUS_PER_TASK}
+    elif [[ ${bedMode} == 'YES' ]]; then
+        multiBamSummary BED-file --BED ${bedFile} --bamfiles ${subProtBams} -o ${matrixOut} \
+                        --labels ${labels} --numberOfProcessors ${SLURM_CPUS_PER_TASK}
+    else
+        echo "ERROR: bedMode is incorrect"
+        exit 1
+    fi
 fi
 
 plotCorrelation --corData ${matrixOut} --corMethod spearman --whatToPlot heatmap \
             -o ${outMatrixP}/${Ig_prot}_${minVal}Read_coverageComp_heatmap.pdf --skipZeros --plotTitle ${Ig_prot} \
             --plotNumbers --colorMap viridis
 
-plotPCA --corData ${matrixOut} -o ${outMatrixP}/${Ig_prot}_${minVal}Read_coverageComp_PCA.pdf \
+plotPCA --transpose --corData ${matrixOut} -o ${outMatrixP}/${Ig_prot}_${minVal}Read_coverageComp_PCA.pdf \
     --plotTitle ${Ig_prot} --outFileNameData ${outMatrixP}/${Ig_prot}_${minVal}Read_PCAinfo.txt \
     --markers ${symbols}
 
@@ -231,8 +253,17 @@ if [[ $CompareWithControl == 'YES' ]]; then
         subSampleBams "${compareBams}"
 
         ## Then we compute the matrix
-        multiBamSummary bins --bamfiles ${subProtBams} -o ${matrixOut} \
-                        --labels ${labels} --numberOfProcessors ${SLURM_CPUS_PER_TASK}
+        if [[ ${bedMode} == 'NO' ]]; then
+            multiBamSummary bins --bamfiles ${subProtBams} -o ${matrixOut} \
+                            --labels ${labels} --numberOfProcessors ${SLURM_CPUS_PER_TASK}
+        elif [[ ${bedMode} == 'YES' ]]; then
+            multiBamSummary BED-file --BED ${bedFile} --bamfiles ${subProtBams} -o ${matrixOut} \
+                            --labels ${labels} --numberOfProcessors ${SLURM_CPUS_PER_TASK}
+        else
+            echo "ERROR: bedMode is incorrect"
+            exit 1
+        fi
+
     fi
 
     

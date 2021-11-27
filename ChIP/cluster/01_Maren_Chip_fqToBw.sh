@@ -6,7 +6,7 @@
 #SBATCH --job-name=Chip_fqToBw
 #SBATCH --cpus-per-task=12
 #SBATCH --mem=30G
-#SBATCH --time=02-10:00:00
+#SBATCH --time=01-10:00:00
 #SBATCH -p medium
 #SBATCH -o /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.out  
 #SBATCH -e /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.err 
@@ -15,7 +15,7 @@
 ##SBATCH --mail-user=user@mail.es
 # HOW TO RUN ME
 # for i in *fastq.gz; do echo $i | sed 's/_R._001.fastq.gz//g' ; done | sort | uniq > samplesNames.txt  
-# N=`cat /home/jmendietaes/data/2021/chip/sequencedData/mnavarroa/demux_fastq/samplesNames.txt | wc -l`
+# N=`cat samplesNames.txt | wc -l`
 # sbatch --array=1-${N} /home/jmendietaes/programas/PhD/ChIP/cluster/01_Maren_Chip_fqToBw.sh \
 #/home/jmendietaes/data/2021/chip/sequencedData/mnavarroa \
 #/home/jmendietaes/data/2021/chip/allProcessed \
@@ -39,6 +39,8 @@ RAW_FASTQ_DIR=$PROJECT_DIR"/demux_fastq"
 EDITED_DIR=$PROJECT_DIR"/pipelineOut"
 FASTQ_DIR=$EDITED_DIR"/fastq" 
 libMetricsP="${EDITED_DIR}/libMetrics"
+# set to lowercase yes or not
+removeTemp="yes"
 
 ## path to the main fully processed data output
 basePath=$2
@@ -80,9 +82,6 @@ module load BEDTools/2.27.1-foss-2018b
 #module load Homer/4.10-foss-2018b
 
 ##===============================================================================
-# enable debuging displaying line number and content
-export PS4='$LINENO+ '
-set -x 
 
 echo Maren Calleja  
 echo me.callejac@gmail.com  mcallejac@unav.es
@@ -239,8 +238,10 @@ if [[ ${linec} != "Align" ]]; then
     echo "Align" >> ${stepControl}
 
     # remove temporal trimmed fastq files
-    rm ${trimedRead1}
-    rm ${trimedRead2}
+    if [[ $removeTemp == 'yes' ]] ; then
+        rm ${trimedRead1}
+        rm ${trimedRead2}
+    fi
 else
     echo -e "Alignment - already done before ------------------------------ \n"
 fi
@@ -279,8 +280,10 @@ if [[ ${linec} != "BamSort" ]]; then
     echo "BamSort" >> ${stepControl}
 
     # delete intermediate files
-    rm ${samFile}
-    rm ${bamFile}
+    if [[ $removeTemp == 'yes' ]] ; then
+        rm ${samFile}
+        rm ${bamFile}
+    fi
 else
     echo -e "BAM sorting - already done before -----------------------------\n"
 fi
@@ -329,8 +332,10 @@ if [[ ${linec} != "RmDup" ]]; then
 
     echo -e "\n"  >> ${summaryFile}
    
-    rm ${bamSort}
-    rm ${bamSortMarkDup}
+    if [[ $removeTemp == 'yes' ]] ; then
+        rm ${bamSort}
+        rm ${bamSortMarkDup}
+    fi
     echo -e "Remove duplicates - done ------------------------------------------------ \n"
     # store stage control info
     echo "RmDup" >> ${stepControl}
@@ -354,8 +359,9 @@ bamSortMarkDupBlack="${EDITED_DIR}/BAM/${filename}.sort.rmdup.rmblackls.bam"
 linec=`sed "7q;d" ${stepControl}`
 if [[ ${linec} != "Blacklist" ]]; then 
     bedtools intersect -v -abam ${bamSortRmDup} -b ${BlackList} > ${bamSortMarkDupBlack}
-
-    rm ${bamSortRmDup}
+    if [[ $removeTemp == 'yes' ]] ; then
+        rm ${bamSortRmDup}
+    fi
     echo -e "Remove blacklist regions - done -----------------------------------------\n"
     # store stage control info
     echo "Blacklist" >> ${stepControl}
@@ -390,7 +396,9 @@ if [[ ${linec} != "Remove" ]]; then
     echo -e "Remove chrM and useless chromosomes - done ----------------------------------\n"
     # store stage control info
     echo "Remove" >> ${stepControl}
-    rm ${bamSortMarkDupBlack}
+    if [[ $removeTemp == 'yes' ]] ; then
+        rm ${bamSortMarkDupBlack}
+    fi
 else
     echo -e "Remove chrM and useless chromosomes - already done before--------------------------\n"
 fi
@@ -462,9 +470,11 @@ bigWigOut2="${EDITED_DIR}/BigWig/${filename}.sort.rmdup.rmblackls.rmchr.gencovno
 # check content of eleventh line of step control file
 linec=`sed "11q;d" ${stepControl}`
 if [[ ${linec} != "BigWnorm2" ]]; then 
-    samtools view -b ${bamSortMarkDupBlackChr} | genomeCoverageBed -ibam stdin -g $chr_genome_size -bg | $wigToBigWig -clip stdin $chr_genome_size ${bigWigOut2}
+    samtools view -b ${bamSortMarkDupBlackChr} | \
+            genomeCoverageBed -ibam stdin -g $chr_genome_size -bg | \
+            $wigToBigWig -clip stdin $chr_genome_size ${bigWigOut2}
     #samtools view -b ${bamSortMarkDupBlackChr} | genomeCoverageBed -ibam stdin -g $chr_genome_size -bg > ${basePath}/BigWig/${filename}.sort.rmdup.rmblackls.rmchr.gencovnorm.bedGraph
-
+ 
     # QC: print scaling factors
     echo -e "BIGWIG SCALING FACTOR for first: CPM binSize 5" >> ${summaryFile}
     echo -e "BIGWIG SCALING FACTOR for second normalization: Calculated with genomeCoverageBed " >> ${summaryFile}

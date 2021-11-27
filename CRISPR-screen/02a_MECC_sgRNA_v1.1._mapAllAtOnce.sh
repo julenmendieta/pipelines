@@ -28,8 +28,8 @@
 
 # HOW TO RUN ME
 # for i in *R1_001.fastq.gz; do echo $i | sed 's/_R1_001.fastq.gz//g' ; done | sort | uniq > samplesNames.txt
-# N=`cat /home/jmendietaes/data/2021/CRISPR/sequencedData/merge4_492/samplesNames.txt | wc -l`
-# sbatch --array=1-${N} 00_MECC_sgRNA_v1.1._mapAllAtOnce.sh \
+# N=`cat samplesNames.txt | wc -l`
+# sbatch --array=1-${N} /home/jmendietaes/programas/PhD/CRISPR-screen/02a_MECC_sgRNA_v1.1._mapAllAtOnce.sh \
 #/home/jmendietaes/data/2021/CRISPR/sequencedData/merge4_492 \
 #/home/jmendietaes/data/2021/CRISPR/allProcessed/merge4_492 \
 #/home/jmendietaes/referenceGenomes/sgRNA_indexes/bowtie2/allGuides/finalGuides.fa \
