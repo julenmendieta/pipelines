@@ -17,7 +17,7 @@ from matplotlib.cbook import get_sample_data
 
 ### set of functions to get motifs with HOMER
 def getPeakCommand(species, coordsFile, outMotif, size, background, mtfLens,
-                  threads=4):
+                  threads=4, mknown=False):
     
     '''
     if background file defined you might need to check number of regions
@@ -35,23 +35,31 @@ def getPeakCommand(species, coordsFile, outMotif, size, background, mtfLens,
         background_ = ''
     if not mtfLens:
         mtfLens = '8,10,12'
+    if mknown != False:
+        mknown = f' -mknown {mknown}'
+    else:
+        mknown = ''
 
-    motifCheck_cmd = 'findMotifsGenome.pl %s %s %s -size %s %s -len %s -p %s &> %s'
+    motifCheck_cmd = 'findMotifsGenome.pl %s %s %s -size %s %s -len %s -p %s%s &> %s'
     motifCheck_cmd = motifCheck_cmd %(coordsFile, species,
                                      outMotif, size, background_,
-                                     mtfLens, threads,
+                                     mtfLens, threads, mknown,
                                      f'{outMotif}/Homer.log')
     return motifCheck_cmd
 
 def runMotif(motifCheck_cmd):
     # run job
-    process = subprocess.Popen(motifCheck_cmd2, stdout=subprocess.PIPE, shell=True)
+    process = subprocess.Popen(motifCheck_cmd, stdout=subprocess.PIPE, shell=True)
     output, error = process.communicate()
     
+def runCommand(cmd):
+    # run job
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
+    output, error = process.communicate()
     
 def motifsInAll(outpath, chip, df, size,
                 seqlen, rnd, species, mtfLens, background,
-               inParams, nCPU=1):
+               inParams, nCPU=1, mknown=False):
     # create temporal file with all the peaks    
     outMotif = f'{outpath}/allPeakfile/{chip}/allPeak'
     if size == True:
@@ -72,7 +80,8 @@ def motifsInAll(outpath, chip, df, size,
         df_temp.to_csv(path_or_buf=coordsFile, sep='\t', 
                        index=False, header=False)
         motifCheck_cmd = getPeakCommand(species, coordsFile, 
-                                            outMotif, seqlen, background, mtfLens)
+                                            outMotif, seqlen, background, mtfLens,
+                                            threads=nCPU, mknown=mknown)
 
         # in the future when i have all the bakcground will do this in parallel
         # FOR THIS COORDSFILE WILL NEED TO HAVE A RANDOM NUMBER
@@ -86,7 +95,7 @@ def motifsInAll(outpath, chip, df, size,
         
 def motifsBySubset(outpath, size, foldChanges, chip, cell1, cell2, df_new, posu, posd,
                                   seqlen, rnd, species, mtfLens, background, inParams,
-                                  nCPU=1):
+                                  nCPU=1, mknown=False):
     ### create temporal file with subset 1       
     outMotif1 = f'{outpath}/by_FoldChange/{chip}/{cell1}-Yes-{foldChanges[0]}_{cell2}-No-{foldChanges[1]}_cellBg'
     outMotif1_noBg = f'{outpath}/by_FoldChange/{chip}/{cell1}-Yes-{foldChanges[0]}_{cell2}-No-{foldChanges[1]}_defaultBg'
@@ -130,7 +139,7 @@ def motifsBySubset(outpath, size, foldChanges, chip, cell1, cell2, df_new, posu,
 
     ### create temporal file with subset 2    
     outMotif2 = f'{outpath}/by_FoldChange/{chip}/{cell2}-Yes-{foldChanges[1]}_{cell1}-No-{foldChanges[0]}_cellBg'
-    outMotif2_noBg = f'{outpath}/by_FoldChange/{chip}/{cell2}-Yes-{foldChanges[1]}_{cell1}-No-{foldChanges[0]}_noBg'
+    outMotif2_noBg = f'{outpath}/by_FoldChange/{chip}/{cell2}-Yes-{foldChanges[1]}_{cell1}-No-{foldChanges[0]}_defaultBg'
     if size == True:
         try:
             midpos = np.array([(
@@ -170,7 +179,8 @@ def motifsBySubset(outpath, size, foldChanges, chip, cell1, cell2, df_new, posu,
     if not os.path.exists(f'{outMotif1}/homerResults.html'):
         print('Cell1 with cell2 bg')
         motifCheck_cmd1 = getPeakCommand(species, coordsFile1, 
-                                            outMotif1, seqlen, coordsFile2, mtfLens)
+                                            outMotif1, seqlen, coordsFile2, mtfLens,
+                                            threads=nCPU, mknown=mknown)
         if nCPU != 1:
             process = subprocess.Popen(motifCheck_cmd1, stdout=subprocess.PIPE, shell=True)
             output, error = process.communicate()
@@ -179,7 +189,8 @@ def motifsBySubset(outpath, size, foldChanges, chip, cell1, cell2, df_new, posu,
     if not os.path.exists(f'{outMotif1_noBg}/homerResults.html'):
         print('Cell1 with default background')
         motifCheck_cmd1_noBg = getPeakCommand(species, coordsFile1, 
-                                            outMotif1_noBg, seqlen, background, mtfLens)
+                                            outMotif1_noBg, seqlen, background, 
+                                            mtfLens, threads=nCPU, mknown=mknown)
         if nCPU != 1:
             process = subprocess.Popen(motifCheck_cmd1_noBg, stdout=subprocess.PIPE, shell=True)
             output, error = process.communicate()
@@ -189,7 +200,8 @@ def motifsBySubset(outpath, size, foldChanges, chip, cell1, cell2, df_new, posu,
     if not os.path.exists(f'{outMotif2}/homerResults.html'):
         print('Cell2 with cell1 bg')
         motifCheck_cmd2 = getPeakCommand(species, coordsFile2, 
-                                            outMotif2, seqlen, coordsFile1, mtfLens)
+                                            outMotif2, seqlen, coordsFile1, 
+                                            mtfLens, threads=nCPU, mknown=mknown)
         if nCPU != 1:
             process = subprocess.Popen(motifCheck_cmd2, stdout=subprocess.PIPE, shell=True)
             output, error = process.communicate()
@@ -198,7 +210,8 @@ def motifsBySubset(outpath, size, foldChanges, chip, cell1, cell2, df_new, posu,
     if not os.path.exists(f'{outMotif2_noBg}/homerResults.html'):
         print('Cell2 with default background')
         motifCheck_cmd2_noBg = getPeakCommand(species, coordsFile2, 
-                                            outMotif2_noBg, seqlen, background, mtfLens)
+                                            outMotif2_noBg, seqlen, background, 
+                                            mtfLens, threads=nCPU, mknown=mknown)
         if nCPU != 1:
             process = subprocess.Popen(motifCheck_cmd2_noBg, stdout=subprocess.PIPE, shell=True)
             output, error = process.communicate()
@@ -260,7 +273,7 @@ def reasignMissingCols(whereCentre, df_new, cell1, cell2, pos=False):
     return df_new
 
 
-def getHomerHtmlInfo(newResults):
+def getHomerHtmlInfo(newResults, fullName=False):
     f=codecs.open(newResults, 'r')
     doc = lh.fromstring(f.read())
     f.close()
@@ -290,7 +303,10 @@ def getHomerHtmlInfo(newResults):
     logpvalS = []
     percInTargetS = []
     for t in tr_elements[1:]:
-        nameS += [t[namePos].text_content().split('/')[0]]
+        if fullName:
+            nameS += [t[namePos].text_content()]
+        else:
+            nameS += [t[namePos].text_content().split('/')[0]]
         pvalS += [float(t[pPos].text_content())]
         logpvalS += [float(t[logPPos].text_content())]
         percInTargetS += [float(t[percPos].text_content()[:-1])]
