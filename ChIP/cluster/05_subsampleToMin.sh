@@ -19,19 +19,6 @@
 # to subsample Mye or DM bam files to the one that has less reads to then
 # store it in the subsampled folder
 
-# Make sure bamCounts.txt is updated
-# this will overwrite it
-# echo '' > ${bamCounts}
-# for i in *bam; do 
-#     fileSize=$(du -k ${i} | cut -f1); 
-#     fileLen=$(samtools view -c ${i});
-#     echo -e "${fileSize}\t${i}\t${fileLen}" >> bamCounts.txt ; 
-# done ; for i in mergedReplicates/*bam; do 
-#     fileSize=$(du -k ${i} | cut -f1); 
-#     fileLen=$(samtools view -c ${i});
-#     echo -e "${fileSize}\t${i}\t${fileLen}" >> bamCounts.txt ; 
-# done
-
 basePath=$1
 #basePath="/home/jmendietaes/data/2021/chip/allProcessed"
 
@@ -43,7 +30,6 @@ bamCounts="${bamsPath}/bamCounts.txt"
 # modules
 module load Sambamba/0.7.0
 
-
 # Create output dir
 if [ ! -e ${subOut} ]; then
     mkdir -p ${subOut}
@@ -52,7 +38,42 @@ fi
 # function to join elements from array
 function join_by { local IFS="$1"; shift; echo "$*"; }
 
-
+# Make sure bamCounts.txt is updated
+# this will overwrite it (very slow, better if you update what you need)
+#echo '' > ${bamCounts}
+for i in *bam; do 
+    fileSize=$(du -k ${i} | cut -f1); 
+    fileSize_prev=$({ grep $i ${bamCounts} | cut -f 1 || :; });
+    # if first time we check it
+    if [[ ${fileSize_prev} == "" ]] ; then
+        echo $i;
+        fileLen=$(samtools view -c ${i});
+        echo -e "${fileSize}\t${i}\t${fileLen}" >> bamCounts.txt ; 
+    elif [[ ${fileSize} != ${fileSize_prev} ]]; then
+        echo $i;
+        # store file without this entry
+        grep -v $i ${bamCounts} > bamCounts.txt_ ;
+        mv bamCounts.txt_ bamCounts.txt ;
+        fileLen=$(samtools view -c ${i});
+        echo -e "${fileSize}\t${i}\t${fileLen}" >> bamCounts.txt ; 
+    fi;
+done ; for i in mergedReplicates/*bam; do 
+    fileSize=$(du -k ${i} | cut -f1); 
+    fileSize_prev=$({ grep $i ${bamCounts} | cut -f 1 || :; });
+    # if first time we check it
+    if [[ ${fileSize_prev} == "" ]] ; then
+        echo $i;
+        fileLen=$(samtools view -c ${i});
+        echo -e "${fileSize}\t${i}\t${fileLen}" >> bamCounts.txt ; 
+    elif [[ ${fileSize} != ${fileSize_prev} ]]; then
+        echo $i;
+        # store file without this entry
+        grep -v $i ${bamCounts} > bamCounts.txt_ ;
+        mv bamCounts.txt_ bamCounts.txt ;
+        fileLen=$(samtools view -c ${i});
+        echo -e "${fileSize}\t${i}\t${fileLen}" >> bamCounts.txt ; 
+    fi;
+done
 
 chips=$(for fi in `cut -f 2 ${bamCounts} | tail -n +2`; do 
         filename=$(basename ${fi}); 
@@ -68,7 +89,7 @@ chips=$(for fi in `cut -f 2 ${bamCounts} | tail -n +2`; do
 # for now we only subsample DM and Mye
 for chip in $chips; do
     echo $chip
-    chipFiles=$(grep $chip bamCounts.txt| cut -f 2 | \
+    chipFiles=$(grep $chip ${bamCounts}| cut -f 2 | \
                     grep -v mergedReplicates | grep "Mye\|DM")
 
     if [[ $(echo $chipFiles | wc -w) == 2 ]]; then
@@ -92,11 +113,18 @@ for chip in $chips; do
             # get proportion and subsample
             nReads=$(grep $file1 ${bamCounts} | cut -f 3)
             if [[ ${nReads} == ${minRead} ]]; then
-                cp ${bamsPath}/${file1} ${subOut}/${subsName}
-                cp ${bamsPath}/${file1}.bai ${subOut}/${subsName}.bai
+                # if file doesnt exist
+                if [ ! -e ${subOut}/${subsName} ]; then
+                    cp ${bamsPath}/${file1} ${subOut}/${subsName}
+                    cp ${bamsPath}/${file1}.bai ${subOut}/${subsName}.bai
+                fi
             else
-                fractionOfReads=$(echo "print(${minRead}/${nReads})" | python3)
-                sambamba view -h -t $SLURM_CPUS_PER_TASK -s $fractionOfReads -f bam --subsampling-seed=12345 ${bamsPath}/${file1} -o ${subOut}/${subsName}
+                # if file doesnt exist
+                if [ ! -e ${subOut}/${subsName} ]; then
+                    fractionOfReads=$(echo "print(${minRead}/${nReads})" | python3)
+                    sambamba view -h -t $SLURM_CPUS_PER_TASK -s $fractionOfReads -f bam --subsampling-seed=12345 ${bamsPath}/${file1} -o ${subOut}/${subsName}
+                fi
+                
             fi
 
 

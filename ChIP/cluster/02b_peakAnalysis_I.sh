@@ -4,10 +4,10 @@
 ##===============================================================================
 ## SLURM VARIABLES
 #SBATCH --job-name=peakAnalysis
-#SBATCH --cpus-per-task=24
+#SBATCH --cpus-per-task=32
 #SBATCH --mem=32G
-#SBATCH --time=3-01:00:00
-#SBATCH -p medium
+#SBATCH --time=0-06:00:00
+#SBATCH -p short
 #SBATCH -o /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.out  
 #SBATCH -e /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.err 
 
@@ -62,7 +62,7 @@ scriptsPath="/home/jmendietaes/programas/PhD"
 species="mm"
 speciesGenome="mm10"
 
-# extend variables
+# Where to look for bam files and where to store output tree
 bamsPath="${basePath}/bamfiles/valid/subsampled_noIgG"
 outpath=${basePath}"/furtherAnalysis/subsampled_noIgG"
 
@@ -110,7 +110,7 @@ fileNotExistOrOlder () {
         for tfile in $2; do
             if [[ $1 -ot ${tfile} ]] ; then
                 analyse="yes"
-                echo $1" older than"${tfile}
+                echo $1" older than "${tfile}
             fi
         done
     fi
@@ -157,20 +157,20 @@ addControls () {
 # first make sure input and output folder do not contain names
 # that can result in an issue
 if [[ $bamsPath == *"_IgG"* ]]; then
-    echo "bamsPath contains key substring _IgG";
+    echo "bamsPath contains key substring: _IgG";
     exit 1;
 fi
 if [[ $outpath == *"_IgG"* ]]; then
-    echo "outpath contains key substring _IgG";
+    echo "outpath contains key substring: _IgG";
     exit 1;
 fi
 
 if [[ $bamsPath == *"_input"* ]]; then
-    echo "bamsPath contains key substring _input"
+    echo "bamsPath contains key substring: _input"
     exit 1;
 fi
 if [[ $outpath == *"_input"* ]]; then
-    echo "outpath contains key substring _input"
+    echo "outpath contains key substring: _input"
     exit 1;
 fi
 
@@ -518,7 +518,8 @@ for peaktype in narrowPeak broadPeak; do
 
 
         nfiles=$(echo $peakFiles | wc -w)
-        if [[ ${nfiles} -gt 1 ]]; then    
+        # just to have same table format we will also include ChIPs with one dataset
+        if [[ ${nfiles} -ge 1 ]]; then 
 
             RoutPlot=${sameChipCons}/${prefix}.boolean.intersect.pdf
             fileNotExistOrOlder "${RoutPlot}" "${peakFiles}"
@@ -539,9 +540,11 @@ for peaktype in narrowPeak broadPeak; do
                 echo -e "GeneID\tChr\tStart\tEnd\tStrand" > ${sameChipCons}/${prefix}.saf
                 awk -v FS='\t' -v OFS='\t' 'FNR > 1 { print $4, $1, $2, $3,  "+" }' \
                     ${sameChipCons}/${prefix}.boolean.txt >> ${sameChipCons}/${prefix}.saf
-                Rscript ${scriptsPath}/ChIP/cluster/02_NR_plot_peak_intersect.r \
-                    -i ${sameChipCons}/${prefix}.boolean.intersect.txt \
-                    -o ${RoutPlot}
+                if [[ ${nfiles} -gt 1 ]]; then    
+                    Rscript ${scriptsPath}/ChIP/cluster/02_NR_plot_peak_intersect.r \
+                        -i ${sameChipCons}/${prefix}.boolean.intersect.txt \
+                        -o ${RoutPlot}
+                fi
             fi
         
         fi
