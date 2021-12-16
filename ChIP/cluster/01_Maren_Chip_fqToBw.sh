@@ -6,7 +6,7 @@
 #SBATCH --job-name=Chip_fqToBw
 #SBATCH --cpus-per-task=12
 #SBATCH --mem=30G
-#SBATCH --time=01-10:00:00
+#SBATCH --time=00-08:00:00
 #SBATCH -p medium
 #SBATCH -o /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.out  
 #SBATCH -e /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.err 
@@ -223,15 +223,18 @@ echo -e "Starting Alignment -------------------------------------- \n"
 
 if [ ! -e ${EDITED_DIR}/BAM/ ]; then
     mkdir -p ${EDITED_DIR}/BAM/
+    mkdir -p ${EDITED_DIR}/unMapped/
 fi
 
 samFile="${EDITED_DIR}/BAM/${filename}.sam"
 
 # check content of third line of step control file
+extr_unmap="${EDITED_DIR}/unMapped/${filename}_R%_001_unmap.fastq.gz"
 linec=`sed "3q;d" ${stepControl}`
 if [[ ${linec} != "Align" ]]; then 
     bowtie2 -p $SLURM_CPUS_PER_TASK -X 1000 --no-discordant --no-mixed \
-    --very-sensitive -x $GenomeIndex -1 ${trimedRead1} -2 ${trimedRead2} -S ${samFile}
+    --very-sensitive -x $GenomeIndex -1 ${trimedRead1} -2 ${trimedRead2} \
+    -S ${samFile} --un-conc-gz ${extr_unmap}
         
     echo -e "Alignment - done -------------------------------------- \n"
     # store stage control info

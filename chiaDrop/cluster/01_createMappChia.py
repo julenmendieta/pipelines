@@ -10,13 +10,13 @@ filesPath = '/home/jmendietaes/data/2021/chia-drop/sequenceData/fastq_filter/toM
 #realpath *fastq.gz > toMapp.txt
 
 # load genome path
-#genome = '/home/jmendietaes/referenceGenomes/mm10_reordered/mm10.reordered.fa'
-genome = '/home/jmendietaes/referenceGenomes/GRCh38/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa'
+genome = '/home/jmendietaes/referenceGenomes/mm10_reordered/mm10.reordered.fa'
+#genome = '/home/jmendietaes/referenceGenomes/GRCh38/GCA_000001405.15_GRCh38_no_alt_analysis_set.fa'
 #genome = '/ssd/genomes/dm6/dm6.fa'
 
 # load GEM index path
-#gem_index_path = '/home/jmendietaes/referenceGenomes/mm10_reordered/mm10.reordered.gem'
-gem_index_path= '/home/jmendietaes/referenceGenomes/GRCh38/GCA_000001405.15_GRCh38_no_alt_analysis_set.gem'
+gem_index_path = '/home/jmendietaes/referenceGenomes/mm10_reordered/mm10.reordered.gem'
+#gem_index_path= '/home/jmendietaes/referenceGenomes/GRCh38/GCA_000001405.15_GRCh38_no_alt_analysis_set.gem'
 
 # get output folder
 path = '/home/jmendietaes/data/2021/chia-drop/mapOut/'

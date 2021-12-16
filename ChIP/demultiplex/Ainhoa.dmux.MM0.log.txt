@@ -1,0 +1,231 @@
+BCL to FASTQ file converter
+bcl2fastq v2.20.0.422
+Copyright (c) 2007-2017 Illumina, Inc.
+
+2021-08-09 14:24:58 [7fa64eba47c0] Command-line invocation: bcl2fastq --runfolder-dir /datos/intercambio/eguruce/210806_VH00461_59_AAALHW2M5_2 --output-dir /home/jmendietaes/data/2021/singleCell/sequencedData/210806_VH00461_59_AAALHW2M5/ --sample-sheet /home/jmendietaes/data/2021/singleCell/sequencedData/demultiplex/Datasheet_CRISPRScreening.csv --use-bases-mask Y28,I10,I10,Y84 --minimum-trimmed-read-length 50 --mask-short-adapter-read 7 --no-lane-splitting --barcode-mismatches 1 -r 12 -p 12 -w 4 -l INFO 
+2021-08-09 14:24:58 [7fa64eba47c0] INFO: Minimum log level: INFO
+2021-08-09 14:24:58 [7fa64eba47c0] INFO: Sample sheet: '/home/jmendietaes/data/2021/singleCell/sequencedData/demultiplex/Datasheet_CRISPRScreening.csv'
+2021-08-09 14:24:58 [7fa64eba47c0] INFO: Runfolder path: '/datos/intercambio/eguruce/210806_VH00461_59_AAALHW2M5_2'
+2021-08-09 14:24:58 [7fa64eba47c0] INFO: Input path: '/datos/intercambio/eguruce/210806_VH00461_59_AAALHW2M5_2/Data/Intensities/BaseCalls/'
+2021-08-09 14:24:58 [7fa64eba47c0] INFO: Intensities path: '/datos/intercambio/eguruce/210806_VH00461_59_AAALHW2M5_2/Data/Intensities/'
+2021-08-09 14:24:58 [7fa64eba47c0] INFO: Output path: '/home/jmendietaes/data/2021/singleCell/sequencedData/210806_VH00461_59_AAALHW2M5/'
+2021-08-09 14:24:58 [7fa64eba47c0] INFO: InterOp path: '/datos/intercambio/eguruce/210806_VH00461_59_AAALHW2M5_2/InterOp/'
+2021-08-09 14:24:58 [7fa64eba47c0] INFO: Stats path: '/home/jmendietaes/data/2021/singleCell/sequencedData/210806_VH00461_59_AAALHW2M5/Stats/'
+2021-08-09 14:24:58 [7fa64eba47c0] INFO: Reports path: '/home/jmendietaes/data/2021/singleCell/sequencedData/210806_VH00461_59_AAALHW2M5/Reports/'
+2021-08-09 14:24:58 [7fa64eba47c0] INFO: Detected CPUs: 112
+2021-08-09 14:24:58 [7fa64eba47c0] INFO: Loading threads: 12
+2021-08-09 14:24:58 [7fa64eba47c0] INFO: Processing threads: 12
+2021-08-09 14:24:58 [7fa64eba47c0] INFO: Writing threads: 4
+2021-08-09 14:24:58 [7fa64eba47c0] INFO: Allowed barcode mismatches: 1 
+2021-08-09 14:24:58 [7fa64eba47c0] INFO: Tiles: <ALL>
+2021-08-09 14:24:58 [7fa64eba47c0] INFO: Minimum trimmed read length: 50
+2021-08-09 14:24:58 [7fa64eba47c0] INFO: Use bases masks: 
+	Y28,I10,I10,Y84
+2021-08-09 14:24:58 [7fa64eba47c0] INFO: Mask short adapter reads: 7
+2021-08-09 14:24:58 [7fa64eba47c0] INFO: Adapter stringency: 0.9
+2021-08-09 14:24:58 [7fa64eba47c0] INFO: Adapter trimming method: Allow matches with indels
+2021-08-09 14:24:58 [7fa64eba47c0] INFO: Ignore missing BCLs: NO
+2021-08-09 14:24:58 [7fa64eba47c0] INFO: Ignore missing filters: NO
+2021-08-09 14:24:58 [7fa64eba47c0] INFO: Ignore missing positions: NO
+2021-08-09 14:24:58 [7fa64eba47c0] INFO: Ignore missing controls: NO
+2021-08-09 14:24:58 [7fa64eba47c0] INFO: Include non-PF clusters: NO
+2021-08-09 14:24:58 [7fa64eba47c0] INFO: Create FASTQs for index reads: NO
+2021-08-09 14:24:58 [7fa64eba47c0] INFO: Use bgzf compression for FASTQ files: YES
+2021-08-09 14:24:58 [7fa64eba47c0] INFO: FASTQ compression level: 4
+2021-08-09 14:24:58 [7fa64eba47c0] INFO: RunInfo.xml: '"/datos/intercambio/eguruce/210806_VH00461_59_AAALHW2M5_2/RunInfo.xml"'
+2021-08-09 14:24:58 [7fa64eba47c0] INFO: Lane: 1
+2021-08-09 14:24:58 [7fa64eba47c0] INFO: Mask: Y28,I10,I10,Y84
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Sample: #0 'unknown' 'Undetermined' [default]
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Sample: #1 'WT_Exvivo_3expression_d7_02082021' 'WT_Exvivo_3expression_d7_02082021' [default]
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:     Barcode: 'GTAGACGAAA+ACCACACTAG'
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Sample: #2 'Cas9_Exvivo_3expression_d7_02082021' 'Cas9_Exvivo_3expression_d7_02082021' [default]
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:     Barcode: 'GCAGTATAGG+GTGCACGGAA'
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Sample: #3 'WT_Exvivo_sgRNA_d7_02082021' 'WT_Exvivo_sgRNA_d7_02082021' [default]
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:     Barcode: 'CTATGGCATC+GCGCTCAGAG'
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Sample: #4 'Cas9_Exvivo_sgRNA_d7_02082021' 'Cas9_Exvivo_sgRNA_d7_02082021' [default]
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:     Barcode: 'AGGTCGTTAT+TGGATAACCT'
+2021-08-09 14:24:58 [7fa64eba47c0] INFO: Read: 1 data read
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Cycles: 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28
+2021-08-09 14:24:58 [7fa64eba47c0] INFO: Read: 1 index read
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Cycles: 29,30,31,32,33,34,35,36,37,38
+2021-08-09 14:24:58 [7fa64eba47c0] INFO: Read: 2 index read
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Cycles: 39,40,41,42,43,44,45,46,47,48
+2021-08-09 14:24:58 [7fa64eba47c0] INFO: Read: 2 data read
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Cycles: 49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132
+2021-08-09 14:24:58 [7fa64eba47c0] WARNING: Option: '--minimum-trimmed-read-length' with value: 50 is being overwritten by the shortest non-index read length: 28
+2021-08-09 14:24:58 [7fa64eba47c0] INFO: Patterned flowcell detected
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1101 (index: 0, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1102 (index: 1, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1103 (index: 2, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1104 (index: 3, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1105 (index: 4, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1106 (index: 5, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1107 (index: 6, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1108 (index: 7, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1109 (index: 8, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1110 (index: 9, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1111 (index: 10, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1201 (index: 11, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1202 (index: 12, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1203 (index: 13, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1204 (index: 14, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1205 (index: 15, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1206 (index: 16, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1207 (index: 17, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1208 (index: 18, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1209 (index: 19, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1210 (index: 20, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1211 (index: 21, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1301 (index: 22, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1302 (index: 23, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1303 (index: 24, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1304 (index: 25, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1305 (index: 26, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1306 (index: 27, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1307 (index: 28, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1308 (index: 29, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1309 (index: 30, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1310 (index: 31, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1311 (index: 32, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1401 (index: 33, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1402 (index: 34, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1403 (index: 35, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1404 (index: 36, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1405 (index: 37, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1406 (index: 38, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1407 (index: 39, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1408 (index: 40, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1409 (index: 41, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1410 (index: 42, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1411 (index: 43, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1501 (index: 44, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1502 (index: 45, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1503 (index: 46, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1504 (index: 47, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1505 (index: 48, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1506 (index: 49, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1507 (index: 50, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1508 (index: 51, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1509 (index: 52, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1510 (index: 53, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1511 (index: 54, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1601 (index: 55, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1602 (index: 56, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1603 (index: 57, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1604 (index: 58, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1605 (index: 59, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1606 (index: 60, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1607 (index: 61, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1608 (index: 62, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1609 (index: 63, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1610 (index: 64, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 1611 (index: 65, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 2101 (index: 66, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 2102 (index: 67, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 2103 (index: 68, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 2104 (index: 69, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 2105 (index: 70, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 2106 (index: 71, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 2107 (index: 72, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 2108 (index: 73, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 2109 (index: 74, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 2110 (index: 75, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 2111 (index: 76, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 2201 (index: 77, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 2202 (index: 78, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 2203 (index: 79, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 2204 (index: 80, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 2205 (index: 81, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 2206 (index: 82, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 2207 (index: 83, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 2208 (index: 84, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 2209 (index: 85, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 2210 (index: 86, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 2211 (index: 87, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 2301 (index: 88, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 2302 (index: 89, skipped tiles: 0)
+2021-08-09 14:24:58 [7fa64eba47c0] INFO:   Tile: 2303 (index: 90, skipped tiles: 0)
+2021-08-09 14:24:59 [7fa64eba47c0] INFO:   Tile: 2304 (index: 91, skipped tiles: 0)
+2021-08-09 14:24:59 [7fa64eba47c0] INFO:   Tile: 2305 (index: 92, skipped tiles: 0)
+2021-08-09 14:24:59 [7fa64eba47c0] INFO:   Tile: 2306 (index: 93, skipped tiles: 0)
+2021-08-09 14:24:59 [7fa64eba47c0] INFO:   Tile: 2307 (index: 94, skipped tiles: 0)
+2021-08-09 14:24:59 [7fa64eba47c0] INFO:   Tile: 2308 (index: 95, skipped tiles: 0)
+2021-08-09 14:24:59 [7fa64eba47c0] INFO:   Tile: 2309 (index: 96, skipped tiles: 0)
+2021-08-09 14:24:59 [7fa64eba47c0] INFO:   Tile: 2310 (index: 97, skipped tiles: 0)
+2021-08-09 14:24:59 [7fa64eba47c0] INFO:   Tile: 2311 (index: 98, skipped tiles: 0)
+2021-08-09 14:24:59 [7fa64eba47c0] INFO:   Tile: 2401 (index: 99, skipped tiles: 0)
+2021-08-09 14:24:59 [7fa64eba47c0] INFO:   Tile: 2402 (index: 100, skipped tiles: 0)
+2021-08-09 14:24:59 [7fa64eba47c0] INFO:   Tile: 2403 (index: 101, skipped tiles: 0)
+2021-08-09 14:24:59 [7fa64eba47c0] INFO:   Tile: 2404 (index: 102, skipped tiles: 0)
+2021-08-09 14:24:59 [7fa64eba47c0] INFO:   Tile: 2405 (index: 103, skipped tiles: 0)
+2021-08-09 14:24:59 [7fa64eba47c0] INFO:   Tile: 2406 (index: 104, skipped tiles: 0)
+2021-08-09 14:24:59 [7fa64eba47c0] INFO:   Tile: 2407 (index: 105, skipped tiles: 0)
+2021-08-09 14:24:59 [7fa64eba47c0] INFO:   Tile: 2408 (index: 106, skipped tiles: 0)
+2021-08-09 14:24:59 [7fa64eba47c0] INFO:   Tile: 2409 (index: 107, skipped tiles: 0)
+2021-08-09 14:24:59 [7fa64eba47c0] INFO:   Tile: 2410 (index: 108, skipped tiles: 0)
+2021-08-09 14:24:59 [7fa64eba47c0] INFO:   Tile: 2411 (index: 109, skipped tiles: 0)
+2021-08-09 14:24:59 [7fa64eba47c0] INFO:   Tile: 2501 (index: 110, skipped tiles: 0)
+2021-08-09 14:24:59 [7fa64eba47c0] INFO:   Tile: 2502 (index: 111, skipped tiles: 0)
+2021-08-09 14:24:59 [7fa64eba47c0] INFO:   Tile: 2503 (index: 112, skipped tiles: 0)
+2021-08-09 14:24:59 [7fa64eba47c0] INFO:   Tile: 2504 (index: 113, skipped tiles: 0)
+2021-08-09 14:24:59 [7fa64eba47c0] INFO:   Tile: 2505 (index: 114, skipped tiles: 0)
+2021-08-09 14:24:59 [7fa64eba47c0] INFO:   Tile: 2506 (index: 115, skipped tiles: 0)
+2021-08-09 14:24:59 [7fa64eba47c0] INFO:   Tile: 2507 (index: 116, skipped tiles: 0)
+2021-08-09 14:24:59 [7fa64eba47c0] INFO:   Tile: 2508 (index: 117, skipped tiles: 0)
+2021-08-09 14:24:59 [7fa64eba47c0] INFO:   Tile: 2509 (index: 118, skipped tiles: 0)
+2021-08-09 14:24:59 [7fa64eba47c0] INFO:   Tile: 2510 (index: 119, skipped tiles: 0)
+2021-08-09 14:24:59 [7fa64eba47c0] INFO:   Tile: 2511 (index: 120, skipped tiles: 0)
+2021-08-09 14:24:59 [7fa64eba47c0] INFO:   Tile: 2601 (index: 121, skipped tiles: 0)
+2021-08-09 14:24:59 [7fa64eba47c0] INFO:   Tile: 2602 (index: 122, skipped tiles: 0)
+2021-08-09 14:24:59 [7fa64eba47c0] INFO:   Tile: 2603 (index: 123, skipped tiles: 0)
+2021-08-09 14:24:59 [7fa64eba47c0] INFO:   Tile: 2604 (index: 124, skipped tiles: 0)
+2021-08-09 14:24:59 [7fa64eba47c0] INFO:   Tile: 2605 (index: 125, skipped tiles: 0)
+2021-08-09 14:24:59 [7fa64eba47c0] INFO:   Tile: 2606 (index: 126, skipped tiles: 0)
+2021-08-09 14:24:59 [7fa64eba47c0] INFO:   Tile: 2607 (index: 127, skipped tiles: 0)
+2021-08-09 14:24:59 [7fa64eba47c0] INFO:   Tile: 2608 (index: 128, skipped tiles: 0)
+2021-08-09 14:24:59 [7fa64eba47c0] INFO:   Tile: 2609 (index: 129, skipped tiles: 0)
+2021-08-09 14:24:59 [7fa64eba47c0] INFO:   Tile: 2610 (index: 130, skipped tiles: 0)
+2021-08-09 14:24:59 [7fa64eba47c0] INFO:   Tile: 2611 (index: 131, skipped tiles: 0)
+2021-08-09 14:25:00 [7fa64eba47c0] INFO: creating directory "/home/jmendietaes/data/2021/singleCell/sequencedData/210806_VH00461_59_AAALHW2M5/Stats"
+2021-08-09 14:25:00 [7fa64eba47c0] INFO: Created FASTQ file '"/home/jmendietaes/data/2021/singleCell/sequencedData/210806_VH00461_59_AAALHW2M5/Undetermined_S0_R1_001.fastq.gz"
+2021-08-09 14:25:00 [7fa64eba47c0] INFO: Created FASTQ file '"/home/jmendietaes/data/2021/singleCell/sequencedData/210806_VH00461_59_AAALHW2M5/Undetermined_S0_R2_001.fastq.gz"
+2021-08-09 14:25:00 [7fa64eba47c0] INFO: Created FASTQ file '"/home/jmendietaes/data/2021/singleCell/sequencedData/210806_VH00461_59_AAALHW2M5/WT_Exvivo_3expression_d7_02082021_S1_R1_001.fastq.gz"
+2021-08-09 14:25:00 [7fa64eba47c0] INFO: Created FASTQ file '"/home/jmendietaes/data/2021/singleCell/sequencedData/210806_VH00461_59_AAALHW2M5/WT_Exvivo_3expression_d7_02082021_S1_R2_001.fastq.gz"
+2021-08-09 14:25:00 [7fa64eba47c0] INFO: Created FASTQ file '"/home/jmendietaes/data/2021/singleCell/sequencedData/210806_VH00461_59_AAALHW2M5/Cas9_Exvivo_3expression_d7_02082021_S2_R1_001.fastq.gz"
+2021-08-09 14:25:00 [7fa64eba47c0] INFO: Created FASTQ file '"/home/jmendietaes/data/2021/singleCell/sequencedData/210806_VH00461_59_AAALHW2M5/Cas9_Exvivo_3expression_d7_02082021_S2_R2_001.fastq.gz"
+2021-08-09 14:25:00 [7fa64eba47c0] INFO: Created FASTQ file '"/home/jmendietaes/data/2021/singleCell/sequencedData/210806_VH00461_59_AAALHW2M5/WT_Exvivo_sgRNA_d7_02082021_S3_R1_001.fastq.gz"
+2021-08-09 14:25:01 [7fa64eba47c0] INFO: Created FASTQ file '"/home/jmendietaes/data/2021/singleCell/sequencedData/210806_VH00461_59_AAALHW2M5/WT_Exvivo_sgRNA_d7_02082021_S3_R2_001.fastq.gz"
+2021-08-09 14:25:01 [7fa64eba47c0] INFO: Created FASTQ file '"/home/jmendietaes/data/2021/singleCell/sequencedData/210806_VH00461_59_AAALHW2M5/Cas9_Exvivo_sgRNA_d7_02082021_S4_R1_001.fastq.gz"
+2021-08-09 14:25:01 [7fa64eba47c0] INFO: Created FASTQ file '"/home/jmendietaes/data/2021/singleCell/sequencedData/210806_VH00461_59_AAALHW2M5/Cas9_Exvivo_sgRNA_d7_02082021_S4_R2_001.fastq.gz"
+2021-08-09 14:30:46 [7fa64eba47c0] WARNING: Unable to open Interop file '/datos/intercambio/eguruce/210806_VH00461_59_AAALHW2M5_2/InterOp/IndexMetricsOut.bin' for writing
+2021-08-09 14:30:46 [7fa64eba47c0] INFO: creating directory "/home/jmendietaes/data/2021/singleCell/sequencedData/210806_VH00461_59_AAALHW2M5/Reports/"
+2021-08-09 14:30:46 [7fa64eba47c0] INFO: creating directory "/home/jmendietaes/data/2021/singleCell/sequencedData/210806_VH00461_59_AAALHW2M5/Reports/html"
+2021-08-09 14:30:46 [7fa64eba47c0] INFO: creating directory "/home/jmendietaes/data/2021/singleCell/sequencedData/210806_VH00461_59_AAALHW2M5/Reports/html/AAALHW2M5"
+2021-08-09 14:30:46 [7fa64eba47c0] INFO: creating directory "/home/jmendietaes/data/2021/singleCell/sequencedData/210806_VH00461_59_AAALHW2M5/Reports/html/AAALHW2M5/all"
+2021-08-09 14:30:46 [7fa64eba47c0] INFO: creating directory "/home/jmendietaes/data/2021/singleCell/sequencedData/210806_VH00461_59_AAALHW2M5/Reports/html/AAALHW2M5/all/all"
+2021-08-09 14:30:46 [7fa64eba47c0] INFO: creating directory "/home/jmendietaes/data/2021/singleCell/sequencedData/210806_VH00461_59_AAALHW2M5/Reports/html/AAALHW2M5/all/all/all"
+2021-08-09 14:30:46 [7fa64eba47c0] INFO: creating directory "/home/jmendietaes/data/2021/singleCell/sequencedData/210806_VH00461_59_AAALHW2M5/Reports/html/AAALHW2M5/all/all/unknown"
+2021-08-09 14:30:46 [7fa64eba47c0] INFO: creating directory "/home/jmendietaes/data/2021/singleCell/sequencedData/210806_VH00461_59_AAALHW2M5/Reports/html/AAALHW2M5/default"
+2021-08-09 14:30:46 [7fa64eba47c0] INFO: creating directory "/home/jmendietaes/data/2021/singleCell/sequencedData/210806_VH00461_59_AAALHW2M5/Reports/html/AAALHW2M5/default/Cas9_Exvivo_3expression_d7_02082021"
+2021-08-09 14:30:46 [7fa64eba47c0] INFO: creating directory "/home/jmendietaes/data/2021/singleCell/sequencedData/210806_VH00461_59_AAALHW2M5/Reports/html/AAALHW2M5/default/Cas9_Exvivo_3expression_d7_02082021/GCAGTATAGG+GTGCACGGAA"
+2021-08-09 14:30:46 [7fa64eba47c0] INFO: creating directory "/home/jmendietaes/data/2021/singleCell/sequencedData/210806_VH00461_59_AAALHW2M5/Reports/html/AAALHW2M5/default/Cas9_Exvivo_3expression_d7_02082021/all"
+2021-08-09 14:30:46 [7fa64eba47c0] INFO: creating directory "/home/jmendietaes/data/2021/singleCell/sequencedData/210806_VH00461_59_AAALHW2M5/Reports/html/AAALHW2M5/default/Cas9_Exvivo_3expression_d7_02082021/unknown"
+2021-08-09 14:30:46 [7fa64eba47c0] INFO: creating directory "/home/jmendietaes/data/2021/singleCell/sequencedData/210806_VH00461_59_AAALHW2M5/Reports/html/AAALHW2M5/default/Cas9_Exvivo_sgRNA_d7_02082021"
+2021-08-09 14:30:46 [7fa64eba47c0] INFO: creating directory "/home/jmendietaes/data/2021/singleCell/sequencedData/210806_VH00461_59_AAALHW2M5/Reports/html/AAALHW2M5/default/Cas9_Exvivo_sgRNA_d7_02082021/AGGTCGTTAT+TGGATAACCT"
+2021-08-09 14:30:46 [7fa64eba47c0] INFO: creating directory "/home/jmendietaes/data/2021/singleCell/sequencedData/210806_VH00461_59_AAALHW2M5/Reports/html/AAALHW2M5/default/Cas9_Exvivo_sgRNA_d7_02082021/all"
+2021-08-09 14:30:46 [7fa64eba47c0] INFO: creating directory "/home/jmendietaes/data/2021/singleCell/sequencedData/210806_VH00461_59_AAALHW2M5/Reports/html/AAALHW2M5/default/Cas9_Exvivo_sgRNA_d7_02082021/unknown"
+2021-08-09 14:30:46 [7fa64eba47c0] INFO: creating directory "/home/jmendietaes/data/2021/singleCell/sequencedData/210806_VH00461_59_AAALHW2M5/Reports/html/AAALHW2M5/default/Undetermined"
+2021-08-09 14:30:46 [7fa64eba47c0] INFO: creating directory "/home/jmendietaes/data/2021/singleCell/sequencedData/210806_VH00461_59_AAALHW2M5/Reports/html/AAALHW2M5/default/Undetermined/all"
+2021-08-09 14:30:46 [7fa64eba47c0] INFO: creating directory "/home/jmendietaes/data/2021/singleCell/sequencedData/210806_VH00461_59_AAALHW2M5/Reports/html/AAALHW2M5/default/Undetermined/unknown"
+2021-08-09 14:30:46 [7fa64eba47c0] INFO: creating directory "/home/jmendietaes/data/2021/singleCell/sequencedData/210806_VH00461_59_AAALHW2M5/Reports/html/AAALHW2M5/default/WT_Exvivo_3expression_d7_02082021"
+2021-08-09 14:30:46 [7fa64eba47c0] INFO: creating directory "/home/jmendietaes/data/2021/singleCell/sequencedData/210806_VH00461_59_AAALHW2M5/Reports/html/AAALHW2M5/default/WT_Exvivo_3expression_d7_02082021/GTAGACGAAA+ACCACACTAG"
+2021-08-09 14:30:46 [7fa64eba47c0] INFO: creating directory "/home/jmendietaes/data/2021/singleCell/sequencedData/210806_VH00461_59_AAALHW2M5/Reports/html/AAALHW2M5/default/WT_Exvivo_3expression_d7_02082021/all"
+2021-08-09 14:30:46 [7fa64eba47c0] INFO: creating directory "/home/jmendietaes/data/2021/singleCell/sequencedData/210806_VH00461_59_AAALHW2M5/Reports/html/AAALHW2M5/default/WT_Exvivo_3expression_d7_02082021/unknown"
+2021-08-09 14:30:47 [7fa64eba47c0] INFO: creating directory "/home/jmendietaes/data/2021/singleCell/sequencedData/210806_VH00461_59_AAALHW2M5/Reports/html/AAALHW2M5/default/WT_Exvivo_sgRNA_d7_02082021"
+2021-08-09 14:30:47 [7fa64eba47c0] INFO: creating directory "/home/jmendietaes/data/2021/singleCell/sequencedData/210806_VH00461_59_AAALHW2M5/Reports/html/AAALHW2M5/default/WT_Exvivo_sgRNA_d7_02082021/CTATGGCATC+GCGCTCAGAG"
+2021-08-09 14:30:47 [7fa64eba47c0] INFO: creating directory "/home/jmendietaes/data/2021/singleCell/sequencedData/210806_VH00461_59_AAALHW2M5/Reports/html/AAALHW2M5/default/WT_Exvivo_sgRNA_d7_02082021/all"
+2021-08-09 14:30:47 [7fa64eba47c0] INFO: creating directory "/home/jmendietaes/data/2021/singleCell/sequencedData/210806_VH00461_59_AAALHW2M5/Reports/html/AAALHW2M5/default/WT_Exvivo_sgRNA_d7_02082021/unknown"
+2021-08-09 14:30:47 [7fa64eba47c0] INFO: creating directory "/home/jmendietaes/data/2021/singleCell/sequencedData/210806_VH00461_59_AAALHW2M5/Reports/html/AAALHW2M5/default/all"
+2021-08-09 14:30:47 [7fa64eba47c0] INFO: creating directory "/home/jmendietaes/data/2021/singleCell/sequencedData/210806_VH00461_59_AAALHW2M5/Reports/html/AAALHW2M5/default/all/all"
+2021-08-09 14:30:47 [7fa64eba47c0] INFO: creating directory "/home/jmendietaes/data/2021/singleCell/sequencedData/210806_VH00461_59_AAALHW2M5/Reports/html/AAALHW2M5/default/all/unknown"
+2021-08-09 14:30:47 [7fa64eba47c0] Processing completed with 0 errors and 2 warnings.
