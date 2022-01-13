@@ -4,17 +4,17 @@
 ##===============================================================================
 ## SLURM VARIABLES
 #SBATCH --job-name=peakAnalysis
-#SBATCH --cpus-per-task=16
-#SBATCH --mem=15G
-#SBATCH --time=0-04:00:00
+#SBATCH --cpus-per-task=32
+#SBATCH --mem=32G
+#SBATCH --time=12:00:00
 #SBATCH -p short
 #SBATCH -o /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.out  
 #SBATCH -e /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.err 
 
 
 # HOW TO RUN ME
-#sbatch /home/jmendietaes/programas/PhD/ChIP/cluster/02b_peakAnalysis_I.sh \
-#/home/jmendietaes/data/2021/chip/allProcessed \
+#sbatch /home/jmendietaes/programas/PhD/ATAC/cluster/02b_peakAnalysis_I.sh \
+#/home/jmendietaes/data/2021/ATAC/allProcessed \
 
 # OBJECTIVE
 # call peaks, annotate, make consensus peaks, get reads in peaks, CPM and merge
@@ -49,7 +49,7 @@ doAllMerge="no"
 # path where we have the folder structure for chip analysis 
 # (inside we have ${basePath}/bamfiles/valid/)
 basePath=$1
-#basePath="/home/jmendietaes/data/2021/chip/allProcessed"
+#basePath="/home/jmendietaes/data/2021/ATAC/allProcessed"
 # Location of the analysis header files downloaded from 
 # https://github.com/nf-core/chipseq/tree/master/assets/multiqc
 #extraFilePath=$2
@@ -63,8 +63,8 @@ species="mm"
 speciesGenome="mm10"
 
 # Where to look for bam files and where to store output tree
-bamsPath="${basePath}/bamfiles/valid/josepMaria"
-outpath=${basePath}"/furtherAnalysis/josepMaria"
+bamsPath="${basePath}/bamfiles/valid/01_chipLike"
+outpath=${basePath}"/furtherAnalysis/01_chipLike"
 
 # never filter out _IgG in here
 allbams=$(find ${bamsPath}/*bam -printf "${bamsPath}/%f\n" | \
@@ -501,9 +501,7 @@ for peaktype in narrowPeak broadPeak; do
     # then extract chip from them
     allChip=$(\
     for filename in ${allFiles}; do 
-        mapLib=(${filename//\./ }); 
-        mapLib=${mapLib[0]};
-        mapLib=(${mapLib//_/ }); 
+        mapLib=(${filename//_/ }); 
         mapLib=${mapLib[1]}; 
         mapLib=(${mapLib//-/ }); 
         echo ${mapLib[0]}; done | \

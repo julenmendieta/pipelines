@@ -84,7 +84,7 @@ consensusFiles=$(find ${inpath}/*tsv -printf "${inpath}/%f\n" | \
 chip="allmerged"
 for binnedPeaks in ${consensusFiles}; do
     peaktype="binnedPeak"
-    prefix=$(basename $binnedPeaks | cut -d '.' -f 1 | cut -d '_' -f 2)
+    prefix=$(basename $binnedPeaks | cut -d '.' -f 1 | sed 's/allChIPCounts_//g')
 
     prefix="${chip}_${peaktype}_consensusPeaks_${prefix}"
 

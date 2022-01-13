@@ -15,7 +15,7 @@
 # DO NOT USE home relative paths (~/)
 inTable="/home/jmendietaes/data/2021/singleCell/allProcessed/pruebas/convertNames.txt"
 # path in which we will do the search and name changing
-focusPath="/home/jmendietaes/data/2021/singleCell/allProcessed/omicstmp/old"
+focusPath="/home/jmendietaes/data/2021/singleCell/allProcessed/cloupes"
 # If we want to do a test printing the change but not doing anything
 # posible answers are lowercase "yes" (ony print) or "no" (print and change)
 onlyTest="no"

@@ -466,29 +466,29 @@ fi
 
 
 # I might remove this from the pipeline in the future
-echo -e "Starting BigWigs different normalization---------------------------\n"
+# echo -e "Starting BigWigs different normalization---------------------------\n"
 
-bigWigOut2="${EDITED_DIR}/BigWig/${filename}.sort.rmdup.rmblackls.rmchr.gencovnorm.bw"
+# bigWigOut2="${EDITED_DIR}/BigWig/${filename}.sort.rmdup.rmblackls.rmchr.gencovnorm.bw"
 
-# check content of eleventh line of step control file
-linec=`sed "11q;d" ${stepControl}`
-if [[ ${linec} != "BigWnorm2" ]]; then 
-    samtools view -b ${bamSortMarkDupBlackChr} | \
-            genomeCoverageBed -ibam stdin -g $chr_genome_size -bg | \
-            $wigToBigWig -clip stdin $chr_genome_size ${bigWigOut2}
-    #samtools view -b ${bamSortMarkDupBlackChr} | genomeCoverageBed -ibam stdin -g $chr_genome_size -bg > ${basePath}/BigWig/${filename}.sort.rmdup.rmblackls.rmchr.gencovnorm.bedGraph
+# # check content of eleventh line of step control file
+# linec=`sed "11q;d" ${stepControl}`
+# if [[ ${linec} != "BigWnorm2" ]]; then 
+#     samtools view -b ${bamSortMarkDupBlackChr} | \
+#             genomeCoverageBed -ibam stdin -g $chr_genome_size -bg | \
+#             $wigToBigWig -clip stdin $chr_genome_size ${bigWigOut2}
+#     #samtools view -b ${bamSortMarkDupBlackChr} | genomeCoverageBed -ibam stdin -g $chr_genome_size -bg > ${basePath}/BigWig/${filename}.sort.rmdup.rmblackls.rmchr.gencovnorm.bedGraph
  
-    # QC: print scaling factors
-    echo -e "BIGWIG SCALING FACTOR for first: CPM binSize 5" >> ${summaryFile}
-    echo -e "BIGWIG SCALING FACTOR for second normalization: Calculated with genomeCoverageBed " >> ${summaryFile}
-    echo -e "\n" >> ${summaryFile}
+#     # QC: print scaling factors
+#     echo -e "BIGWIG SCALING FACTOR for first: CPM binSize 5" >> ${summaryFile}
+#     echo -e "BIGWIG SCALING FACTOR for second normalization: Calculated with genomeCoverageBed " >> ${summaryFile}
+#     echo -e "\n" >> ${summaryFile}
 
-    echo -e "BigWigs second - done ---------------------------------------------\n"
-    # store stage control info
-    echo "BigWnorm2" >> ${stepControl}
-else
-    echo -e "BigWigs second - already done before ------------------------------\n"
-fi    
+#     echo -e "BigWigs second - done ---------------------------------------------\n"
+#     # store stage control info
+#     echo "BigWnorm2" >> ${stepControl}
+# else
+#     echo -e "BigWigs second - already done before ------------------------------\n"
+# fi    
 #sortBed -i "$i" | genomeCoverageBed -bg -i stdin -g ~/alignments/chr_genome_size/chr_hg38_size/hg38.chrom.sizes | wigToBigWig -clip stdin ~/alignments/chr_genome_size/chr_hg38_size/hg38.chrom.sizes ${f%.*PE*}.bw
 
 

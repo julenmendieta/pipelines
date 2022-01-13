@@ -13,16 +13,14 @@
 
 # HOW TO RUN ME
 # add in the list bellow the bam file names (but the .bam termination)
-#sbatch /home/jmendietaes/programas/PhD/ChIP/cluster/06d_bigwig_fromList.sh
+#sbatch /home/jmendietaes/programas/PhD/ATAC/cluster/06d_bigwig_fromList.sh
 
-files="Mye_Kmt2d-merged.sort.rmdup.rmblackls.rmchr \
-Ery_Brd9-merged.sort.rmdup.rmblackls.rmchr \
-MEP_Brd9-merged.sort.rmdup.rmblackls.rmchr \
-Mono_Brd9-merged.sort.rmdup.rmblackls.rmchr \
-Mono_Kmt2d-merged.sort.rmdup.rmblackls.rmchr \
-Mono_Smarcb1-merged.sort.rmdup.rmblackls.rmchr"
+files="LSK-NTC_ATAC-merged.sort.rmdup.rmblackls.rmchr \
+LSK-WDR82_ATAC-merged.sort.rmdup.rmblackls.rmchr \
+Mye-NTC_ATAC-merged.sort.rmdup.rmblackls.rmchr \
+Mye-WDR82_ATAC-merged.sort.rmdup.rmblackls.rmchr"
 
-basePath="/home/jmendietaes/data/2021/chip/allProcessed"
+basePath="/home/jmendietaes/data/2021/ATAC/allProcessed"
 REFERENCE_DIR="/home/jmendietaes/referenceGenomes/mm10_reordered/mm10.reordered"
 chr_genome_size=$REFERENCE_DIR".sizes"
 wigToBigWig="/home/jmendietaes/programas/binPath/wigToBigWig"
