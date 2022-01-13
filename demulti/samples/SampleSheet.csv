@@ -1,0 +1,26 @@
+[Header],,,,,,,,,,,,
+IEMFileVersion,4,,,,,,,,,,,
+Experiment,RUN524,,,,,,,,,,,
+Date,27/05/2021,,,,,,,,,,,
+Workflow,GenerateFASTQ,,,,,,,,,,,
+Application,NextSeq,FASTQ,Only,,,,,,,,,
+Assay,,,,,,,,,,,,
+Description,,,,,,,,,,,,
+Chemistry,Default,,,,,,,,,,,
+,,,,,,,,,,,,
+[Reads],,,,,,,,,,,,
+68,,,,,,,,,,,,
+8,,,,,,,,,,,,
+15,,,,,,,,,,,,
+,,,,,,,,,,,,
+[Settings],,,,,,,,,,,,
+,,,,,,,,,,,,
+[Data],,,,,,,,,,,,
+Sample_ID,Sample_Name,index,index2,SampleProject,Species,Library,Run,Machine,Platform,Date,User,Coverage
+MIN_E_1,MIN_E_1,AGTTCAGT,CCTAAGG,mumoreno,hg38,RNAseq_3_S,RUN524,NextSeq500,Illumina,20210527,mumoreno,10
+MIN_E_2,MIN_E_2,AGTTCAGT,GGCGATT,mumoreno,hg38,RNAseq_3_S,RUN524,NextSeq500,Illumina,20210527,mumoreno,10
+MIN_E_3,MIN_E_3,AGTTCAGT,GCTGAAT,mumoreno,hg38,RNAseq_3_S,RUN524,NextSeq500,Illumina,20210527,mumoreno,10
+MIN_E_4,MIN_E_4,AGTTCAGT,GAATAGC,mumoreno,hg38,RNAseq_3_S,RUN524,NextSeq500,Illumina,20210527,mumoreno,10
+
+
+# i7 (index) & i5 (index2)

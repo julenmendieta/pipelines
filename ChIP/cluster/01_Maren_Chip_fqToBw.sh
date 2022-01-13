@@ -6,7 +6,7 @@
 #SBATCH --job-name=Chip_fqToBw
 #SBATCH --cpus-per-task=12
 #SBATCH --mem=30G
-#SBATCH --time=01-10:00:00
+#SBATCH --time=00-08:00:00
 #SBATCH -p medium
 #SBATCH -o /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.out  
 #SBATCH -e /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.err 
@@ -223,15 +223,18 @@ echo -e "Starting Alignment -------------------------------------- \n"
 
 if [ ! -e ${EDITED_DIR}/BAM/ ]; then
     mkdir -p ${EDITED_DIR}/BAM/
+    mkdir -p ${EDITED_DIR}/unMapped/
 fi
 
 samFile="${EDITED_DIR}/BAM/${filename}.sam"
 
 # check content of third line of step control file
+extr_unmap="${EDITED_DIR}/unMapped/${filename}_R%_001_unmap.fastq.gz"
 linec=`sed "3q;d" ${stepControl}`
 if [[ ${linec} != "Align" ]]; then 
     bowtie2 -p $SLURM_CPUS_PER_TASK -X 1000 --no-discordant --no-mixed \
-    --very-sensitive -x $GenomeIndex -1 ${trimedRead1} -2 ${trimedRead2} -S ${samFile}
+    --very-sensitive -x $GenomeIndex -1 ${trimedRead1} -2 ${trimedRead2} \
+    -S ${samFile} --un-conc-gz ${extr_unmap}
         
     echo -e "Alignment - done -------------------------------------- \n"
     # store stage control info
@@ -463,29 +466,29 @@ fi
 
 
 # I might remove this from the pipeline in the future
-echo -e "Starting BigWigs different normalization---------------------------\n"
+# echo -e "Starting BigWigs different normalization---------------------------\n"
 
-bigWigOut2="${EDITED_DIR}/BigWig/${filename}.sort.rmdup.rmblackls.rmchr.gencovnorm.bw"
+# bigWigOut2="${EDITED_DIR}/BigWig/${filename}.sort.rmdup.rmblackls.rmchr.gencovnorm.bw"
 
-# check content of eleventh line of step control file
-linec=`sed "11q;d" ${stepControl}`
-if [[ ${linec} != "BigWnorm2" ]]; then 
-    samtools view -b ${bamSortMarkDupBlackChr} | \
-            genomeCoverageBed -ibam stdin -g $chr_genome_size -bg | \
-            $wigToBigWig -clip stdin $chr_genome_size ${bigWigOut2}
-    #samtools view -b ${bamSortMarkDupBlackChr} | genomeCoverageBed -ibam stdin -g $chr_genome_size -bg > ${basePath}/BigWig/${filename}.sort.rmdup.rmblackls.rmchr.gencovnorm.bedGraph
+# # check content of eleventh line of step control file
+# linec=`sed "11q;d" ${stepControl}`
+# if [[ ${linec} != "BigWnorm2" ]]; then 
+#     samtools view -b ${bamSortMarkDupBlackChr} | \
+#             genomeCoverageBed -ibam stdin -g $chr_genome_size -bg | \
+#             $wigToBigWig -clip stdin $chr_genome_size ${bigWigOut2}
+#     #samtools view -b ${bamSortMarkDupBlackChr} | genomeCoverageBed -ibam stdin -g $chr_genome_size -bg > ${basePath}/BigWig/${filename}.sort.rmdup.rmblackls.rmchr.gencovnorm.bedGraph
  
-    # QC: print scaling factors
-    echo -e "BIGWIG SCALING FACTOR for first: CPM binSize 5" >> ${summaryFile}
-    echo -e "BIGWIG SCALING FACTOR for second normalization: Calculated with genomeCoverageBed " >> ${summaryFile}
-    echo -e "\n" >> ${summaryFile}
+#     # QC: print scaling factors
+#     echo -e "BIGWIG SCALING FACTOR for first: CPM binSize 5" >> ${summaryFile}
+#     echo -e "BIGWIG SCALING FACTOR for second normalization: Calculated with genomeCoverageBed " >> ${summaryFile}
+#     echo -e "\n" >> ${summaryFile}
 
-    echo -e "BigWigs second - done ---------------------------------------------\n"
-    # store stage control info
-    echo "BigWnorm2" >> ${stepControl}
-else
-    echo -e "BigWigs second - already done before ------------------------------\n"
-fi    
+#     echo -e "BigWigs second - done ---------------------------------------------\n"
+#     # store stage control info
+#     echo "BigWnorm2" >> ${stepControl}
+# else
+#     echo -e "BigWigs second - already done before ------------------------------\n"
+# fi    
 #sortBed -i "$i" | genomeCoverageBed -bg -i stdin -g ~/alignments/chr_genome_size/chr_hg38_size/hg38.chrom.sizes | wigToBigWig -clip stdin ~/alignments/chr_genome_size/chr_hg38_size/hg38.chrom.sizes ${f%.*PE*}.bw
 
 

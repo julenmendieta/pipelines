@@ -41,6 +41,7 @@ function join_by { local IFS="$1"; shift; echo "$*"; }
 # Make sure bamCounts.txt is updated
 # this will overwrite it (very slow, better if you update what you need)
 #echo '' > ${bamCounts}
+cd ${bamsPath}
 for i in *bam; do 
     fileSize=$(du -k ${i} | cut -f1); 
     fileSize_prev=$({ grep $i ${bamCounts} | cut -f 1 || :; });
@@ -77,7 +78,9 @@ done
 
 chips=$(for fi in `cut -f 2 ${bamCounts} | tail -n +2`; do 
         filename=$(basename ${fi}); 
-        mapLib=(${filename//_/ }); 
+        mapLib=(${filename//\./ }); 
+        mapLib=${mapLib[0]};
+        mapLib=(${mapLib//_/ }); 
         mapLib=${mapLib[1]}; 
         mapLib=(${mapLib//-/ }) ; 
         echo ${mapLib[0]};

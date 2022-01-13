@@ -369,7 +369,7 @@ if [[ ${linec} != "Align" ]]; then
             -S ${samPath} --un ${extr_unmap} >> ${summaryFile} 2>&1
     
     # with --un we write unmapped reads to another fastq
-    # the we try to map them to all the reference guides
+    # then we try to map them to all the reference guides
     echo -e "\nALIGNMENT of previously unmapped\n" >> ${summaryFile}
     bowtie2 -p $SLURM_CPUS_PER_TASK -x $GenomeIndex_allGuide -U ${extr_unmap} \
             -S ${samPath_unM} >> ${summaryFile} 2>&1
