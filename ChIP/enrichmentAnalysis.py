@@ -115,8 +115,17 @@ def getGREATout(GREATout, infile, minGene=3, minGeneGO=5, maxGeneGO=500,
     mainTab = driver.current_window_handle
 
     # histogram with distances to TSS (opens new tab)
-    distTSS_file = driver.find_element_by_xpath("/html/body/div[2]/div[13]/div/div/div[2]/div[2]/div[2]/a")
-    distTSS_file.click()
+    xpathSection=13
+    try:
+        distTSS_file = driver.find_element_by_xpath(f"/html/body/div[2]/div[{xpathSection}]/div/div/div[2]/div[2]/div[2]/a")
+        distTSS_file.click()
+    except:
+        xpathSection=14
+        distTSS_file = driver.find_element_by_xpath(f"/html/body/div[2]/div[{xpathSection}]/div/div/div[2]/div[2]/div[2]/a")
+        distTSS_file.click()
+        print("Warning: Your set hits a large fraction of the genes in the genome, \
+which often does not work well with the GREAT Significant by Both view due to a \
+saturation of the gene-based hypergeometric test.")
 
     # get all tab Ids and switch to new one
     #chwd = driver.window_handles
@@ -162,7 +171,7 @@ def getGREATout(GREATout, infile, minGene=3, minGeneGO=5, maxGeneGO=500,
     
     
     # download all data
-    downloadAll_button = driver.find_element_by_xpath('/html/body/div[2]/div[14]/div/h3/select/option[2]')
+    downloadAll_button = driver.find_element_by_xpath(f'/html/body/div[2]/div[{xpathSection+1}]/div/h3/select/option[2]')
     scrollToElem(driver, downloadAll_button)
     downloadAll_button.click()
     # in headless mode we need to set some time or wont have any download
