@@ -101,4 +101,17 @@ write.table(data.frame("interval"=rownames(cpm),cpm), file=fileOut, quote=FALSE,
             row.names=FALSE, col.names=originalColNames)
 
 
-
+## get normalisation factors to be used in the future
+NormFactor <- calcNormFactors(object = Dataset, method = "TMM")
+## raw library size:
+LibSize <- colSums(Dataset)
+## calculate size factors:
+SizeFactors <- NormFactor * LibSize / 1000000
+## Reciprocal, to be multiplied at the time to get bigwig   
+SizeFactors.Reciprocal <- 1/SizeFactors
+                             
+# Store reciprocla values
+write.table(SizeFactors.Reciprocal, 
+            file=paste0(gsub('txt', '', fileOut), 'TMMscale.txt'), 
+            quote=FALSE, sep="\t",
+            row.names=TRUE, col.names=FALSE)

@@ -15,12 +15,13 @@
 # add in the list bellow the bam file names (but the .bam termination)
 #sbatch /home/jmendietaes/programas/PhD/ChIP/cluster/06d_bigwig_fromList.sh
 
-files="Mye_Kmt2d-merged.sort.rmdup.rmblackls.rmchr \
-Ery_Brd9-merged.sort.rmdup.rmblackls.rmchr \
-MEP_Brd9-merged.sort.rmdup.rmblackls.rmchr \
-Mono_Brd9-merged.sort.rmdup.rmblackls.rmchr \
-Mono_Kmt2d-merged.sort.rmdup.rmblackls.rmchr \
-Mono_Smarcb1-merged.sort.rmdup.rmblackls.rmchr"
+files="MEP_Brd9-merged-sub105350855.sort.rmdup.rmblackls.rmchr \
+MEP_Kmt2a-sub56264160_ChIP11_S7.sort.rmdup.rmblackls.rmchr \
+MEP_Kmt2d-sub43061841_ChIP11_S3.sort.rmdup.rmblackls.rmchr \
+GMP_Brd9-merged-sub105350855.sort.rmdup.rmblackls.rmchr \
+GMP_Kmt2a-sub56264160_ChIP11_S9.sort.rmdup.rmblackls.rmchr \
+GMP_Kmt2d-sub43061841_ChIP11_S4.sort.rmdup.rmblackls.rmchr \
+GMP_Smarcb1_ChIP11_S1.sort.rmdup.rmblackls.rmchr"
 
 basePath="/home/jmendietaes/data/2021/chip/allProcessed"
 REFERENCE_DIR="/home/jmendietaes/referenceGenomes/mm10_reordered/mm10.reordered"
@@ -33,7 +34,7 @@ echo -e "Starting BigWigs normalization---------------------------\n"
 # check content of eleventh line of step control file
 for fi in ${files}; do
     echo ${fi}
-    bamPath="${basePath}/bamfiles/valid/${fi}.bam"
+    bamPath="${basePath}/bamfiles/valid/subsampled_noIgG/${fi}.bam"
     bigWigOut2="${basePath}/BigWig/valid/${fi}.norm.bw"
     bamCoverage --binSize 5 --normalizeUsing CPM --exactScaling \
     -b ${bamPath} -of bigwig \

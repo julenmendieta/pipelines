@@ -5,9 +5,9 @@
 ## SLURM VARIABLES
 #SBATCH --job-name=peakAnalysis
 #SBATCH --cpus-per-task=16
-#SBATCH --mem=15G
-#SBATCH --time=0-04:00:00
-#SBATCH -p short
+#SBATCH --mem=20G
+#SBATCH --time=1-04:00:00
+#SBATCH -p medium
 #SBATCH -o /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.out  
 #SBATCH -e /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.err 
 
@@ -25,9 +25,9 @@
 # as control in cells with no control. Otherwise to No
 # This Igg file has to be in the bams folder inside of a folder 
 # called cellMergeIgG
-useMergeIgG="no"
+useMergeIgG="yes"
 # Set to lowercase "yes" to get consensus peaks of all ChIPs and cells
-doAllMerge="no"
+doAllMerge="yes"
 
 # FILE NAMING FORMAT
 # [cellType]_[chip]_[date]_[extra?].[bamfilteringKeys].bam
@@ -63,8 +63,8 @@ species="mm"
 speciesGenome="mm10"
 
 # Where to look for bam files and where to store output tree
-bamsPath="${basePath}/bamfiles/valid/josepMaria"
-outpath=${basePath}"/furtherAnalysis/josepMaria"
+bamsPath="${basePath}/bamfiles/valid/subsampled_noIgG"
+outpath=${basePath}"/furtherAnalysis/subsampled_noIgG"
 
 # never filter out _IgG in here
 allbams=$(find ${bamsPath}/*bam -printf "${bamsPath}/%f\n" | \
@@ -766,7 +766,7 @@ if [[ ${doAllMerge} == "yes" ]]; then
 
         echo -e "FileName\tSampleName\tCellType\tStatus" > ${featureCpath}/sampleInfo.txt
         for bam in ${bamfiles}; do
-            sname=`basename $bam  | sed 's/.sort.rmdup.rmblackls.rmchr.bam//g'`
+            sname=`basename $bam  | sed 's/.sort.rmdup.*.bam//g'`
             #sname=$bam
             cell=(${sname//_/ }) ; cell=${cell[0]}
             status=(${sname//_/ }) ; status=${status[1]}; status=(${status//-/ }); status=${status[0]}

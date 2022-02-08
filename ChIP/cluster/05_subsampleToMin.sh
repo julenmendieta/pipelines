@@ -5,7 +5,7 @@
 ## SLURM VARIABLES
 #SBATCH --job-name=SubsToMin
 #SBATCH --cpus-per-task=16
-#SBATCH --mem=32G
+#SBATCH --mem=8G
 #SBATCH --time=05:00:00
 #SBATCH -p short
 #SBATCH -o /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.out  
@@ -22,6 +22,8 @@
 basePath=$1
 #basePath="/home/jmendietaes/data/2021/chip/allProcessed"
 
+# cells to be counted at the time to subsample (separated by \|)
+subsampleCells="GMP_\|MEP_"
 
 bamsPath="${basePath}/bamfiles/valid"
 subOut="${bamsPath}/subsampled"
@@ -93,7 +95,7 @@ chips=$(for fi in `cut -f 2 ${bamCounts} | tail -n +2`; do
 for chip in $chips; do
     echo $chip
     chipFiles=$(grep $chip ${bamCounts}| cut -f 2 | \
-                    grep -v mergedReplicates | grep "Mye\|DM")
+                    grep -v mergedReplicates | grep "${subsampleCells}")
 
     if [[ $(echo $chipFiles | wc -w) == 2 ]]; then
         # get minimum number of reads

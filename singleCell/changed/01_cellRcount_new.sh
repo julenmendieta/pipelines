@@ -5,12 +5,12 @@
 ## SLURM VARIABLES
 #SBATCH --job-name=cellRrun
 #SBATCH --cpus-per-task=24
-#SBATCH --mem=75Gb
-#SBATCH --time=1-00:00:00
-#SBATCH -p medium
+#SBATCH --mem=40Gb
+#SBATCH --time=20:00:00
+#SBATCH -p short
 #SBATCH -o /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.out  
 #SBATCH -e /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.err 
-##SBATCH --dependency=afterany:571091
+##SBATCH --dependency=afterany:599711
 
 
 # original ram was 258Gb, and cpu 24
@@ -32,7 +32,7 @@ featurePath="/home/jmendietaes/data/2021/singleCell/allProcessed/rangerFiles/ECC
 
 # base name of the files to check (separated by space)
 # avoid adding _Library.csv, it will be added later
-filesCheck="LSK_OP1_NM_9d_1"
+filesCheck="LSK_OP2_NM_9d_1"
 
 
 # Path where we will store output data

@@ -13,9 +13,9 @@
 ########## TO CHANGE ###########
 # Path to the table with 2 columns (string\tsubstitute)
 # DO NOT USE home relative paths (~/)
-inTable="/home/jmendietaes/data/2021/singleCell/allProcessed/pruebas/convertNames.txt"
+inTable="/home/jmendietaes/data/2021/chip/changeName.tsv"
 # path in which we will do the search and name changing
-focusPath="/home/jmendietaes/data/2021/singleCell/allProcessed/cloupes"
+focusPath="/home/jmendietaes/data/2021/ATAC/allProcessed/furtherAnalysis/02_firstATAC/HOMER/peakAnnotation"
 # If we want to do a test printing the change but not doing anything
 # posible answers are lowercase "yes" (ony print) or "no" (print and change)
 onlyTest="no"
@@ -35,16 +35,19 @@ fi
 for ni in "${!strings[@]}"; do
     string_=${strings[${ni}]}
     substitute_=${substitutes[${ni}]}
-    file=$(find ${focusPath} -maxdepth 1 -name *${string_}* | grep .)
+    # removing -maxdepth 1 to do the change recursively 
+    file=$(find ${focusPath} -maxdepth 1 -name "*${string_}*" | grep .)
 
     # if we found a match
     if [ ! -z "$file" ]; then 
         for fi in $file; do 
             basefi=$(basename ${fi})
+            # in case we do the change recursively (removing -maxdepth 1 in find command)
+            pathfi=$(dirname ${fi})
             newName=$(echo ${basefi} | sed "s/${string_}/${substitute_}/g")
             echo "$basefi   ---    $newName"
             if [ ${onlyTest} == "no" ]; then 
-                mv ${focusPath}/${basefi} ${focusPath}/${newName}
+                mv ${fi} ${pathfi}/${newName}
             fi
         done
     fi

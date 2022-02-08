@@ -5,9 +5,9 @@
 ## SLURM VARIABLES
 #SBATCH --job-name=bigwig_TMM
 #SBATCH --cpus-per-task=12
-#SBATCH --mem=12G
-#SBATCH --time=01-13:00:00
-#SBATCH -p medium
+#SBATCH --mem=5G
+#SBATCH --time=05:00:00
+#SBATCH -p short
 #SBATCH -o /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.out  
 #SBATCH -e /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.err 
 
@@ -18,7 +18,7 @@
 
 basePath="/home/jmendietaes/data/2021/chip/allProcessed"
 # Where to look for bam files and where to store output tree
-bamsPath="${basePath}/bamfiles/valid/subsampled_noIgG"
+bamsPath="${basePath}/bamfiles/valid/MEP_vs_GMP"
 outpath=${basePath}"/furtherAnalysis/subsampled_noIgG"
 
 # get list of bamfiles to scale
@@ -71,23 +71,23 @@ fileNotExistOrOlder () {
 
 # featureCount files start with this columns before the bam read counts
 #Geneid	Chr	Start	End	Strand	Length
-prevFields=6
-lengthCol=5
+# prevFields=6
+# lengthCol=5
 
-featureCpath=${outpath}/peakCalling/MACS2/consensusPeaks/featureCounts
-chip="allmerged"
-for peaktype in narrowPeak broadPeak; do
-    prefix="${chip}_${peaktype}_consensusPeaks"
-    featureOut=${featureCpath}/${prefix}.featureCounts.txt
-    scalingVals=${featureCpath}/${prefix}.featureCounts.TMMscaling.txt
+# featureCpath=${outpath}/peakCalling/MACS2/consensusPeaks/featureCounts
+# chip="allmerged"
+# for peaktype in narrowPeak broadPeak; do
+#     prefix="${chip}_${peaktype}_consensusPeaks"
+#     featureOut=${featureCpath}/${prefix}.featureCounts.txt
+#     scalingVals=${featureCpath}/${prefix}.featureCounts.TMMscaling.txt
 
-    Rscript ${scriptsPath}/ChIP/cluster/06_NR_getTMMscaling.R \
-                        -i ${featureOut} \
-                        -o ${scalingVals} \
-                        -l ${lengthCol} \
-                        -d ${prevFields}
+#     Rscript ${scriptsPath}/ChIP/cluster/06_NR_getTMMscaling.R \
+#                         -i ${featureOut} \
+#                         -o ${scalingVals} \
+#                         -l ${lengthCol} \
+#                         -d ${prevFields}
 
-done
+# done
 
 
 ############################################
@@ -109,7 +109,7 @@ for peaktype in narrowPeak; do
     fi
 
     prefix="${chip}_${peaktype}_consensusPeaks"
-    scalingVals=${featureCpath}/${prefix}.featureCounts.TMMscaling.txt
+    scalingVals=${featureCpath}/${prefix}.featureCounts.CPM.TMMscale.txt
 
     # check content of eleventh line of step control file
     for fi in ${allbams}; do

@@ -5,8 +5,8 @@
 ## SLURM VARIABLES
 #SBATCH --job-name=replyPeaks
 #SBATCH --cpus-per-task=8
-#SBATCH --mem=16G
-#SBATCH --time=02:00:00
+#SBATCH --mem=10G
+#SBATCH --time=12:00:00
 #SBATCH -p short
 #SBATCH -o /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.out  
 #SBATCH -e /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.err 
@@ -33,15 +33,16 @@ scriptsPath="/home/jmendietaes/programas/PhD"
 
 # extend variables
 bamsPath="${basePath}/bamfiles/valid/mergedReplicates"
-outpath=${basePath}"/furtherAnalysis/replicateAnalysis"
+outpath=${basePath}"/furtherAnalysis/subsampled_noIgG/replicateAnalysis"
 
 
 allbams=$(find ${bamsPath}/*bam -printf "${bamsPath}/%f\n" | \
             { grep -v -e "_input" -v -e "_IgG" || :; })
 allChip=$(\
     for filename in ${allbams}; do 
-        filename=$(basename ${filename})
-        mapLib=(${filename//_/ }); 
+        mapLib=(${filename//\./ }); 
+        mapLib=${mapLib[0]};
+        mapLib=(${mapLib//_/ }); 
         mapLib=${mapLib[1]}; 
         mapLib=(${mapLib//-/ }); 
         echo ${mapLib[0]}; done | sort | uniq)
@@ -123,6 +124,7 @@ done)
 for chip in ${chipCheck}; do
     for peaktype in narrowPeak broadPeak; do
         prefix="${chip}_${peaktype}_consensusPeaks"
+        echo ${prefix}
         coordFiles=$(find -L ${inPath}/peakCalling/MACS2/consensusPeaks/bySameChip/${chip}_${peaktype}_consensusPeaks.saf \
                                 -maxdepth 1  -type f ! -size 0 )
         # get a list with the bam files 
@@ -158,10 +160,11 @@ if [ ! -e ${outpath}/DESeq2/ ]; then
 	mkdir -p ${outpath}/DESeq2/
 fi
 
+echo -e "Starting DESeq analysis -----------------------\n"
 for chip in ${chipCheck}; do
-    for peaktype in narrowPeak broadPeak; do
+    for peaktype in narrowPeak; do
         prefixF="${chip}_${peaktype}_consensusPeaks"
-
+        echo ${prefixF}
         # first input is featureCounts file
         featureOut=${featureCpath}/${prefixF}.featureCounts.txt
 
@@ -186,3 +189,15 @@ for chip in ${chipCheck}; do
     done
 done
 
+
+# Gather all data
+cd ${outpath}/DESeq2/
+mkdir -p ${outpath}/DESeq2/gatheredDESeq
+for chip in *Peak; do 
+    for compare in ${chip}/*vs*; do 
+        cells=$(basename ${compare}); 
+        cp ${compare}/${cells}.deseq2.results.txt gatheredDESeq/${chip}_${cells}.deseq2.results.txt ; 
+    done;
+done
+
+echo -e "DESeq analysis - Finished -----------------------\n"

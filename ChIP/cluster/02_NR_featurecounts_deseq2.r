@@ -98,7 +98,8 @@ DDSFile <- paste(opt$outprefix,".dds.rld.RData",sep="")
 if (file.exists(DDSFile) == FALSE) {
     counts <- count.table[,samples.vec,drop=FALSE]
     coldata <- data.frame(row.names=colnames(counts),condition=groups)
-    dds <- DESeqDataSetFromMatrix(countData = round(counts), colData = coldata, design = ~ condition)
+    dds <- DESeqDataSetFromMatrix(countData = round(counts), colData = coldata, 
+                                design = ~ condition)
     dds <- DESeq(dds, parallel=TRUE, BPPARAM=MulticoreParam(opt$cores))
     if (!opt$vst) {
         rld <- rlog(dds)
@@ -207,7 +208,7 @@ if (file.exists(ResultsFile) == FALSE) {
 
         control.group <- comparisons[1,idx]
         treat.group <- comparisons[2,idx]
-        CompPrefix <- paste(control.group,treat.group,sep="vs")
+        CompPrefix <- paste(control.group,treat.group,sep="-vs-")
         cat("Saving results for ",CompPrefix," ...\n",sep="")
 
         CompOutDir <- paste(CompPrefix,'/',sep="")
