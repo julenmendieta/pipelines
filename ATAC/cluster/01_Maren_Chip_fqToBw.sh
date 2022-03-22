@@ -6,8 +6,8 @@
 #SBATCH --job-name=ATAC_fqToBw
 #SBATCH --cpus-per-task=12
 #SBATCH --mem=30G
-#SBATCH --time=00-08:00:00
-#SBATCH -p medium
+#SBATCH --time=00-20:00:00
+#SBATCH -p short
 #SBATCH -o /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.out  
 #SBATCH -e /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.err 
 

@@ -6,8 +6,8 @@
 #SBATCH --job-name=peakAnalysis
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=20G
-#SBATCH --time=1-04:00:00
-#SBATCH -p medium
+#SBATCH --time=24:00:00
+#SBATCH -p short
 #SBATCH -o /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.out  
 #SBATCH -e /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.err 
 

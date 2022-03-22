@@ -27,13 +27,21 @@ basePath=$1
 extraFilePath=$2
 #extraFilePath="/home/jmendietaes/data/2021/chip/analysisFiles"
 
+# Important paremeter to modify
+# Set to lowercase yes to use merge of IgG from different cells allCell_IgG.sort.r..
+# as control in cells with no control. Otherwise to No
+# This Igg file has to be in the bams folder inside of a folder 
+# called cellMergeIgG
+useMergeIgG="yes"
+
+
 
 # path for the location of the pipeline scripts
 scriptsPath="/home/jmendietaes/programas/PhD"
 
 # extend variables
-bamsPath="${basePath}/bamfiles/valid"
-outpath=${basePath}"/furtherAnalysis"
+bamsPath="${basePath}/bamfiles/valid/subsampled_noIgG"
+outpath=${basePath}"/furtherAnalysis/subsampled_noIgG"
 # Number of genomic bins to use when calculating fingerprint plot (Default: 500000)
 fingerprint_bins=500000
 allbams=$(find ${bamsPath}/*bam -printf "${bamsPath}/%f ")
@@ -144,16 +152,17 @@ spp_correlation_header="${extraFilePath}/spp_correlation_header.txt"
 spp_nsc_header="${extraFilePath}/spp_nsc_header.txt"
 spp_rsc_header="${extraFilePath}/spp_rsc_header.txt"
 
+# Create output dir
+if [ ! -e ${outpath}/phantompeak/extraData ]; then
+    mkdir -p ${outpath}/phantompeak/extraData
+fi
+
 # create common nsc and rsc file
 if [ ! -e ${outpath}/phantompeak/allChIP_spp_nsc.tsv ]; then
     cat $spp_nsc_header > ${outpath}/phantompeak/allChIP_spp_nsc.tsv
     cat $spp_rsc_header > ${outpath}/phantompeak/allChIP_spp_rsc.tsv
 fi
 
-# Create output dir
-if [ ! -e ${outpath}/phantompeak/extraData ]; then
-    mkdir -p ${outpath}/phantompeak/extraData
-fi
 
 RUN_SPP="${scriptsPath}/ChIP/cluster/02_NR_run_spp.R"
 
@@ -217,16 +226,22 @@ allCell=`for filename in ${allLabels}; do
             echo ${mapLib[0]}; done | sort | uniq`
 
 ## then we go for each cell
-for cell in `echo ${allCell} | tr ' ' '\n' `; do
+for cell in ${allCell}; do
     echo $cell
-    cellChip=`echo ${allLabels} | tr ' ' '\n' | grep ${cell}`
+    cellChip=`echo ${allLabels} | tr ' ' '\n' | grep "${cell}_"`
     cellChip=`for filename in ${cellChip}; do 
             mapLib=(${filename//_/ }); mapLib=${mapLib[1]}; mapLib=(${mapLib//-/ }); 
             echo ${mapLib[0]}; done | grep -v input | grep -v IgG | sort | uniq`
     # Dont know why but in submited jobs this might fail when there are no controls
     # so i need a back up plan
     cellControls=`echo ${allbams} | tr ' ' '\n' | grep "${cell}_" | \
-                    { grep -e "input" -e "IgG" || :; }`
+                    { grep -e "_input" -e "_IgG" || :; }`
+
+    # IMPORTANT
+    # if we have no control for this cell and stated useMergeIgG to Yes we use the merge
+    if [[ $useMergeIgG == "yes" ]] && [[ $cellControls == "" ]]; then
+        cellControls=`find ${bamsPath}/cellMergeIgG/allCell_*bam`
+    fi
 
     # proceed only if we have controls
     if [[ ! $cellControls == "" ]] ; then

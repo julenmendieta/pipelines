@@ -20,6 +20,10 @@
 # call peaks, annotate, make consensus peaks, get reads in peaks, CPM and merge
 # all in same table
 
+# Where to look for bam files and where to store output tree
+bamsPath="${basePath}/bamfiles/valid/02_firstATAC"
+outpath=${basePath}"/furtherAnalysis/02_firstATAC"
+
 # Important paremeter to modify
 # Set to lowercase yes to use merge of IgG from different cells allCell_IgG.sort.r..
 # as control in cells with no control. Otherwise to No
@@ -27,7 +31,7 @@
 # called cellMergeIgG
 useMergeIgG="no"
 # Set to lowercase "yes" to get consensus peaks of all ChIPs and cells
-doAllMerge="yes"
+doAllMerge="no"
 
 # FILE NAMING FORMAT
 # [cellType]_[chip]_[date]_[extra?].[bamfilteringKeys].bam
@@ -61,7 +65,6 @@ basePath=$1
 #extraFilePath=$2
 #extraFilePath="/home/jmendietaes/data/2021/chip/analysisFiles"
 
-
 # path for the location of the pipeline scripts
 scriptsPath="/home/jmendietaes/programas/PhD"
 # species shortcut for MACS
@@ -70,10 +73,6 @@ speciesGenome="mm10"
 # Path to used genomic reference
 REFERENCE_DIR="/home/jmendietaes/referenceGenomes/mm10_reordered/mm10.reordered"
 chr_genome_size=$REFERENCE_DIR".sizes"
-
-# Where to look for bam files and where to store output tree
-bamsPath="${basePath}/bamfiles/valid/02_firstATAC"
-outpath=${basePath}"/furtherAnalysis/02_firstATAC"
 
 # Path to bedgraphToBigwig script
 bedGraphToBigWig="/home/jmendietaes/programas/PhD/general/bedGraphToBigWig"

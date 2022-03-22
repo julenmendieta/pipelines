@@ -37,7 +37,7 @@
 #'CACCG(.{20})GT'
 
 # the files stored in samplesNames.txt are the ones that will be analysed
-# for lib in ../../Lib*; do cd $lib/fastq; N=`cat samplesNames.txt | \
+# for lib in ../../Lib*; do cd $lib/demux_fastq; N=`cat samplesNames.txt | \
 # wc -l`; path1=`realpath $lib` ; path2=`basename $path1`; \
 # path2="/home/jmendietaes/data/2021/CRISPR/allProcessed/$path2"; \
 # echo "sbatch --array=1-${N} 00_MECC_sgRNA_v1.1.sh ${path1} ${path2} \
@@ -83,7 +83,7 @@ extraSTR="_001"
 
 #######################################################################################
 # these ones shouldnt need to be modified if we are using the right folder structure
-FASTQ_DIR=$PARENT_DIR"/fastq"
+FASTQ_DIR=$PARENT_DIR"/demux_fastq"
 EDITED_DIR=$PARENT_DIR"/pipelineOut"
 #FASTQC_DIR=$EDITED_DIR"/fastQC"
 

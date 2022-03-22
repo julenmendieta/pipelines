@@ -15,7 +15,7 @@
 # DO NOT USE home relative paths (~/)
 inTable="/home/jmendietaes/data/2021/chip/changeName.tsv"
 # path in which we will do the search and name changing
-focusPath="/home/jmendietaes/data/2021/ATAC/allProcessed/furtherAnalysis/02_firstATAC/HOMER/peakAnnotation"
+focusPath="/home/jmendietaes/data/2021/ATAC/sequencedData/NextSeq2000.RUN63.20220315/demux_fastq"
 # If we want to do a test printing the change but not doing anything
 # posible answers are lowercase "yes" (ony print) or "no" (print and change)
 onlyTest="no"

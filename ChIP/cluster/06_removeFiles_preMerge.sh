@@ -1,6 +1,6 @@
 # Script to delete all files from analysis that will be done again
 # Add here unique IDs of each sample separated by a space
-removeChip="GMP_Brd9 MEP_Brd9 GMP_Kmt2a MEP_Kmt2a GMP_Kmt2d MEP_Kmt2d"
+removeChip="GMP_Kmt2a GMP_Kmt2d MEP_Kmt2a MEP_Kmt2d GMP_Brd9 MEP_Brd9"
 basePath=/home/jmendietaes/data/2021/chip/allProcessed
 outpath=${basePath}"/furtherAnalysis/subsampled_noIgG"
 if [ ! -e ${outpath}/peakCalling/MACS2/peaks/mergedReplicates ]; then

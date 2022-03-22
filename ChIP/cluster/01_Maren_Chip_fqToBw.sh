@@ -10,6 +10,8 @@
 #SBATCH -p medium
 #SBATCH -o /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.out  
 #SBATCH -e /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.err 
+#SBATCH --dependency=afterany:624523
+
 
 ##SBATCH --mail-type=END
 ##SBATCH --mail-user=user@mail.es
@@ -496,4 +498,4 @@ echo -e "END --------------------------------------------------"
 
 seff $SLURM_JOBID
 
-exit 1
+exit 0

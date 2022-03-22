@@ -1,0 +1,64 @@
+# This scripts is used to get bed files with the bound motif coordinates that lie
+# in given focus loci
+
+
+#Get overlap of bound TF coordinates with given ranges
+# Base path were we have output from TOBIAS
+basepath="/scratch/julen/ATAC/allData/03_nisha/TOBIAS"
+# Path to file with regions we want to look into
+focusReg="/scratch/julen/ATAC/allData/03_nisha/TOBIAS/intersections/focusCoord1.bed"
+# Define cells to look in
+cells="DM"
+# Label for control samples
+controlLabel=V12h
+
+
+
+######## RUN
+
+# Get id of focus file name
+id1=$(basename ${focusReg})
+id1=${id1::-4}
+if [ ! -e ${basepath}/intersections/${id1} ]; then
+	mkdir -p ${basepath}/intersections/${id1}
+fi
+
+
+for cell in $cells; do
+    kos=$(find ${basepath}/${cell}/${cell}* -maxdepth 0 -printf "%f ")
+    for ko in ${kos}; do 
+        koProt=(${ko//_/ }); 
+        koProt=${koProt[0]}; 
+        koProt=(${koProt//-/ });
+        koProt=${koProt[1]};
+
+        # # since we have to many files, prepare to ireate every 100
+        # infiles=$(ls ${basepath}/${cell}/${ko}/bindetect_output/*/beds/*${ko}*_bound.bed | tr ' ' '\n')
+        # echo $infiles | tr ' ' '\n' | sed -n '1,13p;14q'
+        # nfiles=$(echo $infiles | wc -l)
+        # maxHundred=$(((nfiles / 100) + 1))
+        # range=$(for i in $(seq 1 $maxHundred); do echo $i; done)
+        # prev=0
+
+        # intersection for KO cell
+        bedtools intersect -a $focusReg \
+                            -b ${basepath}/${cell}/${ko}/bindetect_output/*/beds/*${ko}*_bound.bed \
+                            -wb > ${basepath}/intersections/${id1}/${ko}_${koProt}_bound_intersection.temp
+
+        awk '{ print $6"\t"$7"\t"$8"\t"$9 }' \
+                ${basepath}/intersections/${id1}/${ko}_${koProt}_bound_intersection.temp > \
+                ${basepath}/intersections/${id1}/${ko}_${koProt}_bound_intersection.bed
+        rm ${basepath}/intersections/${id1}/${ko}_${koProt}_bound_intersection.temp
+
+        # intersection for control cell
+        bedtools intersect -a $focusReg \
+                            -b ${basepath}/${cell}/${ko}/bindetect_output/*/beds/*${controlLabel}*_bound.bed \
+                            -wb > ${basepath}/intersections/${id1}/${ko}_${controlLabel}_bound_intersection.temp
+
+        awk '{ print $6"\t"$7"\t"$8"\t"$9 }' \
+                ${basepath}/intersections/${id1}/${ko}_${controlLabel}_bound_intersection.temp > \
+                ${basepath}/intersections/${id1}/${ko}_${controlLabel}_bound_intersection.bed
+        rm ${basepath}/intersections/${id1}/${ko}_${controlLabel}_bound_intersection.temp
+
+    done
+done

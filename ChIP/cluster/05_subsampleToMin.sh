@@ -23,7 +23,7 @@ basePath=$1
 #basePath="/home/jmendietaes/data/2021/chip/allProcessed"
 
 # cells to be counted at the time to subsample (separated by \|)
-subsampleCells="GMP_\|MEP_"
+subsampleCells="DM_\|Mye_"
 
 bamsPath="${basePath}/bamfiles/valid"
 subOut="${bamsPath}/subsampled"

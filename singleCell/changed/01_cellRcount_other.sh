@@ -3,11 +3,11 @@
 
 ##===============================================================================
 ## SLURM VARIABLES
-#SBATCH --job-name=cellRrun
+#SBATCH --job-name=cellRrunOther
 #SBATCH --cpus-per-task=24
-#SBATCH --mem=40Gb
-#SBATCH --time=20:00:00
-#SBATCH -p short
+#SBATCH --mem=50Gb
+#SBATCH --time=2-20:00:00
+#SBATCH -p medium
 #SBATCH -o /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.out  
 #SBATCH -e /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.err 
 ##SBATCH --dependency=afterany:599711
@@ -16,7 +16,7 @@
 # original ram was 258Gb, and cpu 24
 
 # HOW TO RUN ME
-#sbatch /home/jmendietaes/programas/PhD/singleCell/changed/01_cellRcount_new.sh
+#sbatch /home/jmendietaes/programas/PhD/singleCell/changed/01_cellRcount_other.sh
 
 # OBJECTIVE
 # run cellRanger
@@ -28,11 +28,12 @@
 basepath="/home/jmendietaes/data/2021/singleCell"
 
 # Features file path
-featurePath="/home/jmendietaes/data/2021/singleCell/allProcessed/rangerFiles/ECCITE8_Features_ensgs.csv"
+featurePath="/home/jmendietaes/data/2021/singleCell/allProcessed/rangerFiles/ECCITE8_Features_ensgs_plusAntibody.csv"
 
 # base name of the files to check (separated by space)
 # avoid adding _Library.csv, it will be added later
-filesCheck="inVivo_Test_ckit_14d_1 inVivo_Test_ckit_7d_1 inVivo_Test_ckit_7d_2 inVivo_NTC_lin-andckit_14d_1"
+filesCheck="DM_OP4_NM_6d_1 DM_OP3_NM_6d_1 DM_OP2_NM_6d_3 DM_OP2_NM_6d_2 \
+DM_OP0_NM_6d_1"
 
 
 # Path where we will store output data

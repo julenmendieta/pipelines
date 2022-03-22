@@ -3,7 +3,7 @@
 
 ##===============================================================================
 ## SLURM VARIABLES
-#SBATCH --job-name=peakAnalysis
+#SBATCH --job-name=specificBigwig
 #SBATCH --cpus-per-task=12
 #SBATCH --mem=12G
 #SBATCH --time=08:00:00
@@ -15,10 +15,10 @@
 # add in the list bellow the bam file names (but the .bam termination)
 #sbatch /home/jmendietaes/programas/PhD/ATAC/cluster/06d_bigwig_fromList.sh
 
-files="LSK-NTC_ATAC-merged.sort.rmdup.rmblackls.rmchr \
-LSK-WDR82_ATAC-merged.sort.rmdup.rmblackls.rmchr \
-Mye-NTC_ATAC-merged.sort.rmdup.rmblackls.rmchr \
-Mye-WDR82_ATAC-merged.sort.rmdup.rmblackls.rmchr"
+files="LSK-Smarcd2_ATAC2-merged.sort.rmdup.rmblackls.rmchr.Tn5 \
+LSK-WT_ATAC3-merged.sort.rmdup.rmblackls.rmchr.Tn5.bam \
+LSK-Kmt2d_ATAC2-merged.sort.rmdup.rmblackls.rmchr.Tn5 \
+LSK-Hdac3_ATAC3-merged.sort.rmdup.rmblackls.rmchr.Tn5.bam"
 
 basePath="/home/jmendietaes/data/2021/ATAC/allProcessed"
 REFERENCE_DIR="/home/jmendietaes/referenceGenomes/mm10_reordered/mm10.reordered"

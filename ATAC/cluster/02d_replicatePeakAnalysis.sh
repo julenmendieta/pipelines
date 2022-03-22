@@ -3,28 +3,28 @@
 
 ##===============================================================================
 ## SLURM VARIABLES
-#SBATCH --job-name=replyPeaks
+#SBATCH --job-name=replyATAC
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=16G
-#SBATCH --time=02:00:00
+#SBATCH --time=04:00:00
 #SBATCH -p short
 #SBATCH -o /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.out  
 #SBATCH -e /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.err 
 
 # HOW TO RUN ME
 #sbatch /home/jmendietaes/programas/PhD/ATAC/cluster/02d_replicatePeakAnalysis.sh \
-#/home/jmendietaes/data/2021/ATAC/allProcessed \
+#/home/jmendietaes/data/2021/ATAC/allProcessed/bamfiles/valid/mergedReplicates/02_firstATAC \
 #/home/jmendietaes/data/2021/ATAC/allProcessed/furtherAnalysis/02_firstATAC \
 
 
-# path where we have the folder structure for chip analysis 
-# (inside we have ${basePath}/bamfiles/valid/)
-basePath=$1
-#basePath="/home/jmendietaes/data/2021/chip/allProcessed"
+# path where we have the replicate files
+# (inside we have ${replicatesPath}/bamfiles/valid/)
+replicatesPath=$1
+#replicatesPath="/home/jmendietaes/data/2021/ATAC/allProcessed/bamfiles/valid/mergedReplicates/02_firstATAC"
 # Path to the outpath folder where we run 02b_peakAnalysis_I.sh
 # and where we have the folder tree with the consensus peaks
 inPath=$2
-#inPath="${basePath}/furtherAnalysis/02_firstATAC"
+#inPath="/home/jmendietaes/data/2021/ATAC/allProcessed/furtherAnalysis/02_firstATAC"
 
 # State how to merge chip files (appart from whole merge)
 # Options are: chip, cellfirst, and cell. That state for
@@ -32,13 +32,17 @@ inPath=$2
 # and removing all after "-", and whole first name slot in between "_"
 mergeBy="cellfirst"
 
-# path for the location of the pipeline scripts
-scriptsPath="/home/jmendietaes/programas/PhD"
+# Set to TRUE if you want to compare only by batches
+byBatch=TRUE
 
 # extend variables
-bamsPath="${basePath}/bamfiles/valid/mergedReplicates"
-outpath=${basePath}"/furtherAnalysis/02_firstATAC/replicateAnalysis"
+bamsPath="${replicatesPath}"
+outpath=${inPath}"/replicateAnalysis"
 
+
+
+# path for the location of the pipeline scripts
+scriptsPath="/home/jmendietaes/programas/PhD"
 
 allbams=$(find ${bamsPath}/*bam -printf "${bamsPath}/%f\n" | \
             { grep -v -e "_input" -v -e "_IgG" || :; })
@@ -158,7 +162,7 @@ for chip in ${mergeGroups}; do
 done)
 
 for chip in ${chipCheck}; do
-    for peaktype in narrowPeak broadPeak; do
+    for peaktype in narrowPeak; do
         prefix="${chip}_${peaktype}_consensusPeaks"
         coordFiles=$(find -L ${inPath}/peakCalling/MACS2/consensusPeaks/bySameChip/${chip}_${peaktype}_consensusPeaks.saf \
                                 -maxdepth 1  -type f ! -size 0 )
@@ -200,7 +204,7 @@ if [ ! -e ${outpath}/DESeq2/ ]; then
 fi
 
 for chip in ${chipCheck}; do
-    for peaktype in narrowPeak broadPeak; do
+    for peaktype in narrowPeak; do
         prefixF="${chip}_${peaktype}_consensusPeaks"
 
         # first input is featureCounts file
@@ -257,13 +261,14 @@ for chip in ${chipCheck}; do
 
         
 
-        Rscript ${scriptsPath}/ChIP/cluster/02_NR_featurecounts_deseq2.r \
+        Rscript ${scriptsPath}/ATAC/cluster/02_NR_featurecounts_deseq2.r \
                 --featurecount_file ${featureOut} \
-                --bam_suffix '.sort.rmdup.rmblackls.rmchr.bam' \
+                --bam_suffix '.sort.rmdup.rmblackls.rmchr.Tn5.bam' \
                 --outdir ${outpath}/DESeq2/${chip}_${peaktype}/ \
                 --outprefix $prefix \
                 --outsuffix '' \
-                --cores ${SLURM_CPUS_PER_TASK}
+                --cores ${SLURM_CPUS_PER_TASK} \
+                --bybatch ${byBatch}
     done
 done
 
