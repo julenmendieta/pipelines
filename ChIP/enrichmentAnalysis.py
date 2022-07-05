@@ -56,7 +56,8 @@ def download_wait(directory, timeout, nfiles=None):
     return seconds
 
 def getGREATout(GREATout, infile, minGene=3, minGeneGO=5, maxGeneGO=500,
-               executable_path='chromedriver', interactive=False):
+               executable_path='chromedriver', interactive=False,
+               backGround=False):
     '''
     Function to acces GREAT GO webpage and get GO associated to a specific
         coordinate file
@@ -100,8 +101,19 @@ def getGREATout(GREATout, infile, minGene=3, minGeneGO=5, maxGeneGO=500,
     # click on it
     species_tick.click()
 
-    # uppload file
+    # uppload test regions file
     driver.find_element_by_id("fgFile").send_keys(infile)
+    
+    # Uppload background file if present
+    if backGround != False:
+        # Select the bed file box in background regions
+        backg_tick = driver.find_element_by_xpath("/html/body/div[2]/div[4]/div/form/fieldset/div[3]/div/ul/li[2]/label/input")
+        # click on it
+        backg_tick.click()
+
+        # uppload file
+        driver.find_element_by_id("bgFile").send_keys(backGround)
+    
 
     # submit
     submit_buttom = driver.find_element_by_id("submit_button")
@@ -113,6 +125,11 @@ def getGREATout(GREATout, infile, minGene=3, minGeneGO=5, maxGeneGO=500,
     ## job page
     #get current tab handle
     mainTab = driver.current_window_handle
+    
+    # Open distances section if we used background
+    if backGround != False:
+        distances_button = driver.find_element_by_xpath("/html/body/div[2]/div[12]/div/h3/a/img")
+        distances_button.click()
 
     # histogram with distances to TSS (opens new tab)
     xpathSection=13
@@ -187,41 +204,58 @@ saturation of the gene-based hypergeometric test.")
 ################### Plot related
 
 def greatToDf(GREATout, minGreatP, BinomFdrQ, HyperFdrQ, Ontology, 
-             Desc, goID, BinomP, ObsGenes, TotalGenes):
+             Desc, goID, BinomP, ObsGenes, TotalGenes,
+             backGround=False):
     GreatOut = defaultdict(list)
     with open(f"{GREATout}/greatExportAll.tsv", 'r') as f:
         header = f.readline()
         header = f.readline()
         header = f.readline()
         header = f.readline()[2:-1].split('\t')
+        
         for line in f:
             if not line.startswith('#'):
                 line = line.split('\t')
                 # Store only significnat terms
-                if ((float(line[BinomFdrQ]) < minGreatP) and 
-                    (float(line[HyperFdrQ]) < minGreatP)):
-                    GreatOut['Ontology'] += [line[Ontology]]
-                    GreatOut['GO description'] += [line[Desc]]
-                    GreatOut['ID'] += [line[goID]]
-                    GreatOut['-log10(Binomial p value)'] += [-np.log10(float(line[BinomP]))]
-                    GreatOut['% of observed genes'] += [round((int(line[ObsGenes]) / int(line[TotalGenes])) * 100, 2)]
+                store = False
+                if backGround == False:
+                    if ((float(line[BinomFdrQ]) < minGreatP) and 
+                        (float(line[HyperFdrQ]) < minGreatP)):
+                        GreatOut['Ontology'] += [line[Ontology]]
+                        GreatOut['GO description'] += [line[Desc]]
+                        GreatOut['ID'] += [line[goID]]
+                        GreatOut['-log10(Binomial p value)'] += [-np.log10(float(line[BinomP]))]
+                        GreatOut['% of observed genes'] += [round((int(line[ObsGenes]) / int(line[TotalGenes])) * 100, 2)]
+                else:
+                    if float(line[HyperFdrQ]) < minGreatP:
+                        GreatOut['Ontology'] += [line[Ontology]]
+                        GreatOut['GO description'] += [line[Desc]]
+                        GreatOut['ID'] += [line[goID]]
+                        GreatOut['-log10(Hyper FDR Q-Val)'] += [-np.log10(float(line[HyperFdrQ]))]
 
     df_great = pd.DataFrame.from_dict(GreatOut)
     return df_great
 
 
 def plotGreat(df_onto2, title='', plot1='-log10(Binomial p value)',
-             plot2 = '% of observed genes', yLabel='GO description',
+             plot2 = False, yLabel='GO description',
              color=None, palette=None, figsize=(20, 8)):
 
-    if figsize == 'auto':
-        figsize = (20, max((0.35 * len(df_onto2.index)) + 1, 3))
+    
+    if plot2 == False:
+        ncol = 1
+        if figsize == 'auto':
+            figsize = (10, max((0.35 * len(df_onto2.index)) + 1, 3))
+    else:
+        ncol = 2
+        if figsize == 'auto':
+            figsize = (20, max((0.35 * len(df_onto2.index)) + 1, 3))
     
     fig = plt.figure(figsize=figsize)
     #ax = fig.add_subplot(2, 1, 1)
     #ax2 = fig.add_subplot(2, 2, 1)
 
-    ax1 = plt.subplot2grid((len(df_onto2.index), 2), (0, 0), colspan=1, rowspan=len(df_onto2.index))
+    ax1 = plt.subplot2grid((len(df_onto2.index), ncol), (0, 0), colspan=1, rowspan=len(df_onto2.index))
     sns.barplot(y=yLabel, x=plot1, data=df_onto2, orient='h', 
                        order=df_onto2[yLabel], ax=ax1, color=color, palette=palette)
 
@@ -229,16 +263,18 @@ def plotGreat(df_onto2, title='', plot1='-log10(Binomial p value)',
     ax1.set_xlabel(plot1)
 
     # set axis limit
-    ax1.set_xlim(min(df_onto2[plot1]) * 0.9, max(df_onto2[plot1]) * 1.01)
+    maxi = max(d for d in df_onto2[plot1] if np.isinf(d) == False)
+    ax1.set_xlim(np.nanmin(df_onto2[plot1]) * 0.9, maxi * 1.01)
 
-    ax2 = plt.subplot2grid((len(df_onto2.index), 2), (0, 1), colspan=1,  rowspan=len(df_onto2.index))
-    sns.barplot(y=yLabel, x=plot2, data=df_onto2, orient='h', 
-                       order=df_onto2[yLabel], ax=ax2, color=color, palette=palette)
-    
-    ax2.set_xlim(0, 100)
-    ax2.set_yticks([])
-    ax2.grid(zorder=0)
-    ax2.set_xlabel(plot2)
+    if plot2 != False:
+        ax2 = plt.subplot2grid((len(df_onto2.index), ncol), (0, 1), colspan=1,  rowspan=len(df_onto2.index))
+        sns.barplot(y=yLabel, x=plot2, data=df_onto2, orient='h', 
+                           order=df_onto2[yLabel], ax=ax2, color=color, palette=palette)
+
+        ax2.set_xlim(0, 100)
+        ax2.set_yticks([])
+        ax2.grid(zorder=0)
+        ax2.set_xlabel(plot2)
 
     if title != '':
         fig.suptitle(title)

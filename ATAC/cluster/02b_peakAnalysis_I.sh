@@ -20,6 +20,15 @@
 # call peaks, annotate, make consensus peaks, get reads in peaks, CPM and merge
 # all in same table
 
+# path where we have the folder structure for chip analysis 
+# (inside we have ${basePath}/bamfiles/valid/)
+basePath=$1
+#basePath="/home/jmendietaes/data/2021/ATAC/allProcessed"
+# Location of the analysis header files downloaded from 
+# https://github.com/nf-core/chipseq/tree/master/assets/multiqc
+#extraFilePath=$2
+#extraFilePath="/home/jmendietaes/data/2021/chip/analysisFiles"
+
 # Where to look for bam files and where to store output tree
 bamsPath="${basePath}/bamfiles/valid/02_firstATAC"
 outpath=${basePath}"/furtherAnalysis/02_firstATAC"
@@ -54,16 +63,6 @@ mergeBy="cellfirst"
 # EN ALGUN SITIO EN CONCRETO DONDE COINCIDAN LAS REPLICAS DE LA MISMA MUESTRA
 # pero tambien voy a sacar los picos de las muestras por separado
 # a MACS2 se le puede pasar los BAM en separado y el los junta
-
-
-# path where we have the folder structure for chip analysis 
-# (inside we have ${basePath}/bamfiles/valid/)
-basePath=$1
-#basePath="/home/jmendietaes/data/2021/ATAC/allProcessed"
-# Location of the analysis header files downloaded from 
-# https://github.com/nf-core/chipseq/tree/master/assets/multiqc
-#extraFilePath=$2
-#extraFilePath="/home/jmendietaes/data/2021/chip/analysisFiles"
 
 # path for the location of the pipeline scripts
 scriptsPath="/home/jmendietaes/programas/PhD"

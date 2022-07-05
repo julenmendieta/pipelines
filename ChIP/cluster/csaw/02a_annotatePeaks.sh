@@ -32,9 +32,6 @@ speciesGenome="mm10"
 export PATH="/home/jmendietaes/programas/miniconda3/envs/Renv/bin:$PATH"
 export PATH="/home/jmendietaes/programas/miniconda3/bin:$PATH"
 
-module load SAMtools/1.12-GCC-10.2.0
-module load MACS2/2.2.7.1-foss-2018b-Python-3.6.6
-module load BEDTools/2.27.1-foss-2018b
 module load Homer/4.10-foss-2018b
 
 ##===============================================================================
