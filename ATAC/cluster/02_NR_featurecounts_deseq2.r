@@ -109,6 +109,10 @@ if (file.exists(DDSFile) == FALSE) {
         rld <- vst(dds)
     }
     save(dds,rld,file=DDSFile)
+} else {
+    load(DDSFile)
+    counts <- count.table[,samples.vec,drop=FALSE]
+    coldata <- data.frame(row.names=colnames(counts),condition=groups)
 }
 
 ################################################
@@ -184,9 +188,9 @@ if (file.exists(NormFactorsFile) == FALSE) {
 
 LogFile <- paste(opt$outprefix,".log",sep="")
 if (file.exists(LogFile) == FALSE) {
-    cat("\nSamples =",samples.vec,"\n\n",file=LogFile,append=TRUE,sep=', ')
+    cat("\nSamples =",samples.vec,"\n\n",file=LogFile,append=FALSE,sep=', ')
     cat("Groups =",groups,"\n\n",file=LogFile,append=TRUE,sep=', ')
-    cat("Dimensions of count matrix =",dim(counts),"\n\n",file=LogFile,append=FALSE,sep=' ')
+    cat("Dimensions of count matrix =",dim(counts),"\n\n",file=LogFile,append=TRUE,sep=' ')
     cat("\n",file=LogFile,append=TRUE,sep='')
 }
 
@@ -295,11 +299,12 @@ for (batch in batches) {
             colnames(comp.df) <- paste(CompPrefix,".",colnames(comp.df),sep="")
             deseq2_results_list[[idx]] <- comp.df
         }
+        ## WRITE RESULTS FROM ALL COMPARISONS TO FILE
+        deseq2_results_table <- cbind(interval.table,do.call(cbind, deseq2_results_list),raw.counts,pseudo.counts)
+        write.table(deseq2_results_table, file=ResultsFile, col.names=TRUE, row.names=FALSE, sep='\t', quote=FALSE)
+
     }
 
-    ## WRITE RESULTS FROM ALL COMPARISONS TO FILE
-    deseq2_results_table <- cbind(interval.table,do.call(cbind, deseq2_results_list),raw.counts,pseudo.counts)
-    write.table(deseq2_results_table, file=ResultsFile, col.names=TRUE, row.names=FALSE, sep='\t', quote=FALSE)
 }
 
     

@@ -42,6 +42,10 @@
 # path2="/home/jmendietaes/data/2021/CRISPR/allProcessed/$path2"; \
 # echo "sbatch --array=1-${N} 00_MECC_sgRNA_v1.1.sh ${path1} ${path2} \
 # /home/jmendietaes/referenceGenomes/sgRNA_indexes/bowtie2 'CACCG(.{20})GT'"; done
+
+# Files must have the S[0-9]_R[12]_001.fastq.gz structure, otherwise R script in
+# next step will fail with rbind message
+
 ##===============================================================================
 ## GLOBAL VARIABLES
 # the base ones to modify

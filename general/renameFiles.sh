@@ -13,9 +13,9 @@
 ########## TO CHANGE ###########
 # Path to the table with 2 columns (string\tsubstitute)
 # DO NOT USE home relative paths (~/)
-inTable="/home/jmendietaes/data/2021/chip/changeName.tsv"
+inTable="/home/jmendietaes/prueba/rename.txt"
 # path in which we will do the search and name changing
-focusPath="/home/jmendietaes/data/2021/ATAC/sequencedData/NextSeq2000.RUN63.20220315/demux_fastq"
+focusPath="/home/jmendietaes/data/2021/ATAC/sequencedData/NextSeq2000.RUN83.20220608/demux_fastq"
 # If we want to do a test printing the change but not doing anything
 # posible answers are lowercase "yes" (ony print) or "no" (print and change)
 onlyTest="no"
@@ -36,6 +36,7 @@ for ni in "${!strings[@]}"; do
     string_=${strings[${ni}]}
     substitute_=${substitutes[${ni}]}
     # removing -maxdepth 1 to do the change recursively 
+    #file=$(find ${focusPath} -maxdepth 1 -name "*${string_}*" | grep .)
     file=$(find ${focusPath} -maxdepth 1 -name "*${string_}*" | grep .)
 
     # if we found a match

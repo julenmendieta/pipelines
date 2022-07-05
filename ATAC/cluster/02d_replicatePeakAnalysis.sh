@@ -6,7 +6,7 @@
 #SBATCH --job-name=replyATAC
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=16G
-#SBATCH --time=04:00:00
+#SBATCH --time=10:00:00
 #SBATCH -p short
 #SBATCH -o /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.out  
 #SBATCH -e /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.err 
@@ -14,7 +14,7 @@
 # HOW TO RUN ME
 #sbatch /home/jmendietaes/programas/PhD/ATAC/cluster/02d_replicatePeakAnalysis.sh \
 #/home/jmendietaes/data/2021/ATAC/allProcessed/bamfiles/valid/mergedReplicates/02_firstATAC \
-#/home/jmendietaes/data/2021/ATAC/allProcessed/furtherAnalysis/02_firstATAC \
+#/home/jmendietaes/data/2021/ATAC/allProcessed/furtherAnalysis/02_firstATAC 
 
 
 # path where we have the replicate files
@@ -34,6 +34,14 @@ mergeBy="cellfirst"
 
 # Set to TRUE if you want to compare only by batches
 byBatch=TRUE
+
+# Coma separated string with all posible control IDs 
+# Used for batch corrected analysis of same KOs
+# Set to "no" to not do it
+posibleControls="NTC,WT,NTC0005,NTC5,V12h"
+#posibleControls="no"
+# If we want to include bamfiles with no replicates in the sae batch
+extraBamsPath="/home/jmendietaes/data/2021/ATAC/allProcessed/bamfiles/valid/02_firstATAC"
 
 # extend variables
 bamsPath="${replicatesPath}"
@@ -135,9 +143,15 @@ fileNotExistOrOlder () {
 
 # create new folders
 featureCpath=${outpath}/featureCounts
+featureCpath_batch=${outpath}/featureCounts_batchCorrect
 if [ ! -e ${featureCpath} ]; then
 	mkdir -p ${featureCpath}
 fi
+if [[ ${posibleControls} != "no" ]]; then
+    mkdir -p ${featureCpath_batch}
+fi
+
+
 cd ${featureCpath}
 
 echo -e "Starting consensus same-chip featureCounts -----------------------\n"
@@ -162,7 +176,7 @@ for chip in ${mergeGroups}; do
 done)
 
 for chip in ${chipCheck}; do
-    for peaktype in narrowPeak; do
+    for peaktype in broadPeak; do
         prefix="${chip}_${peaktype}_consensusPeaks"
         coordFiles=$(find -L ${inPath}/peakCalling/MACS2/consensusPeaks/bySameChip/${chip}_${peaktype}_consensusPeaks.saf \
                                 -maxdepth 1  -type f ! -size 0 )
@@ -201,74 +215,92 @@ echo -e "Consensus same-chip featureCounts - Finished ----------------------\n"
 
 if [ ! -e ${outpath}/DESeq2/ ]; then
 	mkdir -p ${outpath}/DESeq2/
+    mkdir -p ${outpath}/DESeq2_batchCorrect/
 fi
 
 for chip in ${chipCheck}; do
-    for peaktype in narrowPeak; do
+    for peaktype in broadPeak; do
         prefixF="${chip}_${peaktype}_consensusPeaks"
 
         # first input is featureCounts file
         featureOut=${featureCpath}/${prefixF}.featureCounts.txt
 
-        # get compared cells to add them at name
-        if [[ ${mergeBy} == "chip" ]]; then
-            cells=$(head -n 2 ${featureOut} | tail -n 1 \
-                    | grep -o "[\/]\w*_*${chip}")
-            cells=`for cell in ${cells}; do 
-                mapLib=(${cell//_/ }); 
-                mapLib=${mapLib[0]}; 
-                echo ${mapLib} | sed 's/\///g'; done | sort | uniq | \
-                tr '\n' '-'`
-            cells=${cells::-1}
-            prefix="${chip}_${cells}_${peaktype}_DESeq2" 
-        elif [[ ${mergeBy} == "cellfirst" ]]; then
-            cells=$(head -n 2 ${featureOut} | tail -n 1 | \
-                    { grep -o -e "${chip}-\|${chip}_" || :; } | sort | uniq)
-            cells=$(for c in $cells; do echo ${c::-1}; done | tr '\n' '-')
-            cells=${cells::-1}
-            if [[ ${chip} == ${cells} ]]; then
-                prefix="${cells}_${peaktype}_DESeq2" 
+        # check if the file exists or it was created with a previous featureCounts version 
+        fileNotExistOrOlder "${outpath}/DESeq2/${chip}_${peaktype}/${chip}_${peaktype}_DESeq2.log" "${featureOut}"
+        if [[ ${analyse} == "yes" ]]; then
+            # get compared cells to add them at name
+            if [[ ${mergeBy} == "chip" ]]; then
+                cells=$(head -n 2 ${featureOut} | tail -n 1 \
+                        | grep -o "[\/]\w*_*${chip}")
+                cells=`for cell in ${cells}; do 
+                    mapLib=(${cell//_/ }); 
+                    mapLib=${mapLib[0]}; 
+                    echo ${mapLib} | sed 's/\///g'; done | sort | uniq | \
+                    tr '\n' '-'`
+                cells=${cells::-1}
+                prefix="${chip}_${cells}_${peaktype}_DESeq2" 
+            elif [[ ${mergeBy} == "cellfirst" ]]; then
+                cells=$(head -n 2 ${featureOut} | tail -n 1 | \
+                        { grep -o -e "${chip}-\|${chip}_" || :; } | sort | uniq)
+                cells=$(for c in $cells; do echo ${c::-1}; done | tr '\n' '-')
+                cells=${cells::-1}
+                if [[ ${chip} == ${cells} ]]; then
+                    prefix="${cells}_${peaktype}_DESeq2" 
+                else
+                    echo "Group selection in ${mergeBy} mode does not match"
+                    echo "${chip}    -vs-   ${cells}"
+                    echo "ERROR"
+                    exit 1
+                fi
+            elif [[ ${mergeBy} == "cell" ]]; then
+                cells=$(head -n 2 ${featureOut} | tail -n 1 | tr '\t' '\n'| \
+                                    { grep -o -e "${chip}[-A-Za-z0-9]*_" || :; } \
+                                    | sort | uniq)
+                cells=`for cell in ${cells}; do 
+                    mapLib=(${cell//_/ }); 
+                    mapLib=${mapLib[0]}; 
+                    echo ${mapLib}; done | sort | uniq | \
+                    tr '\n' '-'`
+
+                cells=${cells::-1}
+
+                if [[ ${chip} == ${cells} ]]; then
+                    prefix="${cells}_${peaktype}_DESeq2" 
+                else
+                    echo "Group selection in ${mergeBy} mode does not match"
+                    echo "${chip}    -vs-   ${cells}"
+                    echo "ERROR"
+                    exit 1
+                fi
             else
-                echo "Group selection in ${mergeBy} mode does not match"
-                echo "${chip}    -vs-   ${cells}"
-                echo "ERROR"
+                echo "ERROR: Merge-by method not recognised"
                 exit 1
             fi
-        elif [[ ${mergeBy} == "cell" ]]; then
-            cells=$(head -n 2 ${featureOut} | tail -n 1 | tr '\t' '\n'| \
-                                { grep -o -e "${chip}[-A-Za-z0-9]*_" || :; } \
-                                | sort | uniq)
-            cells=`for cell in ${cells}; do 
-                mapLib=(${cell//_/ }); 
-                mapLib=${mapLib[0]}; 
-                echo ${mapLib}; done | sort | uniq | \
-                tr '\n' '-'`
 
-            cells=${cells::-1}
+            
+            # Run all by batch
+            Rscript ${scriptsPath}/ATAC/cluster/02_NR_featurecounts_deseq2.r \
+                    --featurecount_file ${featureOut} \
+                    --bam_suffix '.sort.rmdup.rmblackls.rmchr.Tn5.bam' \
+                    --outdir ${outpath}/DESeq2/${chip}_${peaktype}/ \
+                    --outprefix $prefix \
+                    --outsuffix '' \
+                    --cores ${SLURM_CPUS_PER_TASK} \
+                    --bybatch ${byBatch}
 
-            if [[ ${chip} == ${cells} ]]; then
-                prefix="${cells}_${peaktype}_DESeq2" 
-            else
-                echo "Group selection in ${mergeBy} mode does not match"
-                echo "${chip}    -vs-   ${cells}"
-                echo "ERROR"
-                exit 1
+
+            # Run merging by ko and with batch corrections
+            if [[ ${posibleControls} != "no" ]]; then
+                Rscript ${scriptsPath}/ATAC/cluster/02_NR_featurecounts_deseq2_joinBatches.r \
+                        --featurecount_file ${featureOut} \
+                        --bam_suffix '.sort.rmdup.rmblackls.rmchr.Tn5.bam' \
+                        --outdir ${outpath}/DESeq2_batchCorrect/${chip}_${peaktype}/ \
+                        --outprefix $prefix \
+                        --outsuffix '' \
+                        --cores ${SLURM_CPUS_PER_TASK} \
+                        --controls ${posibleControls}
             fi
-        else
-            echo "ERROR: Merge-by method not recognised"
-            exit 1
         fi
-
-        
-
-        Rscript ${scriptsPath}/ATAC/cluster/02_NR_featurecounts_deseq2.r \
-                --featurecount_file ${featureOut} \
-                --bam_suffix '.sort.rmdup.rmblackls.rmchr.Tn5.bam' \
-                --outdir ${outpath}/DESeq2/${chip}_${peaktype}/ \
-                --outprefix $prefix \
-                --outsuffix '' \
-                --cores ${SLURM_CPUS_PER_TASK} \
-                --bybatch ${byBatch}
     done
 done
 
@@ -282,3 +314,14 @@ for chip in *Peak; do
         cp ${compare}/${cells}.deseq2.results.txt gatheredDESeq/${chip}_${cells}.deseq2.results.txt ; 
     done;
 done
+
+if [[ ${posibleControls} == "no" ]]; then
+    cd ${outpath}/DESeq2_batchCorrect/
+    mkdir -p ${outpath}/DESeq2_batchCorrect/gatheredDESeq
+    for chip in *Peak; do 
+        for compare in ${chip}/*vs*; do 
+            cells=$(basename ${compare}); 
+            cp ${compare}/${cells}.deseq2.results.txt gatheredDESeq/${chip}_${cells}.deseq2.results.txt ; 
+        done;
+    done
+fi
