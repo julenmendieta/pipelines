@@ -10,7 +10,7 @@
 #SBATCH -p medium
 #SBATCH -o /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.out  
 #SBATCH -e /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.err 
-#SBATCH --dependency=afterany:624523
+##SBATCH --dependency=afterany:624523
 
 
 ##SBATCH --mail-type=END

@@ -4,9 +4,9 @@
 ##===============================================================================
 ## SLURM VARIABLES
 #SBATCH --job-name=specificBigwig
-#SBATCH --cpus-per-task=12
-#SBATCH --mem=12G
-#SBATCH --time=08:00:00
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=8G
+#SBATCH --time=04:00:00
 #SBATCH -p short
 #SBATCH -o /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.out  
 #SBATCH -e /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.err 
@@ -15,12 +15,16 @@
 # add in the list bellow the bam file names (but the .bam termination)
 #sbatch /home/jmendietaes/programas/PhD/ATAC/cluster/06d_bigwig_fromList.sh
 
-files="LSK-Smarcd2_ATAC2-merged.sort.rmdup.rmblackls.rmchr.Tn5 \
-LSK-WT_ATAC3-merged.sort.rmdup.rmblackls.rmchr.Tn5.bam \
-LSK-Kmt2d_ATAC2-merged.sort.rmdup.rmblackls.rmchr.Tn5 \
-LSK-Hdac3_ATAC3-merged.sort.rmdup.rmblackls.rmchr.Tn5.bam"
+#files="LSK-Chd4_ATAC5-merged.sort.rmdup.rmblackls.rmchr.Tn5 \
+#LSK-Men1_ATAC5-merged.sort.rmdup.rmblackls.rmchr.Tn5"
+
+files="LSK-Setdb1_ATAC6-merged.sort.rmdup.rmblackls.rmchr.Tn5" # \
+#GMP-Brd9_ATACTraspl-merged.sort.rmdup.rmblackls.rmchr.Tn5"
 
 basePath="/home/jmendietaes/data/2021/ATAC/allProcessed"
+bamBase="${basePath}/bamfiles/valid/02_firstATAC"
+
+
 REFERENCE_DIR="/home/jmendietaes/referenceGenomes/mm10_reordered/mm10.reordered"
 chr_genome_size=$REFERENCE_DIR".sizes"
 wigToBigWig="/home/jmendietaes/programas/binPath/wigToBigWig"
@@ -31,7 +35,7 @@ echo -e "Starting BigWigs normalization---------------------------\n"
 # check content of eleventh line of step control file
 for fi in ${files}; do
     echo ${fi}
-    bamPath="${basePath}/bamfiles/valid/${fi}.bam"
+    bamPath="${bamBase}/${fi}.bam"
     bigWigOut2="${basePath}/BigWig/valid/${fi}.norm.bw"
     bamCoverage --binSize 5 --normalizeUsing CPM --exactScaling \
     -b ${bamPath} -of bigwig \

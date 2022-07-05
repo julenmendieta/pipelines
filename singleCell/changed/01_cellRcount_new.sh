@@ -28,11 +28,12 @@
 basepath="/home/jmendietaes/data/2021/singleCell"
 
 # Features file path
-featurePath="/home/jmendietaes/data/2021/singleCell/allProcessed/rangerFiles/ECCITE8_Features_ensgs.csv"
+# Caixa feture files
+featurePath="/home/jmendietaes/data/2021/singleCell/allProcessed/rangerFiles/allGuide_features_2022-06-29.csv"
 
 # base name of the files to check (separated by space)
 # avoid adding _Library.csv, it will be added later
-filesCheck="inVivo_Test_ckit_14d_1 inVivo_Test_ckit_7d_1 inVivo_Test_ckit_7d_2 inVivo_NTC_lin-andckit_14d_1"
+filesCheck="DM_OP5_NM_6d_1"
 
 
 # Path where we will store output data

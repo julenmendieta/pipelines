@@ -66,6 +66,16 @@ speciesGenome="mm10"
 bamsPath="${basePath}/bamfiles/valid/subsampled_noIgG"
 outpath=${basePath}"/furtherAnalysis/subsampled_noIgG"
 
+# GTF file for annotation (top be consistent with scRNA data)
+# Set to FALSE if you wnat HOMER's default UCSC refGene annotation
+#gtfFile=/home/jmendietaes/data/2021/singleCell/additionalFiles/refdata-gex-mm10-2020-A/genes/genes.gtf
+gtfFile=FALSE
+
+# If we want a column focussed on repeated elements only
+# Path to Homer file with repeat element locations
+repeatsPath=/beegfs/easybuild/CentOS/7.5.1804/Skylake/software/Homer/4.10-foss-2018b/data/genomes/mm10/mm10.repeats
+#repeatsPath=FALSE
+
 # never filter out _IgG in here
 allbams=$(find ${bamsPath}/*bam -printf "${bamsPath}/%f\n" | \
             tr '\n' ' ')
@@ -173,6 +183,14 @@ if [[ $outpath == *"_input"* ]]; then
     echo "outpath contains key substring: _input"
     exit 1;
 fi
+
+# get extra parameters for annotation
+if [[ $gtfFile == "FALSE" ]]; then
+    extraAnnot=""
+else
+    extraAnnot="-gtf ${gtfFile}"
+fi
+
 
 #############################
 #PEAK CALLING: MACS2
@@ -340,6 +358,7 @@ for bam in ${allbams}; do
                     ${peakIn} \
                     ${speciesGenome} \
                     -gid \
+                    ${extraAnnot} \
                     -cpu ${SLURM_CPUS_PER_TASK} \
                     -annStats ${outpath}/HOMER/peakAnnotation/${label}_${peaktype}.annotateStats.txt \
                     > ${annotationOut}
@@ -477,7 +496,7 @@ fi
 
 
 ## Same by comparing samples of same chip
-echo -e "Starting same-chip peak consensus -------------------------------------\n"
+echo -e "Starting same-chip peak consensus analysis -------------------------------------\n"
 
 sameChipCons=${outpath}/peakCalling/MACS2/consensusPeaks/bySameChip
 if [ ! -e ${sameChipCons} ]; then
@@ -556,7 +575,7 @@ for peaktype in narrowPeak broadPeak; do
 done
 
 
-echo -e "same-chip peak consensus - Finished ---------------------------\n"
+echo -e "same-chip peak consensus analysis - Finished ---------------------------\n"
 
 
 
@@ -588,6 +607,7 @@ if [[ ${doAllMerge} == "yes" ]]; then
                     ${consensusPeakBed} \
                     ${speciesGenome} \
                     -gid \
+                    ${extraAnnot} \
                     -cpu ${SLURM_CPUS_PER_TASK} \
                     -annStats ${outpath}/HOMER/consensusPeaks/${prefix}.annotateStats.txt \
                     > ${outpath}/HOMER/consensusPeaks/${prefix}.annotatePeaks.txt
@@ -597,6 +617,28 @@ if [[ ${doAllMerge} == "yes" ]]; then
                 cut -f6- > ${outpath}/HOMER/consensusPeaks/tmp.txt
             paste ${outpath}/peakCalling/MACS2/consensusPeaks/${prefix}.boolean.txt \
                 ${outpath}/HOMER/consensusPeaks/tmp.txt > ${boolAnotMatr}
+
+            # We add a column for annotations regarding repeat elements
+            if [[ $repeatsPath != "FALSE" ]]; then
+                annotatePeaks.pl \
+                        ${consensusPeakBed} \
+                        ${speciesGenome} \
+                        -gid \
+                        -ann ${repeatsPath} \
+                        -cpu ${SLURM_CPUS_PER_TASK} \
+                        > ${outpath}/HOMER/consensusPeaks/${prefix}.annotatePeaks_rep.txt
+
+                cut -f2- ${outpath}/HOMER/consensusPeaks/${prefix}.annotatePeaks_rep.txt | \
+                    awk 'NR==1; NR > 1 {print $0 | "sort -T '.' -k1,1 -k2,2n"}' | \
+                    cut -f7 > ${outpath}/HOMER/consensusPeaks/tmp.txt
+                rm ${outpath}/HOMER/consensusPeaks/${prefix}.annotatePeaks_rep.txt
+                # rename header and paste to consensus table
+                sed -i 's/Annotation/Repeats Annotation/g' ${outpath}/HOMER/consensusPeaks/tmp.txt
+                paste ${boolAnotMatr} \
+                    ${outpath}/HOMER/consensusPeaks/tmp.txt > ${outpath}/HOMER/consensusPeaks/tmp2.txt
+                mv ${outpath}/HOMER/consensusPeaks/tmp2.txt ${boolAnotMatr}
+            fi
+
         fi
     done
 
@@ -646,6 +688,28 @@ for chip in ${more1Chip}; do
                 cut -f6- > ${sameChipHomer}/tmp.txt
             paste ${sameChipCons}/${prefix}.boolean.txt \
                 ${sameChipHomer}/tmp.txt > ${boolAnotMatr}
+
+            # We add a column for annotations regarding repeat elements
+            if [[ $repeatsPath != "FALSE" ]]; then
+                annotatePeaks.pl \
+                        ${consensusPeakBed} \
+                        ${speciesGenome} \
+                        -gid \
+                        -ann ${repeatsPath} \
+                        -cpu ${SLURM_CPUS_PER_TASK} \
+                        > ${sameChipHomer}/${prefix}.annotatePeaks_rep.txt
+
+                cut -f2- ${sameChipHomer}/${prefix}.annotatePeaks_rep.txt | \
+                    awk 'NR==1; NR > 1 {print $0 | "sort -T '.' -k1,1 -k2,2n"}' | \
+                    cut -f7 > ${sameChipHomer}/tmp.txt
+                rm ${sameChipHomer}/${prefix}.annotatePeaks_rep.txt
+                # rename header and paste to consensus table
+                sed -i 's/Annotation/Repeats Annotation/g' ${sameChipHomer}/tmp.txt
+                paste ${boolAnotMatr} \
+                    ${sameChipHomer}/tmp.txt > ${sameChipHomer}/tmp2.txt
+                mv ${sameChipHomer}/tmp2.txt ${boolAnotMatr}
+            fi
+
         fi
     done
 done

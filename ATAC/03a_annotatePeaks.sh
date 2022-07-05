@@ -1,48 +1,32 @@
 #!/bin/bash
 # -*- ENCODING: UTF-8 -*-
 
-##===============================================================================
-## SLURM VARIABLES
-#SBATCH --job-name=AnnotatePeaks
-#SBATCH --cpus-per-task=8
-#SBATCH --mem=16G
-#SBATCH --time=0-02:00:00
-#SBATCH -p short
-#SBATCH -o /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.out  
-#SBATCH -e /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.err 
-
-
 # HOW TO RUN ME
-#sbatch /home/jmendietaes/programas/PhD/ChIP/cluster/csaw/02a_annotatePeaks.sh 
+#bash /home/jmendietaes/programas/PhD/ChIP/cluster/csaw/02a_annotatePeaks.sh 
 
 # OBJECTIVE
 # Annotate peakfiles in a folder
 
-basePath="/home/jmendietaes/data/2021/chip/allProcessed/furtherAnalysis/subsampled_noIgG/binCalling"
-inpath="${basePath}/binnedPeaks/consensus"
+basePath="/scratch/julen/ChIP/allData/04_subsamplingNoIgG/outdata/csaw"
+inpath="${basePath}/binnedPeaks"
 outpath="${basePath}/Annot/consensus"
+nCPU=16
 
 # GTF file for annotation (top be consistent with scRNA data)
 # Set to FALSE if you wnat HOMER's default UCSC refGene annotation
-gtfFile=/home/jmendietaes/data/2021/singleCell/additionalFiles/refdata-gex-mm10-2020-A/genes/genes.gtf
+gtfFile=/scratch/julen/singleCell/cellRanger/genes.gtf
 #gtfFile=FALSE
 
 # If we want a column focussed on repeated elements only
 # Path to Homer file with repeat element locations
-repeatsPath=/beegfs/easybuild/CentOS/7.5.1804/Skylake/software/Homer/4.10-foss-2018b/data/genomes/mm10/mm10.repeats
+repeatsPath=/home/julen/programas/HOMER/data/genomes/mm10/mm10.repeats
 #repeatsPath=FALSE
 
 # path for the location of the pipeline scripts
-scriptsPath="/home/jmendietaes/programas/PhD"
+scriptsPath="/home/julen/programas/PhD"
 # species shortcut for MACS
 species="mm"
 speciesGenome="mm10"
-
-## load modules
-export PATH="/home/jmendietaes/programas/miniconda3/envs/Renv/bin:$PATH"
-export PATH="/home/jmendietaes/programas/miniconda3/bin:$PATH"
-
-module load Homer/4.10-foss-2018b
 
 ##===============================================================================
 
@@ -121,7 +105,7 @@ for binnedPeaks in ${consensusFiles}; do
                 ${speciesGenome} \
                 -gid \
                 ${extraAnnot} \
-                -cpu ${SLURM_CPUS_PER_TASK} \
+                -cpu ${nCPU} \
                 -annStats ${outpath}/${prefix}.annotateStats.txt \
                 > ${outpath}/${prefix}.annotatePeaks.txt
 
@@ -138,7 +122,7 @@ for binnedPeaks in ${consensusFiles}; do
                     ${speciesGenome} \
                     -gid \
                     -ann ${repeatsPath} \
-                    -cpu ${SLURM_CPUS_PER_TASK} \
+                    -cpu ${nCPU} \
                     > ${outpath}/${prefix}.annotatePeaks_rep.txt
 
             cut -f2- ${outpath}/${prefix}.annotatePeaks_rep.txt | \

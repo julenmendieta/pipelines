@@ -13,8 +13,8 @@
 
 
 # HOW TO RUN ME
-#sbatch /home/jmendietaes/programas/PhD/ChIP/cluster/07a_specificConsensus_bigwigTMM.sh \
-#/home/jmendietaes/data/2021/chip/allProcessed \
+#sbatch /home/jmendietaes/programas/PhD/ATAC/cluster/07a_specificConsensus_bigwigTMM.sh \
+#/home/jmendietaes/data/2021/ATAC/allProcessed \
 
 # OBJECTIVE
 # get scaling factors for group of cells and ChIPs we want to compare in the
@@ -35,33 +35,25 @@ basePath=$1
 scriptsPath="/home/jmendietaes/programas/PhD"
 
 # Where to look for bam files and where to store output tree
-bamsPath="${basePath}/bamfiles/valid/subsampled_noIgG"
-outpath=${basePath}"/furtherAnalysis/subsampled_noIgG"
+bamsPath="${basePath}/bamfiles/valid/02_firstATAC"
+outpath=${basePath}"/furtherAnalysis/02_firstATAC"
 
 # Space separated list of files for the consensus and future analysis
-# With unique begining of ID is fine (2-3 first sections in between _)
-# E.j.: "MEP_Brd9-merged-sub105350855 GMP_Smarcb1_ChIP11"
-# Actually if fails if 4 sections are used. Ej Bcell_Brd9_ChIP9_S11
-# instead of Bcell_Brd9_ChIP9
-focusFiles="Bcell_Brd9_ChIP9 \
-Bcell_Kmt2a_ChIP12 \
-Bcell_Kmt2d_ChIP12 \
-Ery_Brd9-merged \
-Ery_Kmt2a_ChIP11 \
-Ery_Kmt2d-merged \
-Ery_Smarcb1_ChIP9 \
-GMP_Brd9-merged \
-GMP_Kmt2a_ChIP11 \
-GMP_Kmt2d_ChIP11 \
-GMP_Smarcb1_ChIP11 \
-MEP_Brd9-merged \
-MEP_Kmt2a_ChIP11 \
-MEP_Kmt2d_ChIP11 \
-MEP_Smarcb1_ChIP12 \
-Mono_Brd9-merged \
-Mono_Kmt2a-merged \
-Mono_Kmt2d-merged \
-Mono_Smarcb1-merged"
+# Add all the id but the .sort.rmdup.rmblackls.rmchr.Tn5.bam ending
+# and if there are more than 3 sections separated by '_' only add 3
+# I.e. LSK-Rbbp4_ATAC6_1 instead of LSK-Rbbp4_ATAC6_1_S16
+focusFiles="LSK-Brd9_ATAC2-merged \
+LSK-Chd4_ATAC6-merged \
+LSK-Hdac3_ATAC3-merged \
+LSK-Kmt2a_ATAC2-merged \
+LSK-Kmt2d_ATAC2-merged \
+LSK-NTC_ATAC4-merged \
+LSK-Rbbp4_ATAC6_1 \
+LSK-Rcor1_ATAC6-merged \
+LSK-Setdb1_ATAC6-merged \
+LSK-Smarcd1_ATAC4-merged \
+LSK-Smarcd2_ATAC2-merged \
+LSK-WDR82_ATAC-merged"
 
 
 
@@ -205,7 +197,7 @@ echo -e "Starting consensus peak analysis -------------------------------------\
 
 
 chip="merged"
-for peaktype in narrowPeak broadPeak; do
+for peaktype in broadPeak; do
     # select the columns to peak in each peak calling case
     if [ ${peaktype} == "narrowPeak" ]; then
         mergecols=`seq 2 10 | tr '\n' ','`
@@ -265,7 +257,7 @@ cd ${featureCpath}
 echo -e "Starting consensus featureCounts -----------------------\n"
 
 chip="merged"
-for peaktype in narrowPeak broadPeak; do
+for peaktype in broadPeak; do
     prefix="${chip}_${peaktype}_consensusPeaks"
     peakFiles=$(find -L ${outpath}/peakCalling/MACS2/peaks/*.${peaktype} -maxdepth 1  -type f ! -size 0 | \
                 { grep -e ${focusGrep} || :; } )
@@ -301,7 +293,7 @@ echo -e "Consensus featureCounts - Finished ----------------------\n"
 
 echo -e "Starting consensus CPM -----------------------\n"
 chip="merged"
-for peaktype in narrowPeak broadPeak; do
+for peaktype in broadPeak; do
     prefix="${chip}_${peaktype}_consensusPeaks"
     
     bamfiles=$(head -n 2 ${featureCpath}/${prefix}.featureCounts.txt | tail -n 1 |\
@@ -354,7 +346,7 @@ fi
 
 # for now we only work with narrow peaks
 chip="merged"
-for peaktype in narrowPeak; do
+for peaktype in broadPeak; do
     # Create output dir
     if [ ! -e ${consensusOut}/bigWig_TMM/${peaktype} ]; then
         mkdir -p ${consensusOut}/bigWig_TMM/${peaktype}
@@ -370,9 +362,14 @@ for peaktype in narrowPeak; do
         fi=(${fi//\.bam/ }); fi=${fi[0]}
 
         # get string of interest from name
-        id1=(${fi//\./ }); id1=${id1[0]}
-        id1=(${id1//-/ }); id1=${id1[0]}
-        id1=(${id1//_/ }); id1="${id1[0]}_${id1[1]}"
+        id1=(${fi//\.sort.rmdup/ }); id1=${id1[0]}
+        id1=(${id1//_/ })
+        if [ -z "${id1[2]}" ]
+        then
+            id1="${id1[0]}_${id1[1]}"
+        else
+            id1="${id1[0]}_${id1[1]}_${id1[2]}"
+        fi
         
         scalingFactor=$(grep ${id1} ${scalingVals} | cut -f 2)
 
