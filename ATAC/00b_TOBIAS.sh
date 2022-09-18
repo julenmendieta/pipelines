@@ -18,19 +18,19 @@ uropa="/home/julen/miniconda3/envs/TOBIAS/bin/uropa"
 # best factors script
 bestFactors="/home/julen/programas/PhD/ATAC/get_best_bingfactors.py"
 # base bams path
-bambase=/home/julen/extraData/ATAC/allData/02_firstATAC/bams/merged
+bambase=/home/julen/extraData/ATAC/allData/05_laura/bams/merged
 # base peaks path
-peakbase=/scratch/julen/ATAC/allData/02_firstATAC/peaks
+peakbase=/scratch/julen/ATAC/allData/05_laura/peaks
 # base output dir
-outdirbase=/scratch/julen/ATAC/allData/02_firstATAC/TOBIAS
+outdirbase=/scratch/julen/ATAC/allData/05_laura/TOBIAS
 # Path to motifs to be check (In format suited for TOBIAS)
 motifsCheck=/scratch/julen/ATAC/allData/02_firstATAC/TOBIAS/motifs/known_jaspar_t100.motifs
 # Path to reference genome
 refGenome=/home/julen/genomes/mm10_reordered/mm10.reordered.fa
 # Cell type of interest
-cell=LSK
+cell=Activated
 # Specify control conditions string in name
-controlCondition=WT
+controlCondition=NtC5
 # define peak type
 peaktype=broadPeak
 # path for the location of the pipeline scripts
@@ -280,7 +280,7 @@ for batch in ATAC3; do
                     mv ${outKo}/bindetect_output/*pdf ${outKo}/; 
                     mv ${outKo}/bindetect_output/*xlsx ${outKo}/;
                     mv ${outKo}/bindetect_output/*html ${outKo}/; 
-                    mv ${outKo}/bindetect_output/network* ${outKo}/; 
+                    #mv ${outKo}/bindetect_output/network* ${outKo}/; 
                     rm -r ${outKo}/bindetect_output/; 
                     rm -r ${outNTC}/; 
                     rm ${outKo}/*uncorrected.bw

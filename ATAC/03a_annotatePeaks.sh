@@ -7,10 +7,14 @@
 # OBJECTIVE
 # Annotate peakfiles in a folder
 
-basePath="/scratch/julen/ChIP/allData/04_subsamplingNoIgG/outdata/csaw"
+#basePath="/scratch/julen/ChIP/allData/04_subsamplingNoIgG/outdata/csaw"
+basePath=$1
+#nCPU=16
+nCPU=$2
+
 inpath="${basePath}/binnedPeaks"
 outpath="${basePath}/Annot/consensus"
-nCPU=16
+
 
 # GTF file for annotation (top be consistent with scRNA data)
 # Set to FALSE if you wnat HOMER's default UCSC refGene annotation
@@ -118,7 +122,7 @@ for binnedPeaks in ${consensusFiles}; do
         # We add a column for annotations regarding repeat elements
         if [[ $repeatsPath != "FALSE" ]]; then
             annotatePeaks.pl \
-                    ${consensusPeakBed} \
+                    ${binnedPeaks} \
                     ${speciesGenome} \
                     -gid \
                     -ann ${repeatsPath} \
