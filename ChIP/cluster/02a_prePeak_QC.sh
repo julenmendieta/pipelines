@@ -282,41 +282,41 @@ done
 # Correlations
 #############################
 
-if [ ! -e ${outpath}/chipCorrelation/allVSall ]; then
-    mkdir -p ${outpath}/chipCorrelation/allVSall
-fi
+# if [ ! -e ${outpath}/chipCorrelation/allVSall ]; then
+#     mkdir -p ${outpath}/chipCorrelation/allVSall
+# fi
 
 
-# generate correlation matrix
-allBamFiles=`ls  ${bamsPath}/*bam`
-labels=$(for file in ${allBamFiles}; do basename $file | cut -d '.' -f 1 | cut -d '_' -f 1,2,3; done)
+# # generate correlation matrix
+# allBamFiles=`ls  ${bamsPath}/*bam`
+# labels=$(for file in ${allBamFiles}; do basename $file | cut -d '.' -f 1 | cut -d '_' -f 1,2,3; done)
 
-outMatrix=${outpath}/chipCorrelation/allVSall/chipCorrelations.npz
-# check if the file exists of it was created with a previous bam version 
-fileNotExistOrOlder "${outMatrix}" "${allBamFiles}"
-# this outputs analyse as yes or no in lowercase
+# outMatrix=${outpath}/chipCorrelation/allVSall/chipCorrelations.npz
+# # check if the file exists of it was created with a previous bam version 
+# fileNotExistOrOlder "${outMatrix}" "${allBamFiles}"
+# # this outputs analyse as yes or no in lowercase
 
-if [[ ${analyse} == "yes" ]]; then
-    multiBamSummary bins --bamfiles ${allBamFiles} \
-                    -o ${outMatrix} \
-                    --labels $labels --binSize 10000 \
-                    --numberOfProcessors ${SLURM_CPUS_PER_TASK}
+# if [[ ${analyse} == "yes" ]]; then
+#     multiBamSummary bins --bamfiles ${allBamFiles} \
+#                     -o ${outMatrix} \
+#                     --labels $labels --binSize 10000 \
+#                     --numberOfProcessors ${SLURM_CPUS_PER_TASK}
 
-    plotCorrelation --corData ${outMatrix} \
-                    --corMethod spearman \
-                    --whatToPlot heatmap \
-                    --plotFile ${outpath}/chipCorrelation/allVSall/allChipCorrelations.pdf \
-                    --skipZeros \
-                    --plotTitle "Correlation heatmap between ChIP samples" \
-                    --plotFileFormat pdf \
-                    --colorMap viridis \
-                    --outFileCorMatrix ${outpath}/chipCorrelation/allVSall/allChipCorrelation_matrix.tsv 
+#     plotCorrelation --corData ${outMatrix} \
+#                     --corMethod spearman \
+#                     --whatToPlot heatmap \
+#                     --plotFile ${outpath}/chipCorrelation/allVSall/allChipCorrelations.pdf \
+#                     --skipZeros \
+#                     --plotTitle "Correlation heatmap between ChIP samples" \
+#                     --plotFileFormat pdf \
+#                     --colorMap viridis \
+#                     --outFileCorMatrix ${outpath}/chipCorrelation/allVSall/allChipCorrelation_matrix.tsv 
 
-    plotCorrelation --corData ${outMatrix} \
-                    --corMethod spearman \
-                    --whatToPlot scatterplot \
-                    --plotFile ${outpath}/chipCorrelation/allVSall/allChipScatterPlot.pdf \
-                    --skipZeros \
-                    --plotTitle "Correlation scatterplot between ChIP samples" \
-                    --plotFileFormat pdf
-fi
+#     plotCorrelation --corData ${outMatrix} \
+#                     --corMethod spearman \
+#                     --whatToPlot scatterplot \
+#                     --plotFile ${outpath}/chipCorrelation/allVSall/allChipScatterPlot.pdf \
+#                     --skipZeros \
+#                     --plotTitle "Correlation scatterplot between ChIP samples" \
+#                     --plotFileFormat pdf
+# fi

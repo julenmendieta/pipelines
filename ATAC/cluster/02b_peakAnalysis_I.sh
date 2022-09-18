@@ -59,8 +59,8 @@ mergeBy="cellfirst"
 
 # GTF file for annotation (top be consistent with scRNA data)
 # Set to FALSE if you wnat HOMER's default UCSC refGene annotation
-gtfFile=/home/jmendietaes/data/2021/singleCell/additionalFiles/refdata-gex-mm10-2020-A/genes/genes.gtf
-#gtfFile=FALSE
+#gtfFile=/home/jmendietaes/data/2021/singleCell/additionalFiles/refdata-gex-mm10-2020-A/genes/genes.gtf
+gtfFile=FALSE
 
 # If we want a column focussed on repeated elements only
 # Path to Homer file with repeat element locations

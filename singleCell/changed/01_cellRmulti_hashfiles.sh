@@ -3,7 +3,7 @@
 
 ##===============================================================================
 ## SLURM VARIABLES
-#SBATCH --job-name=cellRrun
+#SBATCH --job-name=cellRmulti
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=40Gb
 #SBATCH --time=20:00:00
@@ -16,10 +16,11 @@
 # original ram was 258Gb, and cpu 24
 
 # HOW TO RUN ME
-#sbatch /home/jmendietaes/programas/PhD/singleCell/changed/01_cellRcount_new.sh
+#sbatch /home/jmendietaes/programas/PhD/singleCell/changed/01_cellRmulti_hashfiles.sh
 
 # OBJECTIVE
-# run cellRanger
+# run cellRanger to analyze cell hashing data
+# https://kb.10xgenomics.com/hc/en-us/articles/360028612751-Can-I-use-Cell-Ranger-to-analyze-cell-hashing-data-
 
 #source $CODEBASE/tfcf/setup.sh
 
@@ -27,21 +28,14 @@
 # Main data project file
 basepath="/home/jmendietaes/data/2021/singleCell"
 
-# Features file path
-# Caixa feture files
-#featurePath="/home/jmendietaes/data/2021/singleCell/allProcessed/rangerFiles/allGuide_features_2022-06-29.csv"
-# Startup feature file
-featurePath="/home/jmendietaes/data/2021/singleCell/allProcessed/rangerFiles/Startup_feature_2022-07-15.csv"
+
+# base name of the files to check (separated by space)
+# avoid adding _Library.csv, it will be added later
+filesCheck="SAOS_unperturbed"
 
 # Genome ID
 #genomeId="refdata-gex-mm10-2020-A"
 genomeId="refdata-gex-GRCh38-2020-A"
-
-
-# base name of the files to check (separated by space)
-# avoid adding _Library.csv, it will be added later
-filesCheck="SAOS_PoolUnperturbe_d14"
-
 
 # Path where we will store output data
 outputPath="${basepath}/allProcessed"
@@ -52,9 +46,7 @@ rangerPath="${basepath}/allProcessed/rangerFiles"
 # path for scripts location
 scriptsPath="/home/jmendietaes/programas/PhD"
 
-
-
-
+featurePath=/home/jmendietaes/data/2021/singleCell/allProcessed/rangerFiles/SAOS_unperturbed_reference.csv
 
 #### MAIN CODE
 # load modules
@@ -68,11 +60,8 @@ if [ "$adjustedMem" -lt "5" ]; then
     adjustedMem=$(echo "print(int(round($SLURM_MEM_PER_NODE*0.98,0)))" | python3)
 fi  
 
-genomePath="${genomeBase}/${genomeId}"
 # If genome doesn't exist, then create it
 if [ ! -f "${genomePath}/genome.fa" ]; then
-    echo "You have to prepare the reference genome"
-    exit 0
     bash ${scriptsPath}/singleCell/changed/00_PREP_Genome.sh
 fi
 
@@ -82,6 +71,7 @@ fi
 
 
 ########## BASIC ANALYSIS
+genomePath="${genomeBase}/${genomeId}"
 cd $outputPath/omicstmp
 
 for id in ${filesCheck}; do
@@ -94,55 +84,27 @@ for id in ${filesCheck}; do
         exit 1
     fi
 
-    echo "Files"
-    #cat $rangerPath/${id}_Library.csv
 
-    echo "Features"
-    #cat $rangerPath/ECCITE8_Features.csv
+    echo "Dataset"
+    #cat $rangerPath/${id}_dataset.csv
+
+    # cellranger multi --id=$id --csv=$rangerPath/${id}_dataset.csv \
+    #     --localcores=${SLURM_CPUS_PER_TASK} \
+    #     --localmem=${adjustedMem} &> ${id}.log
+
 
     cellranger count --id=$id \
      --no-bam \
      --libraries=$rangerPath/${id}_Library.csv \
-     --transcriptome=${genomePath}-Extended/ \
+     --transcriptome="${genomePath}-Extended/" \
      --feature-ref=${featurePath} \
      --localcores=${SLURM_CPUS_PER_TASK} \
      --localmem=${adjustedMem} \
      --expect-cells=10000 &> ${id}.log
 
+
     mkdir -p ${outputPath}/Data/$id
     mv $id/outs ${outputPath}/Data/$id
 done
-
-
-
-######### BASIC ANALYSIS without RNA
-
-# cd $outputPath/omicstmp
-
-# # for id_original in ECCITE7_Lib1Rep1 ECCITE7_Lib1Rep2 ECCITE7_Lib2; do
-# for id_original in ${filesCheck}; do
-
-#     echo $id_original
-# 	id="${id_original}_onlyRNA"
-# 	echo $id
-
-# 	grep -v "CRISPR Guide Capture" $rangerPath/${id_original}_Library.csv > $rangerPath/${id}_Library.csv
-	
-	
-#     echo "Files"
-#     #cat $rangerPath/${id}_Library.csv
-    
-# 	cellranger count --id=$id \
-# 	 --no-bam \
-# 	 --libraries=$rangerPath/${id}_Library.csv \
-# 	 --transcriptome=$basepath/additionalFiles/omicstmp/newGenomeExtended/ \
-# 		 --localcores=${SLURM_CPUS_PER_TASK} \
-# 		 --localmem=${adjustedMem} \
-# 	 --expect-cells=10000 &> ${id}.log
-    
-# 	mkdir -p ${outputPath}/Data/onlyRNA/$id
-# 	mv $id/outs ${outputPath}/Data/onlyRNA/$id
-# done
-
 
 

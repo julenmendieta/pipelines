@@ -1,16 +1,11 @@
 #!/usr/bin/env Rscript
 args = commandArgs(trailingOnly=TRUE)
 #===============================================================================
-#' Author: Maria E. Calleja
-#' Date: 2020/05
-#' Recycled from MECC_sgRNA_analysis for run363-365
-# David's comment: Julen, you only need to run the multimerge function to combine 
-# the individual tables (one table per sample) from the previous step into one 
-# table containing every sample from each experiment. After that you just need 
-# to split this large table into: a) table with target sgRNAs b) table with 
-# "noise" = sgRNAs that shouldn't be there. And calculate: 1) Read counts/sample 
-# (Colsums removing the * entry that contains the unmapped reads) 2) boxplots 
-# (in log scale) and  3) density plots for each of them.
+# Aim:
+# a) Make table with target sgRNAs 
+# b) Make a table with "noise" = sgRNAs that shouldn't be there. 
+# Then calculate: 
+# 1) Read counts/sample 
 #===============================================================================
 ## PACKAGES.
 library(pheatmap)
@@ -22,7 +17,9 @@ library(dplyr)
 library(tibble)
 #===============================================================================
 # How to run me
-#Rscript --vanilla 01a_MECC_sgRNA_pre_analysis_v2.r /Users/julen/Downloads/prueba/merge4-492 > merge4-492.Rout.txt
+#Rscript --vanilla 01a_MECC_sgRNA_pre_analysis_v2.r \ 
+#/PATH/TO/00_MECC_sgRNA_v1.1.sh/OUTPUT > runID.Rout.txt
+
 # test if there is at least one argument: if not, return an error
 if (length(args)==0) {
   stop("At least one argument must be supplied (input file).n", call.=FALSE)
@@ -33,19 +30,21 @@ if (length(args)==0) {
 ## GLOBAL VARIABLES.
 ## TO BE Modified
 PROJECT_DIR <- args[1]
-#PROJECT_DIR<-file.path("/Users/julen/Downloads/prueba/merge4-492")
-#guidesFile <- "/Users/julen/Downloads/CRISPR/finalGuides.txt"
+#PROJECT_DIR<-file.path("/home/X/data/2021/CRISPR/allProcessed/merge4-492")
+
 guidesFile <- "/home/jmendietaes/data/2021/CRISPR/finalGuides.txt"
 
-# If the folder structure is ok this shouldn chance
+# If the folder structure is ok this shouldnt change
 Counts<-file.path(PROJECT_DIR,"idxstats")
 RSession<-file.path(PROJECT_DIR,"RSession")
 runName <- basename(PROJECT_DIR)
 
 ## Relevant info about the guides
+# List of all allowed guides
 allGuideCodes <- c("MGLibA", "R2.Br", "As", "B.Br", "TF1.Br", "Br", "R1.Br", "B", 
 "TF2.Br", "R2Br", "BBr", "TF1Br", "R1Br", "LibP1", "LibP2", "OP1", "OP2", "OP3",
 "OP4", "OP1234")
+# Make synonyms for each time they use a different name for tha same lib
 guideSynonims <- vector(mode="list", length=length(allGuideCodes) + 5)
 names(guideSynonims) <- c("TF1", "TF2", "R1", "R2", "BBr", allGuideCodes)
 guideSynonims[[1]] <- "TF1Br"; guideSynonims[[2]] <- "TF2Br"
@@ -77,7 +76,7 @@ multimerge <- function (mylist) {
   colnames(bigout) <- paste(rep(names(mylist), sapply(mylist, ncol)), unlist(sapply(mylist, colnames)), sep = "_")
   return(bigout)
 }
-#My though on this: is that tidyverse is here to help, but I need to re-cap. 
+
 
 #===============================================================================
 ### MAIN.
@@ -85,7 +84,7 @@ multimerge <- function (mylist) {
 ## Step . data loading
 ################################################################################
 
-#Set the directory to where your "extracted.fastq.bam.cnt.txt.final.txt" are located
+# Set the directory to where your "extracted.fastq.bam.cnt.txt.final.txt" are located
 setwd (PROJECT_DIR)
 
 ## Read each of the files in a different table. See example below:
@@ -183,14 +182,12 @@ for (glib_ in allLibs) {
   table[is.na(table)] <- 0 
   # Write table with alignment info to all Libraries
   dir.create(RSession, showWarnings = FALSE)
-  write.table(data.frame("ID"=rownames(table),table), paste0(RSession, "/", runName, "_", 
-                                                             noDotLib, "_crisprTable_raw_MapLib.tsv"), 
+  write.table(data.frame("ID"=rownames(table),table), 
+                      paste0(RSession, "/", runName, "_", 
+                      noDotLib, "_crisprTable_raw_MapLib.tsv"), 
               row.names=FALSE, quote=FALSE, sep='\t')
   
-  
-  
-  
-  ##
+
   ## Load unMapped that were aligned against all guides
   # read mapped files in memory
   for (reporte in gcountreports){
@@ -208,7 +205,6 @@ for (glib_ in allLibs) {
   # keep only the data frames that contain the idxstats info
   countable_list <- countable_list[grepl("idxstats", names(countable_list))]
   
-  
   # Use the multimerge function to merge them together into a single table.
   nonValidTable<- multimerge(countable_list)
   colnames(nonValidTable) <- gsub ("_S.*.unMap.idxstats_counts","", colnames(nonValidTable))
@@ -224,13 +220,13 @@ for (glib_ in allLibs) {
   nonValidTable[is.na(nonValidTable)] <- 0 
   # Write table with alignment info to all Libraries
   dir.create(RSession, showWarnings = FALSE)
-  write.table(data.frame("ID"=rownames(nonValidTable),nonValidTable), paste0(RSession, "/", runName, "_", 
-                                                                     noDotLib, "_crisprTable_raw_unMapLib.tsv"), 
+  write.table(data.frame("ID"=rownames(nonValidTable),nonValidTable), 
+                        paste0(RSession, "/", runName, "_", 
+                        noDotLib, "_crisprTable_raw_unMapLib.tsv"), 
               row.names=FALSE, quote=FALSE, sep='\t')
   
   
   ## Plot
-  
   # when there is only one table it doesnt work well
   if (ncol(table) == 1) {
     stackedPlotTabl <- read.csv(text=paste(table[nrow(table),], 
@@ -422,18 +418,10 @@ for (glib_ in allLibs) {
   #     main = paste0("Density", glib, "_nonValid_min1000"))
   #dev.off()
   
-  ## David's comment: Julen, finish here...the remaining is about extracting basic
-  # stats (you can code this yourself better) 1) Read counts/sample (Colsums removing 
-  # the * entry that contains the unmapped reads) 2) boxplots (in log scale) and  3) 
-  # density plots for each of them.
-  
   #Normalize data ##
-  ##  David's comment: We are now using a better normalization method but this 
-  # one is useful to have a quick look to the data. Anyway, this can be done by 
-  # Ainhoa or me once you send us the raw tables.
-  # Calculates "factor.sizes"
+  # Calculate "factor.sizes"
   factor.sizes<-1/(colSums(na.omit(validTable))/ mean(colSums(na.omit(validTable)))) 
-  # Applies normalisation
+  # Apply normalisation
   validTable.norm<-t(t(validTable) * factor.sizes) 
   validTable.norm<-as.data.frame(validTable.norm)
   
@@ -500,8 +488,6 @@ for (glib_ in allLibs) {
   }
   legend("topright", legend=colnames(validTable.norm), lwd=2, col=cols)
   dev.off()
-  
-  
   
   # read percentyles valid vs non valid
   print('Max read count per guide percentyle in valid')

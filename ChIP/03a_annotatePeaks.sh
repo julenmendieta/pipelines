@@ -117,6 +117,29 @@ for binnedPeaks in ${consensusFiles}; do
             cut -f6- > ${outpath}/tmp.txt
         paste ${binnedPeaks} \
             ${outpath}/tmp.txt > ${boolAnotMatr}
+
+
+        # external GTF file annotation gives error in Annotation columns, so I 
+        # will get this one appart
+        if [[ $gtfFile != "FALSE" ]]; then
+            annotatePeaks.pl \
+                    ${binnedPeaks} \
+                    ${speciesGenome} \
+                    -gid \
+                    -cpu ${nCPU} \
+                    -annStats ${outpath}/${prefix}.annotateStats.txt \
+                    > ${outpath}/${prefix}.annotatePeaks.txt
+
+            cut -f2- ${outpath}/${prefix}.annotatePeaks.txt | \
+                awk 'NR==1; NR > 1 {print $0 | "sort -T '.' -k1,1 -k2,2n"}' | \
+                cut -f7 > ${outpath}/tmp.txt
+            rm ${outpath}/${prefix}.annotatePeaks.txt
+            # rename header and paste to consensus table
+            sed -i 's/Annotation/Annotation2/g' ${outpath}/tmp.txt
+            paste ${boolAnotMatr} \
+                ${outpath}/tmp.txt > ${outpath}/tmp2.txt
+            mv ${outpath}/tmp2.txt ${boolAnotMatr}
+        fi
         
         # external GTF file annotation gives error in Annotation columns, so I 
         # will get this one appart
