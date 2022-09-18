@@ -7,10 +7,12 @@
 # OBJECTIVE
 # Annotate peakfiles in a folder
 
-basePath="/scratch/julen/ChIP/allData/04_subsamplingNoIgG/outdata/csaw"
+#basePath="/scratch/julen/ChIP/allData/04_subsamplingNoIgG/outdata/csaw"
+basePath=$1
+#nCPU=16
+nCPU=$2
 inpath="${basePath}/binnedPeaks"
 outpath="${basePath}/Annot/consensus"
-nCPU=16
 
 # GTF file for annotation (top be consistent with scRNA data)
 # Set to FALSE if you wnat HOMER's default UCSC refGene annotation
@@ -114,11 +116,34 @@ for binnedPeaks in ${consensusFiles}; do
             cut -f6- > ${outpath}/tmp.txt
         paste ${binnedPeaks} \
             ${outpath}/tmp.txt > ${boolAnotMatr}
+
+
+        # external GTF file annotation gives error in Annotation columns, so I 
+        # will get this one appart
+        if [[ $gtfFile != "FALSE" ]]; then
+            annotatePeaks.pl \
+                    ${binnedPeaks} \
+                    ${speciesGenome} \
+                    -gid \
+                    -cpu ${nCPU} \
+                    -annStats ${outpath}/${prefix}.annotateStats.txt \
+                    > ${outpath}/${prefix}.annotatePeaks.txt
+
+            cut -f2- ${outpath}/${prefix}.annotatePeaks.txt | \
+                awk 'NR==1; NR > 1 {print $0 | "sort -T '.' -k1,1 -k2,2n"}' | \
+                cut -f7 > ${outpath}/tmp.txt
+            rm ${outpath}/${prefix}.annotatePeaks.txt
+            # rename header and paste to consensus table
+            sed -i 's/Annotation/Annotation2/g' ${outpath}/tmp.txt
+            paste ${boolAnotMatr} \
+                ${outpath}/tmp.txt > ${outpath}/tmp2.txt
+            mv ${outpath}/tmp2.txt ${boolAnotMatr}
+        fi
         
         # We add a column for annotations regarding repeat elements
         if [[ $repeatsPath != "FALSE" ]]; then
             annotatePeaks.pl \
-                    ${consensusPeakBed} \
+                    ${binnedPeaks} \
                     ${speciesGenome} \
                     -gid \
                     -ann ${repeatsPath} \

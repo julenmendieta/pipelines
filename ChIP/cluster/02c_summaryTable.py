@@ -1,6 +1,7 @@
 import os
 from collections import defaultdict
 import copy
+from re import A
 
 ## HOW TO RUN ME
 # modify the required paths and then get the output table in the 
@@ -109,7 +110,7 @@ positionsPeak = [ "NUMBER OF NARROW PEAKS",
             ]
 posIndexPeak = [0] * len(positionsPeak)
 
-header = 'fileType\tsampleID\ttotalReadPairs\ttotalMappedReadPairs\t'
+header = 'fileType\tsampleID\ttotalReadPairs\ttotalMappedReadPairs\tmapedRatio\t'
 header += 'duplicatedReadPairs\tdup%\tfinalReadPairs\tsubsampled\t'
 header += 'narrowPeaks\tnarrowFRiP\tbroadPeaks\tbroadFRiP\t'
 header += 'narrowConsensusPeaks\tbroadConsensusPeaks\n'
@@ -141,10 +142,18 @@ for chip in sorted(fileAssoc):
             # in few cases i dont have this data
             try:
                 # header += f'TotalMappedReadPairs\t'
+                # min 40Mill for TF and 80M for broad
                 m = int(data[posIndex[1]+2].split()[0])
                 content += f'{data[posIndex[1]+2].split()[0]}\t'
 
+                # mapedRatio should be over 80% (in IgG around 60% ok)
+                # The lower the dirtier our smaple is
+                mr = int(data[posIndex[0]+2].split()[2])*2
+                mr = round(m/float(mr), 2) * 100
+                content += f'{mr}\t'
+
                 # header += f'DuplicatedReadPairs\t'
+                # should be < 20% the higher the less DNA content in sample
                 content += f'{data[posIndex[1]+5].split()[0]}\t'
 
                 # dup percentaje
@@ -207,13 +216,15 @@ for chip in sorted(fileAssoc):
                 nBroadConsensus = 'None'
             else:
                 nNarrowConsensus = 0
-                with open(f"{peakConsensusP}/{chip}_narrowPeak_consensusPeaks.bed", 'r') as ff:
-                    for line in ff:
-                        nNarrowConsensus += 1
+                if f"{chip}_narrowPeak_consensusPeaks.bed" in os.listdir(peakConsensusP):
+                    with open(f"{peakConsensusP}/{chip}_narrowPeak_consensusPeaks.bed", 'r') as ff:
+                        for line in ff:
+                            nNarrowConsensus += 1
                 nBroadConsensus = 0
-                with open(f"{peakConsensusP}/{chip}_broadPeak_consensusPeaks.bed", 'r') as ff:
-                    for line in ff:
-                        nBroadConsensus += 1
+                if f"{chip}_broadPeak_consensusPeaks.bed" in os.listdir(peakConsensusP):
+                    with open(f"{peakConsensusP}/{chip}_broadPeak_consensusPeaks.bed", 'r') as ff:
+                        for line in ff:
+                            nBroadConsensus += 1
 
             # header += f'narrowConsensusPeaks\t'
             content += f'{nNarrowConsensus}\t'
@@ -226,6 +237,16 @@ for chip in sorted(fileAssoc):
 
         allText += '\n'
     allText += '\n'
+
+# Remove duplicates
+at = []
+for a in allText.split('\n'):
+    if a != '':
+        if a not in at:
+            at += [a]
+    else:
+        at += [a]
+allText = '\n'.join(at)
 
 # write all
 with open(f"{outTable}/summaryTable.tsv", 'w') as fout:

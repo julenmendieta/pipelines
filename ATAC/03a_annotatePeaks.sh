@@ -118,7 +118,7 @@ for binnedPeaks in ${consensusFiles}; do
         # We add a column for annotations regarding repeat elements
         if [[ $repeatsPath != "FALSE" ]]; then
             annotatePeaks.pl \
-                    ${consensusPeakBed} \
+                    ${binnedPeaks} \
                     ${speciesGenome} \
                     -gid \
                     -ann ${repeatsPath} \

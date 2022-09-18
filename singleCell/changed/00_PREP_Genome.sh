@@ -6,7 +6,7 @@
 #SBATCH --job-name=cellRgenome
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=32G
-#SBATCH --time=0-06:00:00
+#SBATCH --time=0-02:00:00
 #SBATCH -p short
 #SBATCH -o /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.out  
 #SBATCH -e /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.err 
@@ -23,7 +23,10 @@
 # Path where we have the processed files
 basepath=/home/jmendietaes/data/2021/singleCell/additionalFiles
 # Path where we have the resoruce files from cellRAnger
+#resourcePath="/home/jmendietaes/data/2021/singleCell/additionalFiles/refdata-gex-GRCh38-2020-A"
 resourcePath="/home/jmendietaes/data/2021/singleCell/additionalFiles/refdata-gex-mm10-2020-A"
+genomeId=$(basename ${resourcePath})
+
 
 # load modules
 module load CellRanger/6.1.1
@@ -36,10 +39,11 @@ if [ ! -e $basepath/omicstmp ]; then
 fi
 cd $basepath/omicstmp
 
-if [ ! -e $basepath/omicstmp/newGenome ]; then
-	mkdir -p $basepath/omicstmp/newGenome
+outPath="$basepath/omicstmp/${genomeId}"
+if [ ! -e $outPath ]; then
+	mkdir -p $outPath
 fi
-outPath=$basepath/omicstmp/newGenome
+
 
 cp $resourcePath/fasta/genome.fa $outPath/genome.fa
 cp $resourcePath/genes/genes.gtf $outPath/genes.gtf
@@ -66,5 +70,5 @@ grep ">" $outPath/genome.fa
 tail -5 $outPath/genes.gtf
 tail -200 $outPath/genome.fa
 
-
-cellranger mkref --genome=$basepath/omicstmp/newGenomeExtended --fasta=$outPath/genome.fa --genes=$outPath/genes.gtf
+cd $basepath/omicstmp
+cellranger mkref --genome="${genomeId}-Extended"  --fasta=$outPath/genome.fa --genes=$outPath/genes.gtf

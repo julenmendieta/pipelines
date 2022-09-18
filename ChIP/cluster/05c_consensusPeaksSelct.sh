@@ -43,8 +43,8 @@ species="mm"
 speciesGenome="mm10"
 
 # Where to look for bam files and where to store output tree
-bamsPath="${basePath}/bamfiles/valid/07_leukPaper"
-outpath=${basePath}"/furtherAnalysis/07_leukPaper"
+bamsPath="${basePath}/bamfiles/valid/07_leukPaper2"
+outpath=${basePath}"/furtherAnalysis/07_leukPaper2"
 inpath=${basePath}"/furtherAnalysis/subsampled_noIgG"
 
 # never filter out _IgG in here
@@ -283,8 +283,17 @@ if [[ ${doAllMerge} == "yes" ]]; then
     chip="allmerged"
     for peaktype in narrowPeak; do
         prefix="${chip}_${peaktype}_consensusPeaks"
-        peakFiles=$(find -L ${inpath}/peakCalling/MACS2/peaks/*.${peaktype} -maxdepth 1  -type f ! -size 0 | \
-                    { grep -v -e "_input" -v -e "_IgG" || :; } )
+        # get all non empty peak files (avoid controls)
+        bamsShort=$(\
+                for filename in ${allbams}; do 
+                    mapLib=$(basename ${filename})
+                    mapLib=(${mapLib//\./ }); 
+                    mapLib=${mapLib[0]};
+                    mapLib=(${mapLib//_/ }); 
+                    echo ${mapLib[@]:0:2} | tr ' ' '_'; done | sort | uniq)
+        
+        peakFiles=$(for f in $bamsShort; do find -L ${inpath}/peakCalling/MACS2/peaks/${f}*${peaktype} \
+                        -maxdepth 1  -type f ! -size 0 | { grep -v -e "_input" -v -e "_IgG" || :; }; done)
         fileLabels=$(for f in $peakFiles; do echo ${f##*/} |sed "s/_peaks.${peaktype}//g"; done)
         # get a list with the bam files in the same order as peak files
         bamfiles=$(for f in ${fileLabels}; do find -L ${bamsPath}/${f}*bam -printf "${bamsPath}/%f "; 

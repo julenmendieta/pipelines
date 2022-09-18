@@ -6,7 +6,7 @@
 #SBATCH --job-name=hichip
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=32G
-#SBATCH --time=10:00:00
+#SBATCH --time=20:00:00
 #SBATCH -p short
 #SBATCH -o /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.out  
 #SBATCH -e /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.err 
@@ -16,7 +16,7 @@
 #for i in *fastq.gz; do echo $i | sed 's/_R._001.fastq.gz//g' ; done | sort | uniq > samplesNames.txt  
 # N=`cat samplesNames.txt | wc -l`
 # sbatch --array=1-${N} /home/jmendietaes/programas/PhD/HiChIP/cluster/01_Dovetail_generateBAM.sh \
-#/home/jmendietaes/data/2021/HiChIP/sequencedData/NextSeq2000.RUN25.20210923 \
+#/home/jmendietaes/data/2021/HiChIP/sequencedData/SLX-20756_hichip \
 #/home/jmendietaes/data/2021/HiChIP/allProcessed \
 #/home/jmendietaes/referenceGenomes/mm10_reordered/mm10.reordered
 
@@ -59,7 +59,9 @@ GenomeIndex=$REFERENCE_DIR
 
 
 ## load modules
-hichipScripts="/home/jmendietaes/programas/HiChiP"
+hichipScripts="/home/jmendietaes/programas/PhD/HiChIP/cluster"
+# set to lowercase yes or not
+removeTemp="no"
 export PATH="/home/jmendietaes/programas/miniconda3/bin:$PATH"
 module load BWA/0.7.17-foss-2018b
 module load SAMtools/1.12-GCC-10.2.0
@@ -75,8 +77,6 @@ trap 'last_command=$current_command; current_command=$BASH_COMMAND' DEBUG
 trap 'echo "\"${last_command}\" command filed with exit code $?."' EXIT
 
 ##===============================================================================
-
-cd $EDITED_DIR
 
 #Choose file
 # If we always get in list all files from folder
@@ -95,26 +95,51 @@ echo $filename
 ##===============================================================================
 
 
+# function to check if the given first file doesnt exist or is older than 
+# the second input file
+fileNotExistOrOlder () {
+    # check if the file exists of it was created with a previous bam version 
+    analyse="no"
+    if [ ! -e $1 ]; then
+        analyse="yes"
+    # only proceed if the output file is older than the bam file
+    # in this way if we resequenced and kept the name the analysis 
+    # will be repeated
+    else
+        for tfile in $2; do
+            if [[ $1 -ot ${tfile} ]] ; then
+                analyse="yes"
+                echo $1" older than "${tfile}
+            fi
+        done
+    fi
+}
+
+
+##===============================================================================
+
 # get some paths
 read1_path="${RAW_FASTQ_DIR}/${filename}_R1_001.fastq.gz"
 read2_path="${RAW_FASTQ_DIR}/${filename}_R2_001.fastq.gz"
 tempdir="${EDITED_DIR}/tmp"
-statsOut="${EDITED_DIR}/QC/pairtools_${filename}"
-outpair="${EDITED_DIR}/pairtools/outpairs.gz"
-outbam="${bamsPath}/${filename}.PT.bam"
+statsOut="${basePath}/QC/pairtools_${filename}"
+outpair="${basePath}/pairtools/${filename}_outpairs.gz"
 samFile="${EDITED_DIR}/BAM/${filename}.sam"
 
 
 if [ ! -e ${EDITED_DIR} ]; then
     mkdir -p ${EDITED_DIR}
-    mkdir -p ${EDITED_DIR}/QC
-    mkdir -p ${EDITED_DIR}/pairtools
+    mkdir -p ${basePath}/QC
+    mkdir -p ${basePath}/pairtools
     mkdir -p ${tempdir}
     mkdir -p ${EDITED_DIR}/BAM
 fi
 
+cd $EDITED_DIR
 
-SLURM_CPUS_PER_TASK=16
+#############
+# Alignment and duplicates removal
+#############
 
 ## fast version
 # here we will:
@@ -123,51 +148,128 @@ SLURM_CPUS_PER_TASK=16
 #- sort pairsam file
 #- remove PCR duplicates
 #- generate pairs and bam files
-bwa mem -5SP -T0 -t${SLURM_CPUS_PER_TASK} ${REFERENCE_DIR}.fa ${read1_path} ${read2_path}| \
-pairtools parse --min-mapq 40 --walks-policy 5unique \
---max-inter-align-gap 30 --nproc-in ${SLURM_CPUS_PER_TASK} --nproc-out ${SLURM_CPUS_PER_TASK} --chroms-path ${REFERENCE_DIR}.fa | \
-pairtools sort --tmpdir=${tempdir} --nproc ${SLURM_CPUS_PER_TASK} |pairtools dedup --nproc-in ${SLURM_CPUS_PER_TASK} \
---nproc-out ${SLURM_CPUS_PER_TASK} --mark-dups --output-stats "${statsOut}.txt" | pairtools split --nproc-in ${SLURM_CPUS_PER_TASK} \
---nproc-out ${SLURM_CPUS_PER_TASK} --output-pairs ${outpair} --output-sam - | samtools view -bS -@${SLURM_CPUS_PER_TASK} | \
-samtools sort -@${SLURM_CPUS_PER_TASK} -o ${outbam} ;samtools index ${outbam}
 
-## slow version
-# # Alignment
-# bwa mem -5SP -T0 -t${SLURM_CPUS_PER_TASK} ${REFERENCE_DIR}.fa \
-#                 ${read1_path} ${read2_path} -o ${samFile}
+# check if the file exists of it was created with a previous bam version 
+outbam="${EDITED_DIR}/BAM/${filename}.PT.bam"
+fileNotExistOrOlder "${outbam}" \
+                    "${read1_path} ${read2_path}"
 
-# # Recording valid ligation events
-# parsedSam="${EDITED_DIR}/BAM/${filename}.parsed.sam"
-# pairtools parse --min-mapq 40 --walks-policy 5unique \
-#         --max-inter-align-gap 30 --nproc-in ${SLURM_CPUS_PER_TASK} \
-#         --nproc-out ${SLURM_CPUS_PER_TASK} \
-#         --chroms-path ${REFERENCE_DIR}.fa ${samFile} > ${parsedSam}
+if [[ ${analyse} == "yes" ]]; then
+    echo -e "Starting Alignment and duplicate removal ------------------------------\n"
 
-# # sorting pairsam file
-# sortedSam="${EDITED_DIR}/BAM/${filename}.parsed.sorted.sam"
-# pairtools sort --nproc ${SLURM_CPUS_PER_TASK} --tmpdir=${tempdir} ${parsedSam} > ${sortedSam}
+    bwa mem -5SP -T0 -t${SLURM_CPUS_PER_TASK} ${REFERENCE_DIR}.fa ${read1_path} ${read2_path}| \
+    \
+    pairtools parse --min-mapq 40 --walks-policy 5unique \
+    --max-inter-align-gap 30 --nproc-in ${SLURM_CPUS_PER_TASK} --nproc-out ${SLURM_CPUS_PER_TASK} --chroms-path ${REFERENCE_DIR}.fa | \
+    \
+    pairtools sort --tmpdir=${tempdir} --nproc ${SLURM_CPUS_PER_TASK} |pairtools dedup --nproc-in ${SLURM_CPUS_PER_TASK} \
+    --nproc-out ${SLURM_CPUS_PER_TASK} --mark-dups --output-stats "${statsOut}.txt" | pairtools split --nproc-in ${SLURM_CPUS_PER_TASK} \
+    --nproc-out ${SLURM_CPUS_PER_TASK} --output-pairs ${outpair} --output-sam - | samtools view -bS -@${SLURM_CPUS_PER_TASK} | \
+    samtools sort -@${SLURM_CPUS_PER_TASK} -o ${outbam} ;samtools index ${outbam}
 
-# # Remove PCR duplicates
-# dedupSAM="${EDITED_DIR}/BAM/${filename}.parsed.sorted.dedup.sam"
-# pairtools dedup --nproc-in ${SLURM_CPUS_PER_TASK} \
-#             --nproc-out ${SLURM_CPUS_PER_TASK} --mark-dups \
-#             --output-stats "${statsOut}.txt" --output ${dedupSAM} \
-#              ${sortedSam}
+    ## slow version
+    # # Alignment
+    # bwa mem -5SP -T0 -t${SLURM_CPUS_PER_TASK} ${REFERENCE_DIR}.fa \
+    #                 ${read1_path} ${read2_path} -o ${samFile}
 
-# # Generate pairs and bam files
-# unsortSAM="${EDITED_DIR}/BAM/${filename}.parsed.sorted.dedup.unsort.sam"
-# pairtools split --nproc-in ${SLURM_CPUS_PER_TASK} \
-#         --nproc-out ${SLURM_CPUS_PER_TASK} --output-pairs ${outpair} \
-#          --output-sam ${unsortSAM} ${dedupSAM}
+    # # Recording valid ligation events
+    # parsedSam="${EDITED_DIR}/BAM/${filename}.parsed.sam"
+    # pairtools parse --min-mapq 40 --walks-policy 5unique \
+    #         --max-inter-align-gap 30 --nproc-in ${SLURM_CPUS_PER_TASK} \
+    #         --nproc-out ${SLURM_CPUS_PER_TASK} \
+    #         --chroms-path ${REFERENCE_DIR}.fa ${samFile} > ${parsedSam}
 
-# samtools sort -@${SLURM_CPUS_PER_TASK} -T ${tempdir}/tempfile.bam -o ${outbam} ${unsortSAM}
-# samtools index ${outbam}
+    # # sorting pairsam file
+    # sortedSam="${EDITED_DIR}/BAM/${filename}.parsed.sorted.sam"
+    # pairtools sort --nproc ${SLURM_CPUS_PER_TASK} --tmpdir=${tempdir} ${parsedSam} > ${sortedSam}
 
-python3 ${hichipScripts}/get_qc.py -p "${statsOut}.txt" > "${statsOut}_processed.txt"
+    # # Remove PCR duplicates
+    # dedupSAM="${EDITED_DIR}/BAM/${filename}.parsed.sorted.dedup.sam"
+    # pairtools dedup --nproc-in ${SLURM_CPUS_PER_TASK} \
+    #             --nproc-out ${SLURM_CPUS_PER_TASK} --mark-dups \
+    #             --output-stats "${statsOut}.txt" --output ${dedupSAM} \
+    #              ${sortedSam}
 
-peaksBed='/home/jmendietaes/data/2021/chip/allProcessed/furtherAnalysis/subsampled_noIgG/peakCalling/MACS2/peaks/Mye_Smarcb1-merged-sub173331792_peaks.narrowPeak'
+    # # Generate pairs and bam files
+    # unsortSAM="${EDITED_DIR}/BAM/${filename}.parsed.sorted.dedup.unsort.sam"
+    # pairtools split --nproc-in ${SLURM_CPUS_PER_TASK} \
+    #         --nproc-out ${SLURM_CPUS_PER_TASK} --output-pairs ${outpair} \
+    #          --output-sam ${unsortSAM} ${dedupSAM}
 
-${hichipScripts}/enrichment_stats.sh -g ${REFERENCE_DIR}.fa -b ${outbam} -p ${peaksBed} -t ${SLURM_CPUS_PER_TASK} -x ${statsOut}
+    # samtools sort -@${SLURM_CPUS_PER_TASK} -T ${tempdir}/tempfile.bam -o ${outbam} ${unsortSAM}
+    # samtools index ${outbam}
+
+    # Get mapping stats
+    # value thressholds for valid
+    #Metric	                        Shallow Seq (20M)	Deep Seq (100-200M)
+    #No-Dup Read Pairs	            >75%	            >50%
+    #No-dup cis read pairs ≥ 1kb	>20%	            >20%
+
+    python3 ${hichipScripts}/00_NR_get_qc.py -p "${statsOut}.txt" > "${statsOut}_processed.txt"
+    mv ${statsOut}_processed.txt ${statsOut}.txt
+
+else
+    echo -e "Alignment and duplicate removal - already done before--------------------------\n"
+
+fi
 
 
-python3 ${hichipScripts}/plot_chip_enrichment.py -bam ${outbam} -peaks ${peaksBed} -output ${statsOut}_enrichment.png>
+###################################
+# Chromosome filtering
+#################################
+
+# Remove chrM, chrUn, _random ... (remove sort.rmdup.rmblackls.bam)
+echo -e "Starting remove chrM and useless chromosomes ------------------------------\n"
+
+
+outbam2="${bamsPath}/${filename}.PT.rmchr.bam"
+
+fileNotExistOrOlder "${outbam2}" \
+                    "${outbam}"
+
+if [[ ${analyse} == "yes" ]]; then
+	samtools view -h ${outbam} | \
+    awk '(!index($3, "random")) && (!index($3, "chrUn")) && ($3 != "chrM") && ($3 != "chrEBV")' | \
+    samtools view -Sb - > ${outbam2}
+    samtools index ${outbam2} -@ $SLURM_CPUS_PER_TASK
+    echo -e "Remove chrM and useless chromosomes - done ----------------------------------\n"
+    if [[ $removeTemp == 'yes' ]] ; then
+        rm ${outbam}
+    fi
+else
+    echo -e "Remove chrM and useless chromosomes - already done before--------------------------\n"
+fi
+
+
+###################################
+# BigWigs 
+#################################
+# deeptools bamCoverage
+# Normalize by CPM (This is the scaled bigWig we will use)
+
+if [ ! -e ${basePath}/BigWig/ ]; then
+	mkdir ${basePath}/BigWig/
+fi
+
+bigWigOut="${basePath}/BigWig/${filename}.PT.rmchr.bw"
+
+fileNotExistOrOlder "${bigWigOut}" \
+                    "${outbam2}"
+
+if [[ ${analyse} == "yes" ]]; then
+	bamCoverage --binSize 5 --normalizeUsing CPM --exactScaling \
+    -b ${outbam2} -of bigwig \
+    -o ${bigWigOut} --numberOfProcessors $SLURM_CPUS_PER_TASK
+	
+    echo -e "BigWig norm 1 - done ---------------------------------------------\n"
+
+else
+    echo -e "BigWig norm 1 - already done before ------------------------------\n"
+fi
+
+
+echo -e "END --------------------------------------------------"
+
+seff $SLURM_JOBID
+
+exit 0

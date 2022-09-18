@@ -5,7 +5,7 @@
 ## SLURM VARIABLES
 #SBATCH --job-name=peakAnalysis
 #SBATCH --cpus-per-task=16
-#SBATCH --mem=20G
+#SBATCH --mem=10G
 #SBATCH --time=24:00:00
 #SBATCH -p short
 #SBATCH -o /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.out  
@@ -63,8 +63,8 @@ species="mm"
 speciesGenome="mm10"
 
 # Where to look for bam files and where to store output tree
-bamsPath="${basePath}/bamfiles/valid/subsampled_noIgG"
-outpath=${basePath}"/furtherAnalysis/subsampled_noIgG"
+bamsPath="${basePath}/bamfiles/valid/08_projectRestart"
+outpath=${basePath}"/furtherAnalysis/08_projectRestart"
 
 # GTF file for annotation (top be consistent with scRNA data)
 # Set to FALSE if you wnat HOMER's default UCSC refGene annotation
