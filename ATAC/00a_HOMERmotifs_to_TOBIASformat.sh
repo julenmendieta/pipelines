@@ -6,9 +6,9 @@
 # Path to R environment
 R=/home/julen/miniconda3/envs/onlyR/bin/R
 # base output dir
-outdir=/scratch/julen/ATAC/allData/02_firstATAC/TOBIAS
+outdir=/scratch/julen/ChIP/otherFiles
 # Path to motifs to bhe check
-motifsCheck=~/programas/HOMER/data/knownTFs/vertebrates/known.motifs
+motifsCheck=/home/julen/programas/HOMER/data/knownTFs/all/known.motifs
 
 
 ## First of all we convert homer motifs to a format readable by TOBIAS
@@ -19,27 +19,31 @@ library(universalmotif)
 library('stringr')
 motifsCheck='${motifsCheck}'
 fileout='${outdir}/motifs/known_jaspar'
+conversionOut='${outdir}/motifs/motifNameConversion.tsv'
 # First we get all homer Ids
 rl <- readLines(motifsCheck)
 homerIds <- rl[grep('>.*', rl)]
 homerIds <- unlist(lapply(homerIds, 
                 function (x) {strsplit(x, '\t')[[1]][2]}))
+homerIds_original <- homerIds
 homerIds <- unlist(lapply(homerIds,
                 function (x) {strsplit(x, '/')[[1]][1]}))
 
 # Change weird characters (mandatory to use TOBIAS)
 homerIds <- unlist(lapply(homerIds,
+                function (x) {gsub(' ', '', x)[[1]]}))
+homerIds <- unlist(lapply(homerIds,
                 function (x) {gsub(':', '-', x)[[1]]}))
 homerIds <- unlist(lapply(homerIds,
-                function (x) {gsub('\\?', '', x)[[1]]}))
+                function (x) {gsub('\\\?', '', x)[[1]]}))
 homerIds <- unlist(lapply(homerIds,
-                function (x) {gsub('\\|', '--', x)[[1]]}))
+                function (x) {gsub('\\\|', '--', x)[[1]]}))
 homerIds <- unlist(lapply(homerIds,
-                function (x) {gsub('\\+', '--', x)[[1]]}))
+                function (x) {gsub('\\\+', '--', x)[[1]]}))
 homerIds <- unlist(lapply(homerIds,
-                function (x) {gsub('\\(', '_', x)[[1]]}))
+                function (x) {gsub('\\\(', '_', x)[[1]]}))
 homerIds <- unlist(lapply(homerIds,
-                function (x) {gsub('\\)', '', x)[[1]]}))
+                function (x) {gsub('\\\)', '', x)[[1]]}))
 homerIds <- unlist(lapply(homerIds,
                 function (x) {gsub(',', '-', x)[[1]]}))
 homerIds <- unlist(lapply(homerIds,
@@ -48,10 +52,15 @@ homerIds <- unlist(lapply(homerIds,
 
 # Look for duplicates
 n_occur <- data.frame(table(homerIds))
-for (id1 in n_occur[n_occur$Freq > 1,'homerIds']) {
+for (id1 in n_occur[n_occur\$Freq > 1,'homerIds']) {
     pos <- homerIds == id1
     homerIds[pos] <- paste0(id1, paste0('_', 1:sum(pos)))
 }
+
+# Store file with name conversion
+convTable <- data.frame(homerIds_original, homerIds)
+write.table(convTable, file=conversionOut, quote=FALSE, 
+            sep='\t', col.names = FALSE, row.names=FALSE)
 
 homerIds <- paste0('>', homerIds)
 # Then we open file
