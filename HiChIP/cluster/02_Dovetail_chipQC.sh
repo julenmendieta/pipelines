@@ -151,3 +151,9 @@ done
 #   – proceed with downstream analyses
 
 
+
+# Convert filtered pairs file to Hi-C Pro valid pairs format
+grep -v '#' <*.pairs> | \
+    awk -F"\t" '{print $1"\t"$2"\t"$3"\t"$6"\t"$4"\t"$5"\t"$7}' | \
+    gzip -c > <output.pairs.gz>
+

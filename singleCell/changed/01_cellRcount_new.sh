@@ -6,11 +6,11 @@
 #SBATCH --job-name=cellRrun
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=40Gb
-#SBATCH --time=20:00:00
-#SBATCH -p short
+#SBATCH --time=48:00:00
+#SBATCH -p medium
 #SBATCH -o /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.out  
 #SBATCH -e /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.err 
-##SBATCH --dependency=afterany:599711
+##SBATCH --dependency=afterany:802716
 
 
 # original ram was 258Gb, and cpu 24
@@ -29,18 +29,21 @@ basepath="/home/jmendietaes/data/2021/singleCell"
 
 # Features file path
 # Caixa feture files
-#featurePath="/home/jmendietaes/data/2021/singleCell/allProcessed/rangerFiles/allGuide_features_2022-06-29.csv"
+#featurePath="/home/jmendietaes/data/2021/singleCell/allProcessed/rangerFiles/allGuide_features_2022-11-17.csv"
 # Startup feature file
-featurePath="/home/jmendietaes/data/2021/singleCell/allProcessed/rangerFiles/Startup_feature_2022-07-15.csv"
+#featurePath="/home/jmendietaes/data/2021/singleCell/allProcessed/rangerFiles/Startup_feature_2022-07-15.csv"
+# Laura feature file
+featurePath="/home/jmendietaes/data/2021/singleCell/allProcessed/rangerFiles/Feature_File_Laura_28-11-2022.csv"
+
 
 # Genome ID
-#genomeId="refdata-gex-mm10-2020-A"
-genomeId="refdata-gex-GRCh38-2020-A"
+genomeId="refdata-gex-mm10-2020-A"
+#genomeId="refdata-gex-GRCh38-2020-A"
 
 
 # base name of the files to check (separated by space)
 # avoid adding _Library.csv, it will be added later
-filesCheck="SAOS_PoolUnperturbe_d14"
+filesCheck="exVivo_OP2_IL1b_1 exVivo_OP2_IL1b_2 exVivo_OP2_TGFb_1 exVivo_OP2_TGFb_2 exVivo_OP2_resting_1 exVivo_OP2_resting_2"
 
 
 # Path where we will store output data

@@ -2,34 +2,30 @@
 # -*- ENCODING: UTF-8 -*-
 
 #####===============================================================================
-####   MECC_sgRNA_v1.sh
-####   Counts for CrisprScreens
-####   Maren Calleja @Cluster
-####   Project: Crispr screens 
-####   Wet-lab part: Ainhoa, David
-####   Blah, blah
+####   02a_sgRNA_v1.1_mapAllAtOnce.sh
+####   Counts for CrisprScreens aligning to all guides at once
+####   Adapted from Maren Calleja's script
 #####===============================================================================
 
 ##===============================================================================
 ## SLURM VARIABLES
-#SBATCH --job-name=CRISPR
+#SBATCH --job-name=CRISPRall
 #SBATCH --cpus-per-task=6
-#SBATCH --mem=10G
+#SBATCH --mem=5G
 #SBATCH --time=00:30:00
 #SBATCH -p short
 #SBATCH -o /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.out  
 #SBATCH -e /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.err 
 
-##SBATCH --mail-type=END
-##SBATCH --mail-user=mcallejac@unav.es
-#find /home/mcallejac/David_Seq/data/V300042238_L02 -type f -name "WT*" -exec ln -s {} . ';'
-#find /home/mcallejac/David_Seq/data/V300042238_L02 -type f -name "Cas9*" -exec ln -s {} . ';'
-##sbatch --array=0-11%4 MECC_sgRNA_v1_495.sbs
+
+## PURPOSE
+# To align sequenced CRISPR screen data to all guides. For example to check 
+# Maxis
 
 # HOW TO RUN ME
 # for i in *R1_001.fastq.gz; do echo $i | sed 's/_R1_001.fastq.gz//g' ; done | sort | uniq > samplesNames.txt
 # N=`cat samplesNames.txt | wc -l`
-# sbatch --array=1-${N} /home/jmendietaes/programas/PhD/CRISPR-screen/02a_MECC_sgRNA_v1.1._mapAllAtOnce.sh \
+# sbatch --array=1-${N} /home/jmendietaes/programas/PhD/CRISPR-screen/02a_sgRNA_v1.1_mapAllAtOnce.sh \
 #/home/jmendietaes/data/2021/CRISPR/sequencedData/merge4_492 \
 #/home/jmendietaes/data/2021/CRISPR/allProcessed/merge4_492 \
 #/home/jmendietaes/referenceGenomes/sgRNA_indexes/bowtie2/allGuides/finalGuides.fa \
@@ -46,7 +42,8 @@ final_dir=$2
 #final_dir="/home/jmendietaes/data/2021/CRISPR/allProcessed/merge4_492"
 
 ## Guide REFERENCE 
-## Comment by David These are the indexes for the alignment of the sgRNAs. But we will have just one genome index for every library.
+## Comment by David These are the indexes for the alignment of the sgRNAs. 
+#But we will have just one genome index for every library.
 # bowtie 1
 GenomeIndex_all=$3
 #GenomeIndex_all='/home/jmendietaes/referenceGenomes/sgRNA_indexes/bowtie1/finalGuides.fa'
@@ -70,7 +67,7 @@ extraSTR="_001"
 
 #######################################################################################
 # these ones shouldnt need to be modified if we are using the right folder structure
-FASTQ_DIR=$PARENT_DIR"/fastq"
+FASTQ_DIR=$PARENT_DIR"/demux_fastq"
 EDITED_DIR=$PARENT_DIR"/pipelineOut"
 #FASTQC_DIR=$EDITED_DIR"/fastQC"
 

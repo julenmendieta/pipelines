@@ -10,21 +10,21 @@
 ## SLURM VARIABLES
 #SBATCH --job-name=CRISPR
 #SBATCH --cpus-per-task=6
-#SBATCH --mem=10G
+#SBATCH --mem=5G
 #SBATCH --time=00:30:00
 #SBATCH -p short
-#SBATCH -o /home/X/jobsSlurm/outErr/%x_%A_%a.out  
-#SBATCH -e /home/X/jobsSlurm/outErr/%x_%A_%a.err 
+#SBATCH -o /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.out  
+#SBATCH -e /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.err 
 
 
 # HOW TO RUN ME
 # for i in *_R1_001.fastq.gz; do echo $i | sed 's/_R1_001.fastq.gz//g' ; done | \
 #sort | uniq > samplesNames.txt
 # N=`cat samplesNames.txt | wc -l`
-# sbatch --array=1-${N} /home/X/programas/PhD/CRISPR-screen/00_MECC_sgRNA_v1.1.sh \
-#/home/X/data/2021/CRISPR/sequencedData/merge4-492 \
-#/home/X/data/2021/CRISPR/allProcessed/merge4-492 \
-#/home/X/referenceGenomes/sgRNA_indexes/bowtie2 \
+# sbatch --array=1-${N} /home/jmendietaes/programas/PhD/CRISPR-screen/00_MECC_sgRNA_v1.1.sh \
+#/home/jmendietaes/data/2021/CRISPR/sequencedData/merge4-492 \
+#/home/jmendietaes/data/2021/CRISPR/allProcessed/merge4-492 \
+#/home/jmendietaes/referenceGenomes/sgRNA_indexes/bowtie2 \
 #'CACCG(.{20})GT'
 
 # the files stored in samplesNames.txt are the ones that will be analysed
@@ -146,6 +146,7 @@ START_TIME=$SECONDS
 
 if [ ! -e ${EDITED_DIR} ]; then
     mkdir -p ${EDITED_DIR}
+    mkdir -p ${EDITED_DIR}/fastq_extr
 fi
 
 if [ ! -e ${EDITED_DIR}/QC/ ] && echo exists ; then
