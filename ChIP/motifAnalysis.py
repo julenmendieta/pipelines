@@ -2,6 +2,8 @@ import os
 import numpy as np
 import subprocess
 
+import pybedtools
+
 import lxml.html as lh
 import codecs
 
@@ -220,6 +222,179 @@ def motifsBySubset(outpath, size, foldChanges, chip, cell1, cell2, df_new, posu,
     return inParams
 
 
+def motifsBySubset_atac(outpath, size, foldChanges, chip, cell1, cell2, df_new, 
+                                    posu, posd,
+                                  seqlen, rnd, species, mtfLens, background, inParams,
+                                  atac, nCPU=1, mknown=False,
+                                   minOverlap=10):
+    '''
+    :param atac: A dictionary with cell ID as key and ATAC peak coordinates dataframe 
+        as value
+    :param 10 minOverlap: Minimum overlap between ChiP and ATAC to mantain peak
+    
+    '''
+    ### create temporal file with subset 1       
+    outMotif1 = f'{outpath}/by_FoldChange/{chip}/{cell1}-Yes-{foldChanges[0]}_{cell2}-No-{foldChanges[1]}_cellBg'
+    outMotif1_noBg = f'{outpath}/by_FoldChange/{chip}/{cell1}-Yes-{foldChanges[0]}_{cell2}-No-{foldChanges[1]}_defaultBg'
+    if size == True:
+        # remove intersecting coordinates
+        b = pybedtools.BedTool(atac[cell1.split('_')[0]][[
+                    'chr', 
+                      'start', 
+                      'end', 
+                      'interval_id']].to_string(header=False, 
+                                               index=False), from_string=True)
+        a = pybedtools.BedTool(df_new.loc[posu, ['chr', 
+                                                 'start', 
+                                                 'end', 
+                                                 'interval_id']].to_string(header=False, 
+                                                                                          index=False), from_string=True)
+        df_temp = a.intersect(b).to_dataframe()
+        df_temp.rename(columns={'name':'interval_id',
+                               'chrom':'chr'}, inplace=True)
+        df_temp = df_temp[['interval_id', 'chr', 'start', 'end']]
+        
+
+        midpos = df_temp['start'] + ((df_temp['end'] - df_temp['start']) // 2)
+        df_temp['start'] = midpos - (seqlen // 2)
+        df_temp['end'] = midpos + (seqlen // 2)
+        outMotif1 += f'/{seqlen}'
+        outMotif1_noBg += f'/{seqlen}'
+
+    else:
+        # remove intersecting coordinates
+        b = pybedtools.BedTool(atac[cell1.split('_')[0]][[
+                    'chr', 
+                      'start', 
+                      'end', 
+                      'interval_id']].to_string(header=False, 
+                                               index=False), from_string=True)
+        a = pybedtools.BedTool(df_new.loc[posu, ['chr', 
+                                                 'start', 
+                                                 'end', 
+                                                 'interval_id']].to_string(header=False, 
+                                                                                          index=False), from_string=True)
+        df_temp = a.intersect(b).to_dataframe()
+        df_temp.rename(columns={'name':'interval_id',
+                               'chrom':'chr'}, inplace=True)
+        df_temp = df_temp[['interval_id', 'chr', 'start', 'end']]
+        
+        outMotif1 += '/noLen'
+        outMotif1_noBg += '/noLen'
+        
+    # Filter out too short peaks
+    keepPos = (df_temp['end'] - df_temp['start']) >= minOverlap
+    df_temp = df_temp[keepPos]
+    df_temp['strand'] = '+'
+    # create coordinate file 1
+    coordsFile1 = f'{outpath}/temp_{cell1}_{rnd}.bed'
+    df_temp.to_csv(path_or_buf=coordsFile1, sep='\t', 
+                   index=False, header=False)
+
+
+
+    ### create temporal file with subset 2    
+    outMotif2 = f'{outpath}/by_FoldChange/{chip}/{cell2}-Yes-{foldChanges[1]}_{cell1}-No-{foldChanges[0]}_cellBg'
+    outMotif2_noBg = f'{outpath}/by_FoldChange/{chip}/{cell2}-Yes-{foldChanges[1]}_{cell1}-No-{foldChanges[0]}_defaultBg'
+    if size == True:
+        # remove intersecting coordinates
+        b = pybedtools.BedTool(atac[cell2.split('_')[0]][[
+                    'chr', 
+                      'start', 
+                      'end', 
+                      'interval_id']].to_string(header=False, 
+                                               index=False), from_string=True)
+        a = pybedtools.BedTool(df_new.loc[posd, ['chr', 
+                                                 'start', 
+                                                 'end', 
+                                                 'interval_id']].to_string(header=False, 
+                                                                                          index=False), from_string=True)
+        df_temp = a.intersect(b).to_dataframe()
+        df_temp.rename(columns={'name':'interval_id',
+                               'chrom':'chr'}, inplace=True)
+        df_temp = df_temp[['interval_id', 'chr', 'start', 'end']]
+        
+
+        midpos = df_temp['start'] + ((df_temp['end'] - df_temp['start']) // 2)
+        df_temp['start'] = midpos - (seqlen // 2)
+        df_temp['end'] = midpos + (seqlen // 2)
+        outMotif1 += f'/{seqlen}'
+        outMotif1_noBg += f'/{seqlen}'
+
+    else:
+        # remove intersecting coordinates
+        b = pybedtools.BedTool(atac[cell2.split('_')[0]][[
+                    'chr', 
+                      'start', 
+                      'end', 
+                      'interval_id']].to_string(header=False, 
+                                               index=False), from_string=True)
+        a = pybedtools.BedTool(df_new.loc[posd, ['chr', 
+                                                 'start', 
+                                                 'end', 
+                                                 'interval_id']].to_string(header=False, 
+                                                                                          index=False), from_string=True)
+        df_temp = a.intersect(b).to_dataframe()
+        df_temp.rename(columns={'name':'interval_id',
+                               'chrom':'chr'}, inplace=True)
+        df_temp = df_temp[['interval_id', 'chr', 'start', 'end']]
+        
+        outMotif2 += '/noLen'
+        outMotif2_noBg += '/noLen'
+        
+    # Filter out too short peaks
+    keepPos = (df_temp['end'] - df_temp['start']) >= minOverlap
+    df_temp = df_temp[keepPos]
+    df_temp['strand'] = '+'
+    coordsFile2 = f'{outpath}/temp_{cell2}_{rnd}.bed'
+    df_temp.to_csv(path_or_buf=coordsFile2, sep='\t', 
+                   index=False, header=False)
+
+    ### Now we run them using each other as background
+    # cell1
+    if not os.path.exists(f'{outMotif1}/homerResults.html'):
+        print('Cell1 with cell2 bg')
+        motifCheck_cmd1 = getPeakCommand(species, coordsFile1, 
+                                            outMotif1, seqlen, coordsFile2, mtfLens,
+                                            threads=nCPU, mknown=mknown)
+        if nCPU != 1:
+            process = subprocess.Popen(motifCheck_cmd1, stdout=subprocess.PIPE, shell=True)
+            output, error = process.communicate()
+        inParams += [[motifCheck_cmd1]]
+    # cell 1 default background
+    if not os.path.exists(f'{outMotif1_noBg}/homerResults.html'):
+        print('Cell1 with default background')
+        motifCheck_cmd1_noBg = getPeakCommand(species, coordsFile1, 
+                                            outMotif1_noBg, seqlen, background, 
+                                            mtfLens, threads=nCPU, mknown=mknown)
+        if nCPU != 1:
+            process = subprocess.Popen(motifCheck_cmd1_noBg, stdout=subprocess.PIPE, shell=True)
+            output, error = process.communicate()
+        inParams += [[motifCheck_cmd1_noBg]]
+
+    # cell2
+    if not os.path.exists(f'{outMotif2}/homerResults.html'):
+        print('Cell2 with cell1 bg')
+        motifCheck_cmd2 = getPeakCommand(species, coordsFile2, 
+                                            outMotif2, seqlen, coordsFile1, 
+                                            mtfLens, threads=nCPU, mknown=mknown)
+        if nCPU != 1:
+            process = subprocess.Popen(motifCheck_cmd2, stdout=subprocess.PIPE, shell=True)
+            output, error = process.communicate()
+        inParams += [[motifCheck_cmd2]]
+    # cell 2 default background
+    if not os.path.exists(f'{outMotif2_noBg}/homerResults.html'):
+        print('Cell2 with default background')
+        motifCheck_cmd2_noBg = getPeakCommand(species, coordsFile2, 
+                                            outMotif2_noBg, seqlen, background, 
+                                            mtfLens, threads=nCPU, mknown=mknown)
+        if nCPU != 1:
+            process = subprocess.Popen(motifCheck_cmd2_noBg, stdout=subprocess.PIPE, shell=True)
+            output, error = process.communicate()
+        inParams += [[motifCheck_cmd2_noBg]]
+
+    return inParams
+
 # function to assign peak centre to summits where we dont have any data
 def reasignMissingCols(whereCentre, df_new, cell1, cell2, pos=False):
     if not isinstance(pos, int):
@@ -273,7 +448,8 @@ def reasignMissingCols(whereCentre, df_new, cell1, cell2, pos=False):
     return df_new
 
 
-def getHomerHtmlInfo(newResults, fullName=False):
+def getHomerHtmlInfo(newResults, fullName=False,
+                    returnBgPerce=False):
     f=codecs.open(newResults, 'r')
     doc = lh.fromstring(f.read())
     f.close()
@@ -296,12 +472,14 @@ def getHomerHtmlInfo(newResults, fullName=False):
     pPos = [nh for nh,h in enumerate(header) if h == 'P-value'][0]
     logPPos = [nh for nh,h in enumerate(header) if h == 'log P-pvalue'][0]
     percPos = [nh for nh,h in enumerate(header) if h == '% of Targets'][0]
-
+    backgPos = [nh for nh,h in enumerate(header) if h == '% of Background'][0]
+    
     # and rest of table elements
     nameS = []
     pvalS = []
     logpvalS = []
     percInTargetS = []
+    percInBackGS = []
     for t in tr_elements[1:]:
         if fullName:
             nameS += [t[namePos].text_content()]
@@ -310,8 +488,12 @@ def getHomerHtmlInfo(newResults, fullName=False):
         pvalS += [float(t[pPos].text_content())]
         logpvalS += [float(t[logPPos].text_content())]
         percInTargetS += [float(t[percPos].text_content()[:-1])]
+        percInBackGS += [float(t[backgPos].text_content()[:-1])]
 
-    return nameS, pvalS, logpvalS, percInTargetS
+    if returnBgPerce:
+        return nameS, pvalS, logpvalS, percInTargetS, percInBackGS
+    else:
+        return nameS, pvalS, logpvalS, percInTargetS
     
 ## some functions to filter motifs by expression and name
 def motifPassByExpre(cell, rnaTable, motif, motifToGene, minExp):

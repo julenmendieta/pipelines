@@ -85,9 +85,9 @@ echo -e "Starting consensus peak annotations ------------------------------\n"
 
 
 peaktype="binnedPeak"
-prefix=$(basename $binnedPeaks | cut -d '.' -f 1 | sed 's/allChIPCounts_//g')
+prefix=$(basename $binnedPeaks | cut -d '.' -f 1) # | sed 's/allChIPCounts_//g')
 
-prefix="${peaktype}_${prefix}"
+#prefix="${peaktype}_${prefix}"
 cell=$( mapLib=(${prefix//_/ }); 
         echo ${mapLib[1]})
 

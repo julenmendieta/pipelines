@@ -328,13 +328,14 @@ or you might get no reads')
                                             
 # Normalise by frecuencies given the presence of each interacting fragment                                           
 def frecuenciesNorm(hic_data, resol, regRange, concatemersBin, multResult=100, 
-                    keep=False, mininter=0, positionAdjust=0):
+                    keep=False, mininter=0, positionAdjust=0, decimals=8):
     
     '''
     param 0 positionAdjust: In case the positions from concatemersBin are taking 
         into account bining from the whole genome, but we just load in hic_data
-        one chromosome. Here concatemersBin will be substracted added to the 
+        one chromosome. Here concatemersBin will be substracted/added to the 
         positions in regRange in order to compensate this
+    :param 10 decimals: Number of decimals to which round the normalised data
     
     '''
     # create HiC data for normalised interactions
@@ -346,8 +347,9 @@ def frecuenciesNorm(hic_data, resol, regRange, concatemersBin, multResult=100,
     # Will remove from divider concatemers counted twice
     if keep == False:
         for nbin1, bin1 in enumerate(regRange):
+            cbin1 = concatemersBin[bin1 + positionAdjust]
             for bin2 in regRange[nbin1:]:
-                # If diagonal or bellow sed interactions
+                # If diagonal or bellow said interactions
                 if bin1 == bin2 or hic_data[bin1, bin2] <= mininter:
                     pass  # Leave it as zero
 
@@ -361,7 +363,7 @@ def frecuenciesNorm(hic_data, resol, regRange, concatemersBin, multResult=100,
                     #elif concatemersBin[bin2] == 0:
                     #    divider = concatemersBin[bin1]
                     #else:
-                    divider = (concatemersBin[bin1 + positionAdjust] + 
+                    divider = (cbin1 + 
                                concatemersBin[bin2 + positionAdjust] - 
                                hic_data[bin1, bin2])
 
@@ -373,8 +375,9 @@ def frecuenciesNorm(hic_data, resol, regRange, concatemersBin, multResult=100,
                     #ie just checking a chromosome, or whole genome and here just 
                     #normalising a file were we loaded one chromosome
                     # if both are zero 
-                    norm_data[bin1, bin2] = (hic_data[bin1, bin2] / float(divider)) * multResult
-                    norm_data[bin2, bin1] = norm_data[bin1, bin2]
+                    norm_data[bin1, bin2] = round((hic_data[bin1, bin2] / 
+                                            float(divider)) * multResult, decimals)
+                    #norm_data[bin2, bin1] = norm_data[bin1, bin2]
 
 
     else:
@@ -402,8 +405,9 @@ def frecuenciesNorm(hic_data, resol, regRange, concatemersBin, multResult=100,
                 #if divider == 0:
                 #    divider = 1
                 # if both are zero 
-                norm_data[ke[0], ke[1]] = hic_data[ke[0], ke[1]] / float(divider)
-                norm_data[ke[1], ke[0]] = norm_data[ke[0], ke[1]]
+                norm_data[ke[0], ke[1]] = round(hic_data[ke[0], ke[1]] / 
+                                                    float(divider), decimals)
+                #norm_data[ke[1], ke[0]] = norm_data[ke[0], ke[1]]
         
     return norm_data
                                          
