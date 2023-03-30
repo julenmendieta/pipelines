@@ -154,11 +154,11 @@ for (bag in batchGroups) {
 
         print(bag)
         coldataSel <- coldata2[coldata2[, "batch"] %in% bag, ]
-        # Keep samples with data in both batches
+        # Keep samples with data in all batches
         getBatchCorrected2 <- c()
         for (con in unique(coldataSel[,"labels"])) {
-            pos <- coldataSel[,"labels"] == con
-            if (length(unique(coldataSel[pos, "batch"])) > 1) {
+            pos <- coldata2[,"labels"] == con
+            if (sum(unique(coldata2[pos, "batch"]) %in% bag) == length(bag)) {
                 getBatchCorrected2 <- c(getBatchCorrected2, con)
                 
             }
