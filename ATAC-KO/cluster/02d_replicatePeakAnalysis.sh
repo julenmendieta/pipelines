@@ -5,7 +5,7 @@
 ## SLURM VARIABLES
 #SBATCH --job-name=replyATAC
 #SBATCH --cpus-per-task=8
-#SBATCH --mem=16G
+#SBATCH --mem=25G
 #SBATCH --time=10:00:00
 #SBATCH -p short
 #SBATCH -o /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.out  
@@ -13,8 +13,8 @@
 
 # HOW TO RUN ME
 #sbatch /home/jmendietaes/programas/PhD/ATAC-KO/cluster/02d_replicatePeakAnalysis.sh \
-#/home/jmendietaes/data/2021/ATAC/allProcessed/bamfiles/valid/mergedReplicates/02_firstATAC \
-#/home/jmendietaes/data/2021/ATAC/allProcessed/furtherAnalysis/02_firstATAC 
+#/home/jmendietaes/data/2021/ATAC/allProcessed/bamfiles/valid/mergedReplicates/05_laura \
+#/home/jmendietaes/data/2021/ATAC/allProcessed/furtherAnalysis/05_laura 
 
 
 # path where we have the replicate files
@@ -38,10 +38,10 @@ byBatch=TRUE
 # Coma separated string with all posible control IDs 
 # Used for batch corrected analysis of same KOs
 # Set to "no" to not do it
-posibleControls="NTC,WT,NTC0005,NTC5,V12h"
+posibleControls="NTC,WT,NTC0005,NtC5,V12h"
 #posibleControls="no"
 # If we want to include bamfiles with no replicates in the sae batch
-extraBamsPath="/home/jmendietaes/data/2021/ATAC/allProcessed/bamfiles/valid/02_firstATAC"
+extraBamsPath="/home/jmendietaes/data/2021/ATAC/allProcessed/bamfiles/valid/05_laura"
 
 # extend variables
 bamsPath="${replicatesPath}"
@@ -143,13 +143,13 @@ fileNotExistOrOlder () {
 
 # create new folders
 featureCpath=${outpath}/featureCounts
-featureCpath_batch=${outpath}/featureCounts_batchCorrect
+#featureCpath_batch=${outpath}/featureCounts_batchCorrect
 if [ ! -e ${featureCpath} ]; then
 	mkdir -p ${featureCpath}
 fi
-if [[ ${posibleControls} != "no" ]]; then
-    mkdir -p ${featureCpath_batch}
-fi
+# if [[ ${posibleControls} != "no" ]]; then
+#     mkdir -p ${featureCpath_batch}
+# fi
 
 
 cd ${featureCpath}
@@ -175,6 +175,7 @@ for chip in ${mergeGroups}; do
     fi
 done)
 
+chipCheck="${chipCheck} allmerged"
 for chip in ${chipCheck}; do
     for peaktype in broadPeak; do
         prefix="${chip}_${peaktype}_consensusPeaks"
@@ -186,7 +187,9 @@ for chip in ${chipCheck}; do
         #                 tr '\n' ' ')
         bamfiles=$(echo $allbams | tr ' ' '\n' | \
                             { grep -e "${chip}-\|${chip}_" || :; })
-
+        if [[ ${chip} == "allmerged" ]]; then
+            bamfiles=${allbams}
+        fi
         # check if the file exists or it was created with a previous bam version 
         featureOut=${featureCpath}/${prefix}.featureCounts.txt
         fileNotExistOrOlder "${featureOut}" "${bamfiles}"
@@ -226,8 +229,8 @@ for chip in ${chipCheck}; do
         featureOut=${featureCpath}/${prefixF}.featureCounts.txt
 
         # check if the file exists or it was created with a previous featureCounts version 
-        fileNotExistOrOlder "${outpath}/DESeq2/${chip}_${peaktype}/${chip}_${peaktype}_DESeq2.log" "${featureOut}"
-        if [[ ${analyse} == "yes" ]]; then
+        
+        if [[ ${chip} != "allmerged" ]]; then
             # get compared cells to add them at name
             if [[ ${mergeBy} == "chip" ]]; then
                 cells=$(head -n 2 ${featureOut} | tail -n 1 \
@@ -276,30 +279,33 @@ for chip in ${chipCheck}; do
                 echo "ERROR: Merge-by method not recognised"
                 exit 1
             fi
+        else
+            prefix="${chip}_${peaktype}_DESeq2"
+        fi
 
-            
-            # Run all by batch
-            Rscript ${scriptsPath}/ATAC/cluster/02_NR_featurecounts_deseq2.r \
+        
+        # Run all by batch
+        Rscript ${scriptsPath}/ATAC-KO/cluster/02_NR_featurecounts_deseq2.r \
+                --featurecount_file ${featureOut} \
+                --bam_suffix '.sort.rmdup.rmblackls.rmchr.Tn5.bam' \
+                --outdir ${outpath}/DESeq2/${chip}_${peaktype}/ \
+                --outprefix $prefix \
+                --outsuffix '' \
+                --cores ${SLURM_CPUS_PER_TASK} \
+                --bybatch ${byBatch} \
+                --controls ${posibleControls}
+
+
+        # Run merging by ko and with batch corrections
+        if [[ ${posibleControls} != "no" ]]; then
+            Rscript ${scriptsPath}/ATAC-KO/cluster/02_NR_featurecounts_deseq2_joinBatches.r \
                     --featurecount_file ${featureOut} \
                     --bam_suffix '.sort.rmdup.rmblackls.rmchr.Tn5.bam' \
-                    --outdir ${outpath}/DESeq2/${chip}_${peaktype}/ \
+                    --outdir ${outpath}/DESeq2_batchCorrect/${chip}_${peaktype}/ \
                     --outprefix $prefix \
                     --outsuffix '' \
                     --cores ${SLURM_CPUS_PER_TASK} \
-                    --bybatch ${byBatch}
-
-
-            # Run merging by ko and with batch corrections
-            if [[ ${posibleControls} != "no" ]]; then
-                Rscript ${scriptsPath}/ATAC/cluster/02_NR_featurecounts_deseq2_joinBatches.r \
-                        --featurecount_file ${featureOut} \
-                        --bam_suffix '.sort.rmdup.rmblackls.rmchr.Tn5.bam' \
-                        --outdir ${outpath}/DESeq2_batchCorrect/${chip}_${peaktype}/ \
-                        --outprefix $prefix \
-                        --outsuffix '' \
-                        --cores ${SLURM_CPUS_PER_TASK} \
-                        --controls ${posibleControls}
-            fi
+                    --controls ${posibleControls}
         fi
     done
 done
@@ -315,7 +321,7 @@ for chip in *Peak; do
     done;
 done
 
-if [[ ${posibleControls} == "no" ]]; then
+if [[ ${posibleControls} != "no" ]]; then
     cd ${outpath}/DESeq2_batchCorrect/
     mkdir -p ${outpath}/DESeq2_batchCorrect/gatheredDESeq
     for chip in *Peak; do 
