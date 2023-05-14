@@ -3,7 +3,7 @@
 
 ##===============================================================================
 ## SLURM VARIABLES
-#SBATCH --job-name=ATACanalysis
+#SBATCH --job-name=cutTagPeaks
 #SBATCH --cpus-per-task=32
 #SBATCH --mem=32G
 #SBATCH --time=05:00:00
@@ -11,10 +11,13 @@
 #SBATCH -o /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.out  
 #SBATCH -e /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.err 
 
+# WARNING
+# Spike-in didn't work for us, so this scripts doesn't take them
+#   into account
 
 # HOW TO RUN ME
-#sbatch /home/jmendietaes/programas/PhD/ATAC-KO/cluster/02b_peakAnalysis_I.sh \
-#/home/jmendietaes/data/2021/ATAC/allProcessed \
+#sbatch /home/jmendietaes/programas/PhD/cutTag/cluster/02b_peakAnalysis_I.sh \
+#/home/jmendietaes/data/2021/cutTag/allProcessed \
 
 # OBJECTIVE
 # call peaks, annotate, make consensus peaks, get reads in peaks, CPM and merge
@@ -23,15 +26,15 @@
 # path where we have the folder structure for chip analysis 
 # (inside we have ${basePath}/bamfiles/valid/)
 basePath=$1
-#basePath="/home/jmendietaes/data/2021/ATAC/allProcessed"
+#basePath="/home/jmendietaes/data/2021/cutTag/allProcessed"
 # Location of the analysis header files downloaded from 
 # https://github.com/nf-core/chipseq/tree/master/assets/multiqc
 #extraFilePath=$2
 #extraFilePath="/home/jmendietaes/data/2021/chip/analysisFiles"
 
 # Where to look for bam files and where to store output tree
-bamsPath="${basePath}/bamfiles/valid/05_laura"
-outpath=${basePath}"/furtherAnalysis/05_laura"
+bamsPath="${basePath}/bamfiles/valid/03_properAnalysis"
+outpath=${basePath}"/furtherAnalysis/03_properAnalysis"
 
 # Important paremeter to modify
 # Set to lowercase yes to use merge of IgG from different cells allCell_IgG.sort.r..

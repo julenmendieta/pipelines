@@ -15,10 +15,10 @@
 # DO NOT USE home relative paths (~/)
 inTable="/home/jmendietaes/prueba/rename.txt"
 # path in which we will do the search and name changing
-focusPath="/home/jmendietaes/data/2021/chip/sequencedData/NextSeq2000.RUN143.230201/demux_fastq"
+focusPath="/home/jmendietaes/data/2021/ATAC/allProcessed/furtherAnalysis/05_laura/replicateAnalysis/DESeq2_batchCorrect/gatheredDESeq/"
 # If we want to do a test printing the change but not doing anything
 # posible answers are lowercase "yes" (ony print) or "no" (print and change)
-onlyTest="yes"
+onlyTest="no"
 
 
 ########## START #############

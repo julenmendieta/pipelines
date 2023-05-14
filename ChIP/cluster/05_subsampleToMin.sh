@@ -95,7 +95,7 @@ chips=$(for fi in `cut -f 2 ${bamCounts} | tail -n +2`; do
 # for now we only subsample DM and Mye
 for chip in $chips; do
     echo $chip
-    chipFiles=$(grep "${chip}_\|${chip}-" ${bamCounts}| cut -f 2 | \
+    chipFiles=$(grep "${chip}_\|${chip}-\|${chip}\." ${bamCounts}| cut -f 2 | \
                     grep -v mergedReplicates | grep "${subsampleCells}")
 
     if [[ $(echo $chipFiles | wc -w) == 2 ]]; then
@@ -142,7 +142,7 @@ done
 
 
 
-# To copy only subsampled and not subsampled files that are not common
+# # To copy only subsampled and not subsampled files that are not common
 # chips=$(for fi in `cat ${bamCounts} | grep "${subsampleCells}" | \
 #         grep -v mergedReplicates/ | cut -f 2  | tail -n +2`; do 
 #         filename=$(basename ${fi}); 

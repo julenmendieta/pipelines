@@ -13,9 +13,13 @@
 
 # HOW TO RUN ME
 #sbatch /home/jmendietaes/programas/PhD/ATAC/cluster/02d_replicatePeakAnalysis.sh \
-#/home/jmendietaes/data/2021/ATAC/allProcessed/bamfiles/valid/mergedReplicates/02_firstATAC \
-#/home/jmendietaes/data/2021/ATAC/allProcessed/furtherAnalysis/02_firstATAC 
+#/home/jmendietaes/data/2021/ATAC/allProcessed/bamfiles/valid/mergedReplicates/08_paperChip \
+#/home/jmendietaes/data/2021/ATAC/allProcessed/furtherAnalysis/08_paperChip 
 
+# NOTES
+# As it is now, the script will compare groups with more than one replicates
+#   using the whole cell consensus peak table as input for the comparison
+#   coordiantes
 
 # path where we have the replicate files
 # (inside we have ${replicatesPath}/bamfiles/valid/)
@@ -26,22 +30,24 @@ replicatesPath=$1
 inPath=$2
 #inPath="/home/jmendietaes/data/2021/ATAC/allProcessed/furtherAnalysis/02_firstATAC"
 
+# If we want to include bamfiles with no replicates in the sae batch
+extraBamsPath="/home/jmendietaes/data/2021/ATAC/allProcessed/bamfiles/valid/05-2_laura-NTC"
+
+
 # State how to merge chip files (appart from whole merge)
 # Options are: chip, cellfirst, and cell. That state for
 # second name slot in between "_", first name slot in between "_"
 # and removing all after "-", and whole first name slot in between "_"
-mergeBy="cellfirst"
+mergeBy="cell"
 
 # Set to TRUE if you want to compare only by batches
-byBatch=TRUE
+#byBatch=TRUE
 
 # Coma separated string with all posible control IDs 
 # Used for batch corrected analysis of same KOs
 # Set to "no" to not do it
-posibleControls="NTC,WT,NTC0005,NTC5,V12h"
+#posibleControls="NTC,WT,NTC0005,NTC5,V12h"
 #posibleControls="no"
-# If we want to include bamfiles with no replicates in the sae batch
-extraBamsPath="/home/jmendietaes/data/2021/ATAC/allProcessed/bamfiles/valid/02_firstATAC"
 
 # extend variables
 bamsPath="${replicatesPath}"
@@ -135,6 +141,8 @@ fileNotExistOrOlder () {
     fi
 }
 
+function join_by { local IFS="$1"; shift; echo "$*"; }
+
 ###########################################################
 # Count reads in consensus peaks with featureCounts
 ##########################################################
@@ -145,7 +153,7 @@ fileNotExistOrOlder () {
 featureCpath=${outpath}/featureCounts
 featureCpath_batch=${outpath}/featureCounts_batchCorrect
 if [ ! -e ${featureCpath} ]; then
-	mkdir -p ${featureCpath}
+    mkdir -p ${featureCpath}
 fi
 if [[ ${posibleControls} != "no" ]]; then
     mkdir -p ${featureCpath_batch}
@@ -167,43 +175,50 @@ for chip in ${mergeGroups}; do
     for filename in ${chipFiles}; do 
         filename=$(basename ${filename})
         mapLib=(${filename//_/ }); 
-        echo ${mapLib[0]}; done | sort | uniq)
+        echo ${mapLib[0]}; done | sort)
 
     ncell=$(echo $cells | wc -w)
     if [ "${ncell}" -gt 1 ]; then
         echo $chip
     fi
 done)
+chipCheck=$(echo $chipCheck | sort)
 
-for chip in ${chipCheck}; do
-    for peaktype in broadPeak; do
-        prefix="${chip}_${peaktype}_consensusPeaks"
-        coordFiles=$(find -L ${inPath}/peakCalling/MACS2/consensusPeaks/bySameChip/${chip}_${peaktype}_consensusPeaks.saf \
-                                -maxdepth 1  -type f ! -size 0 )
-        # get a list with the bam files 
-        #bamfiles=$(echo $allbams | \
-        #                 grep -o "[A-Za-z0-9_\/\.\-]*\w*${chip}[A-Za-z0-9_\.\-]*" | \
-        #                 tr '\n' ' ')
-        bamfiles=$(echo $allbams | tr ' ' '\n' | \
-                            { grep -e "${chip}-\|${chip}_" || :; })
+separator="\|" 
+regex="$( printf "${separator}%s" ${chipCheck} )"
+regex="${regex:${#separator}}" # remove leading separator
+separator="_" 
+toCompare="$( printf "${separator}%s" ${chipCheck} )"
+toCompare="${toCompare:${#separator}}" # remove leading separator
+toCompare=$(echo $toCompare | sed 's/_/-/g')
 
-        # check if the file exists or it was created with a previous bam version 
-        featureOut=${featureCpath}/${prefix}.featureCounts.txt
-        fileNotExistOrOlder "${featureOut}" "${bamfiles}"
-        # this outputs analyse as yes or no in lowercase
-        if [[ ${analyse} == "yes" ]]; then
-            # this only for the consensus between replicates, here no sense
-            featureCounts \
-                    -F SAF \
-                    -O \
-                    --fracOverlap 0.2 \
-                    -T ${SLURM_CPUS_PER_TASK} \
-                    -p --donotsort \
-                    -a ${inPath}/peakCalling/MACS2/consensusPeaks/bySameChip/${prefix}.saf \
-                    -o ${featureOut} \
-                    ${bamfiles} 
-        fi
-    done
+for peaktype in broadPeak; do
+    prefix="${toCompare}_${peaktype}_consensusPeaks"
+    coordFiles=$(find -L ${inPath}/peakCalling/MACS2/consensusPeaks/ATAC_${peaktype}_consensusPeaks.saf \
+                            -maxdepth 1  -type f ! -size 0 )
+    # get a list with the bam files 
+    #bamfiles=$(echo $allbams | \
+    #                 grep -o "[A-Za-z0-9_\/\.\-]*\w*${chip}[A-Za-z0-9_\.\-]*" | \
+    #                 tr '\n' ' ')
+    bamfiles=$(echo $allbams | tr ' ' '\n' | \
+                        { grep -e ${regex} || :; })
+
+    # check if the file exists or it was created with a previous bam version 
+    featureOut=${featureCpath}/${prefix}.featureCounts.txt
+    fileNotExistOrOlder "${featureOut}" "${bamfiles}"
+    # this outputs analyse as yes or no in lowercase
+    if [[ ${analyse} == "yes" ]]; then
+        # this only for the consensus between replicates, here no sense
+        featureCounts \
+                -F SAF \
+                -O \
+                --fracOverlap 0.2 \
+                -T ${SLURM_CPUS_PER_TASK} \
+                -p --donotsort \
+                -a ${inPath}/peakCalling/MACS2/consensusPeaks/ATAC_${peaktype}_consensusPeaks.saf \
+                -o ${featureOut} \
+                ${bamfiles} 
+    fi
 done
 
 echo -e "Consensus same-chip featureCounts - Finished ----------------------\n"
@@ -214,114 +229,59 @@ echo -e "Consensus same-chip featureCounts - Finished ----------------------\n"
 ###########################################################
 
 if [ ! -e ${outpath}/DESeq2/ ]; then
-	mkdir -p ${outpath}/DESeq2/
+    mkdir -p ${outpath}/DESeq2/
     mkdir -p ${outpath}/DESeq2_batchCorrect/
 fi
 
-for chip in ${chipCheck}; do
-    for peaktype in broadPeak; do
-        prefixF="${chip}_${peaktype}_consensusPeaks"
+for peaktype in broadPeak; do
+    prefixF="${toCompare}_${peaktype}_consensusPeaks"
 
-        # first input is featureCounts file
-        featureOut=${featureCpath}/${prefixF}.featureCounts.txt
+    # first input is featureCounts file
+    featureOut=${featureCpath}/${prefixF}.featureCounts.txt
 
-        # check if the file exists or it was created with a previous featureCounts version 
-        fileNotExistOrOlder "${outpath}/DESeq2/${chip}_${peaktype}/${chip}_${peaktype}_DESeq2.log" "${featureOut}"
-        if [[ ${analyse} == "yes" ]]; then
-            # get compared cells to add them at name
-            if [[ ${mergeBy} == "chip" ]]; then
-                cells=$(head -n 2 ${featureOut} | tail -n 1 \
-                        | grep -o "[\/]\w*_*${chip}")
-                cells=`for cell in ${cells}; do 
-                    mapLib=(${cell//_/ }); 
-                    mapLib=${mapLib[0]}; 
-                    echo ${mapLib} | sed 's/\///g'; done | sort | uniq | \
-                    tr '\n' '-'`
-                cells=${cells::-1}
-                prefix="${chip}_${cells}_${peaktype}_DESeq2" 
-            elif [[ ${mergeBy} == "cellfirst" ]]; then
-                cells=$(head -n 2 ${featureOut} | tail -n 1 | \
-                        { grep -o -e "${chip}-\|${chip}_" || :; } | sort | uniq)
-                cells=$(for c in $cells; do echo ${c::-1}; done | tr '\n' '-')
-                cells=${cells::-1}
-                if [[ ${chip} == ${cells} ]]; then
-                    prefix="${cells}_${peaktype}_DESeq2" 
-                else
-                    echo "Group selection in ${mergeBy} mode does not match"
-                    echo "${chip}    -vs-   ${cells}"
-                    echo "ERROR"
-                    exit 1
-                fi
-            elif [[ ${mergeBy} == "cell" ]]; then
-                cells=$(head -n 2 ${featureOut} | tail -n 1 | tr '\t' '\n'| \
-                                    { grep -o -e "${chip}[-A-Za-z0-9]*_" || :; } \
-                                    | sort | uniq)
-                cells=`for cell in ${cells}; do 
-                    mapLib=(${cell//_/ }); 
-                    mapLib=${mapLib[0]}; 
-                    echo ${mapLib}; done | sort | uniq | \
-                    tr '\n' '-'`
-
-                cells=${cells::-1}
-
-                if [[ ${chip} == ${cells} ]]; then
-                    prefix="${cells}_${peaktype}_DESeq2" 
-                else
-                    echo "Group selection in ${mergeBy} mode does not match"
-                    echo "${chip}    -vs-   ${cells}"
-                    echo "ERROR"
-                    exit 1
-                fi
-            else
-                echo "ERROR: Merge-by method not recognised"
-                exit 1
-            fi
-
-            
-            # Run all by batch
-            Rscript ${scriptsPath}/ATAC/cluster/02_NR_featurecounts_deseq2.r \
-                    --featurecount_file ${featureOut} \
-                    --bam_suffix '.sort.rmdup.rmblackls.rmchr.Tn5.bam' \
-                    --outdir ${outpath}/DESeq2/${chip}_${peaktype}/ \
-                    --outprefix $prefix \
-                    --outsuffix '' \
-                    --cores ${SLURM_CPUS_PER_TASK} \
-                    --bybatch ${byBatch}
+    # check if the file exists or it was created with a previous featureCounts version 
+    fileNotExistOrOlder "${outpath}/DESeq2/${toCompare}_${peaktype}/${toCompare}_${peaktype}_DESeq2.log" "${featureOut}"
+    if [[ ${analyse} == "yes" ]]; then
+        
+        
+        # Run all by batch
+        # Rscript ${scriptsPath}/ATAC/cluster/02_NR_featurecounts_deseq2.r \
+        #         --featurecount_file ${featureOut} \
+        #         --bam_suffix '.sort.rmdup.rmblackls.rmchr.Tn5.bam' \
+        #         --outdir ${outpath}/DESeq2/${toCompare}_${peaktype}/ \
+        #         --outprefix $prefix \
+        #         --outsuffix '' \
+        #         --cores ${SLURM_CPUS_PER_TASK} \
+        #         --bybatch ${byBatch}
 
 
-            # Run merging by ko and with batch corrections
-            if [[ ${posibleControls} != "no" ]]; then
-                Rscript ${scriptsPath}/ATAC/cluster/02_NR_featurecounts_deseq2_joinBatches.r \
-                        --featurecount_file ${featureOut} \
-                        --bam_suffix '.sort.rmdup.rmblackls.rmchr.Tn5.bam' \
-                        --outdir ${outpath}/DESeq2_batchCorrect/${chip}_${peaktype}/ \
-                        --outprefix $prefix \
-                        --outsuffix '' \
-                        --cores ${SLURM_CPUS_PER_TASK} \
-                        --controls ${posibleControls}
-            fi
-        fi
-    done
+        # Run merging by ko and with batch corrections
+        Rscript ${scriptsPath}/ATAC/cluster/02_NR_featurecounts_deseq2_joinBatches.r \
+                --featurecount_file ${featureOut} \
+                --bam_suffix '.sort.rmdup.rmblackls.rmchr.Tn5.bam' \
+                --outdir ${outpath}/DESeq2_batchCorrect/${toCompare}_${peaktype}/ \
+                --outprefix $prefix \
+                --outsuffix '' \
+                --cores ${SLURM_CPUS_PER_TASK}
+    fi
 done
 
 
 # Gather all data
-cd ${outpath}/DESeq2/
-mkdir -p ${outpath}/DESeq2/gatheredDESeq
+# cd ${outpath}/DESeq2/
+# mkdir -p ${outpath}/DESeq2/gatheredDESeq
+# for chip in *Peak; do 
+#     for compare in ${chip}/*vs*; do 
+#         cells=$(basename ${compare}); 
+#         cp ${compare}/${cells}.deseq2.results.txt gatheredDESeq/${chip}_${cells}.deseq2.results.txt ; 
+#     done;
+# done
+
+cd ${outpath}/DESeq2_batchCorrect/
+mkdir -p ${outpath}/DESeq2_batchCorrect/gatheredDESeq
 for chip in *Peak; do 
     for compare in ${chip}/*vs*; do 
         cells=$(basename ${compare}); 
         cp ${compare}/${cells}.deseq2.results.txt gatheredDESeq/${chip}_${cells}.deseq2.results.txt ; 
     done;
 done
-
-if [[ ${posibleControls} == "no" ]]; then
-    cd ${outpath}/DESeq2_batchCorrect/
-    mkdir -p ${outpath}/DESeq2_batchCorrect/gatheredDESeq
-    for chip in *Peak; do 
-        for compare in ${chip}/*vs*; do 
-            cells=$(basename ${compare}); 
-            cp ${compare}/${cells}.deseq2.results.txt gatheredDESeq/${chip}_${cells}.deseq2.results.txt ; 
-        done;
-    done
-fi

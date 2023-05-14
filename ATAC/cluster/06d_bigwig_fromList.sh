@@ -18,13 +18,12 @@
 #files="LSK-Chd4_ATAC5-merged.sort.rmdup.rmblackls.rmchr.Tn5 \
 #LSK-Men1_ATAC5-merged.sort.rmdup.rmblackls.rmchr.Tn5"
 
-files="DM-Kmt2d_ATAC7-merged.sort.rmdup.rmblackls.rmchr.Tn5 \
-DM-NTC_ATAC7-merged.sort.rmdup.rmblackls.rmchr.Tn5 \
-DM-WDR82_ATAC7-merged.sort.rmdup.rmblackls.rmchr.Tn5" # \
+files="DM_ATAC-merged.sort.rmdup.rmblackls.rmchr.Tn5 \
+Mye_ATAC-merged.sort.rmdup.rmblackls.rmchr.Tn5" # \
 #GMP-Brd9_ATACTraspl-merged.sort.rmdup.rmblackls.rmchr.Tn5"
 
 basePath="/home/jmendietaes/data/2021/ATAC/allProcessed"
-bamBase="${basePath}/bamfiles/valid/02_firstATAC"
+bamBase="${basePath}/bamfiles/valid/08_paperChip"
 
 
 REFERENCE_DIR="/home/jmendietaes/referenceGenomes/mm10_reordered/mm10.reordered"

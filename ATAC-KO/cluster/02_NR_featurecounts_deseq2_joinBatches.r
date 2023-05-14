@@ -347,6 +347,7 @@ for (cell in cells) {
 
         ResultsFile <- paste(opt$outprefix, ".results_", compareID,".txt",sep="")
 
+        addidx <- 1
         if (file.exists(ResultsFile) == FALSE) {
 
             deseq2_results_list <- list()
@@ -425,10 +426,14 @@ for (cell in cells) {
                         cat("\n",file=LogFile,append=TRUE,sep="")
                         dev.off()
                     }
+
+                    colnames(comp.df) <- paste(CompPrefix,".",colnames(comp.df),sep="")
+                    deseq2_results_list[[addidx]] <- comp.df
+                    addidx = addidx + 1
+
                 }
                 
-                colnames(comp.df) <- paste(CompPrefix,".",colnames(comp.df),sep="")
-                deseq2_results_list[[idx]] <- comp.df
+                
             }
             ## WRITE RESULTS FROM ALL COMPARISONS TO FILE
             deseq2_results_table <- cbind(interval.table,do.call(cbind, deseq2_results_list),

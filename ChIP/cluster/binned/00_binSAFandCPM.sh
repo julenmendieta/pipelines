@@ -5,7 +5,7 @@
 ## SLURM VARIABLES
 #SBATCH --job-name=cpmInFocusCoord
 #SBATCH --cpus-per-task=8
-#SBATCH --mem=10G
+#SBATCH --mem=30G
 #SBATCH --time=10:00:00
 #SBATCH -p short
 #SBATCH -o /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.out  
@@ -13,31 +13,25 @@
 
 
 # HOW TO RUN ME
-#sbatch /home/jmendietaes/programas/PhD/ChIP/cluster/09_getCPM_fromSAF.sh 
+#sbatch /home/jmendietaes/programas/PhD/ChIP/cluster/binned/00_binSAFandCPM.sh 
 
 # OBJECTIVE
-# get CPM values from bamfiles in path at consensus saf coordinta file
+# get overlap of SAF file with whole genome binned and SAF file with consensus
+#   coordinates. Then compute CPM values from bamfiles in path
 
-# For my paper with ATAC
-peaktype="broadPeak"
+
+# Path to binned whole genome SAF
+safBin="/home/jmendietaes/data/2021/chip/allProcessed/furtherAnalysis/08_projectRestart_subsampeld/consensusPerBins/wholeGenome_200bp.saf"
 # Path to coordinate file
-#safIn="/home/jmendietaes/data/2021/chip/allProcessed/furtherAnalysis/08_projectRestart/csaw/MACSconsensus_DM-Mye_WS-200_SPC-200_IgG-flt.saf"
-safIn="/home/jmendietaes/data/2021/retroChecks/01_expreInPeaksAround/pui1Trim28Overlap_10000bp.saf"
+safIn="/home/jmendietaes/data/2021/chip/allProcessed/furtherAnalysis/08_projectRestart/peakCalling/peakSelection/consensus/allmerged_broadPeak_consensusPeaks.saf"
 # Path where the bams of interest are stored
-#bamsIn="/home/jmendietaes/data/2021/ATAC/allProcessed/bamfiles/valid/08_paperChip"
-bamsIn="/home/jmendietaes/data/2021/retroChecks/01_expreInPeaksAround/bams"
+bamsIn="/home/jmendietaes/data/2021/chip/allProcessed/bamfiles/valid/08_projectRestart_subsampled"
 # Path where to output files
-#outPath="/home/jmendietaes/data/2021/chip/allProcessed/furtherAnalysis/08_projectRestart/csaw/ATACcounts"
-outPath="/home/jmendietaes/data/2021/retroChecks/01_expreInPeaksAround/counts"
+outPath="/home/jmendietaes/data/2021/chip/allProcessed/furtherAnalysis/08_projectRestart_subsampeld/consensusPerBins/consensusOut"
 # Files first label
-label1="multiExperiment"
+label1="allmerged"
 
-# For Ainhoa paper
-# safIn="/home/jmendietaes/data/2021/chip/allProcessed/furtherAnalysis/07_leukPaper/peakCalling/MACS2/consensusPeaks/allmerged_narrowPeak_consensusPeaks.saf"
-# peaktype="narrowPeak"
-# bamsIn="/home/jmendietaes/data/2021/chip/allProcessed/bamfiles/valid/07_leukPaper3_addings"
-# outPath="/home/jmendietaes/data/2021/chip/allProcessed/furtherAnalysis/07_leukPaper/addMany"
-# label1="leukAddings"
+
 
 # path for the location of the pipeline scripts
 scriptsPath="/home/jmendietaes/programas/PhD"
@@ -77,23 +71,51 @@ fileNotExistOrOlder () {
     fi
 }
 
+
+###########################################################
+# Get SAF with all bins overlapping consensus peaks
+##########################################################
+cd ${outPath}
+
+echo -e "Starting binned SAF creation -----------------------\n"
+newSafIn=${outPath}/binned_consensusPeaks.saf
+
+fileNotExistOrOlder "${newSafIn}" \
+                    "${safIn} ${safBin}"
+# this outputs analyse as yes or no in lowercase
+if [[ ${analyse} == "yes" ]]; then
+    # Convert consensus SAF to bed
+    tail -n +2 ${safIn} | \
+        awk '{print $2"\t"$3"\t"$4"\t"$1}' > ${outPath}/consensusPeaks.bed
+
+    # Get overlap
+    tail -n +2 ${safBin} | awk '{print $2"\t"$3"\t"$4"\t"$1}' | \
+        bedtools intersect -a - -b ${outPath}/consensusPeaks.bed \
+                            -u -f 0.1 > ${outPath}/binned_consensusPeaks.bed
+    # Convert overlap bed to SAF
+    echo "GeneID\tChr\tStart\tEnd\tStrand" > ${outPath}/binned_consensusPeaks.saf
+    awk '{print $4"\t"$1"\t"$2"\t"$3"\t+"}' ${outPath}/binned_consensusPeaks.bed >> \
+            ${newSafIn}
+fi
+echo -e "binned SAF creation - Finished ----------------------\n"
+
 ###########################################################
 # Count reads in consensus peaks with featureCounts
 ##########################################################
 
-cd ${outPath}
+
 
 echo -e "Starting consensus featureCounts -----------------------\n"
 
 
-prefix="${label1}_${peaktype}_consensusPeaks"
+prefix="${label1}_consensusPeaks"
 bamfiles=$(find -L ${bamsIn}/*.bam -maxdepth 1  -type f ! -size 0)
-fileLabels=$(for f in $bamfiles; do echo ${f##*/} |sed "s/.sort.rmdup.rmblackls.rmchr.Tn5.bam//g"; done)
+fileLabels=$(for f in $bamfiles; do echo ${f##*/} |sed "s/.sort.rmdup.rmblackls.rmchr.bam//g"; done)
 
 
 # check if the file exists or it was created with a previous peaks version 
 featureOut=${outPath}/${prefix}.featureCounts.txt
-fileNotExistOrOlder "${featureOut}" "${bamfiles} ${safIn}"
+fileNotExistOrOlder "${featureOut}" "${bamfiles} ${newSafIn}"
 # this outputs analyse as yes or no in lowercase
 if [[ ${analyse} == "yes" ]]; then
     # this only for the consensus between replicates, here no sense
@@ -103,7 +125,7 @@ if [[ ${analyse} == "yes" ]]; then
             --fracOverlap 0.2 \
             -T ${SLURM_CPUS_PER_TASK} \
             -p --donotsort \
-            -a ${safIn} \
+            -a ${newSafIn} \
             -o ${featureOut} \
             ${bamfiles}
 fi
@@ -152,4 +174,39 @@ fi
 
 echo -e "Consensus CPM - Finished ----------------------\n"
 
+
+###########################################################
+# get table with rcount and CPM
+###########################################################
+
+echo -e "Starting CPM and rcount tables merge -----------------------\n"
+
+outfile=${outPath}/${prefix}.overlap.txt
+# check if the file exists or it was created with a previous featureCounts version 
+fileNotExistOrOlder "${outfile}" "${featureCPM} ${outPath}/${prefix}.featureCounts.txt"
+# this outputs analyse as yes or no in lowercase
+if [[ ${analyse} == "yes" ]]; then
+
+    head -n 1 ${featureCPM} > ${outPath}/tmp2.txt
+    headerNames=$(head -n 1 ${outPath}/tmp2.txt)
+    for h in ${headerNames}; do
+        if [[ $h != "interval_id" ]]; then
+            sed -i "s/${h}/${h}.cpm/g" ${outPath}/tmp2.txt
+        fi
+    done
+    tail -n +2 ${featureCPM} >> ${outPath}/tmp2.txt
+
+    # Both files are in the same order
+    tail -n +2 ${outPath}/${prefix}.featureCounts.txt | \
+                sed "s/sort.rmdup.rmblackls.rmchr.bam/rcount/g" | \
+                sed "s/$(echo $bamsIn/ | sed 's_/_\\/_g')//g" | \
+                paste - \
+                ${outPath}/tmp2.txt > ${outfile}
+fi
+
+echo -e "CPM and rcount tables merge - Finished ----------------------\n"
+
+
 echo -e "END --------------------------------------------------"
+
+exit 1

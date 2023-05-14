@@ -13,8 +13,8 @@
 
 # HOW TO RUN ME
 #sbatch /home/jmendietaes/programas/PhD/ATAC-KO/cluster/02d_replicatePeakAnalysis.sh \
-#/home/jmendietaes/data/2021/ATAC/allProcessed/bamfiles/valid/mergedReplicates/05_laura \
-#/home/jmendietaes/data/2021/ATAC/allProcessed/furtherAnalysis/05_laura 
+#/home/jmendietaes/data/2021/ATAC/allProcessed/bamfiles/valid/mergedReplicates/08b_RLTR45 \
+#/home/jmendietaes/data/2021/ATAC/allProcessed/furtherAnalysis/08b_RLTR45 
 
 
 # path where we have the replicate files
@@ -24,7 +24,11 @@ replicatesPath=$1
 # Path to the outpath folder where we run 02b_peakAnalysis_I.sh
 # and where we have the folder tree with the consensus peaks
 inPath=$2
-#inPath="/home/jmendietaes/data/2021/ATAC/allProcessed/furtherAnalysis/02_firstATAC"
+#inPath="/home/jmendietaes/data/2021/ATAC/allProcessed/furtherAnalysis/08b_RLTR45"
+
+# Path to coordinate saf file
+inSaf="/home/jmendietaes/data/2021/cutTag/allProcessed/furtherAnalysis/03_properAnalysis/extraFiles/RLTR45_LTR_ERVK.ann.saf"
+ID=$(basename $inSaf); ID=(${ID//\./ }); ID=${ID[0]}; 
 
 # State how to merge chip files (appart from whole merge)
 # Options are: chip, cellfirst, and cell. That state for
@@ -38,10 +42,10 @@ byBatch=TRUE
 # Coma separated string with all posible control IDs 
 # Used for batch corrected analysis of same KOs
 # Set to "no" to not do it
-posibleControls="NTC,WT,NTC0005,NtC5,V12h"
+posibleControls="NTC"
 #posibleControls="no"
 # If we want to include bamfiles with no replicates in the sae batch
-extraBamsPath="/home/jmendietaes/data/2021/ATAC/allProcessed/bamfiles/valid/05_laura"
+extraBamsPath="/home/jmendietaes/data/2021/ATAC/allProcessed/bamfiles/valid/08b_RLTR45"
 
 # extend variables
 bamsPath="${replicatesPath}"
@@ -175,7 +179,7 @@ for chip in ${mergeGroups}; do
     fi
 done)
 
-#chipCheck="${chipCheck} allmerged"
+chipCheck="${chipCheck} allmerged"
 for chip in ${chipCheck}; do
     for peaktype in broadPeak; do
         prefix="${chip}_${peaktype}_consensusPeaks"

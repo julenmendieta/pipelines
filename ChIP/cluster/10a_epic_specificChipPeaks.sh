@@ -3,7 +3,7 @@
 # You'll have to ask for extra RAM salloc -c 1 -p short --mem=30000
 # bash /home/jmendietaes/programas/PhD/ChIP/cluster/10a_epic_specificChipPeaks.sh
 
-chips="Men1"
+chips="K9me3"
 control="IgG"
 species=mm10
 bamsPath="/home/jmendietaes/data/2021/chip/allProcessed/bamfiles/valid/08_projectRestart"

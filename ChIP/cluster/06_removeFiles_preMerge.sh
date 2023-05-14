@@ -2,7 +2,7 @@
 # Add here unique IDs of each sample separated by a space
 #bash /home/jmendietaes/programas/PhD/ChIP/cluster/06_removeFiles_preMerge.sh
 
-removeChip="DM_Prmt5 DM_CBP DM_Nfil3 DM_Prmt1 DM_Jun DM_Junb"
+removeChip="DM_Jun"
 
 delete='yes'
 
@@ -12,7 +12,7 @@ outpath=${basePath}"/furtherAnalysis/08_projectRestart"
 if [ ! -e ${outpath}/peakCalling/MACS2/peaks/mergedReplicates ]; then
     mkdir -p ${outpath}/peakCalling/MACS2/peaks/mergedReplicates
     mkdir -p ${outpath}/HOMER/peakAnnotation/mergedReplicates
-    mkdir -p ${outpath}/peakCalling/MACS2/consensusPeaks/bySameChip/mergedReplicates
+    #mkdir -p ${outpath}/peakCalling/MACS2/consensusPeaks/bySameChip/mergedReplicates
 fi
 
 for re in ${removeChip}; do
@@ -20,11 +20,11 @@ for re in ${removeChip}; do
     ls ${outpath}/HOMER/peakAnnotation/${re}* | tr ' ' '\n'
     if [[ ${delete} == "yes" ]]; then
         rm ${outpath}/peakCalling/MACS2/peaks/${re}*
-        rm ${outpath}/peakCalling/MACS2/consensusPeaks/bySameChip/${re}*
+        #rm ${outpath}/peakCalling/MACS2/consensusPeaks/bySameChip/${re}*
         rm ${outpath}/HOMER/peakAnnotation/${re}*
     else
         mv ${outpath}/peakCalling/MACS2/peaks/${re}* ${outpath}/peakCalling/MACS2/peaks/mergedReplicates
-        mv ${outpath}/peakCalling/MACS2/consensusPeaks/bySameChip/${re}* ${outpath}/peakCalling/MACS2/consensusPeaks/bySameChip/mergedReplicates
+        #mv ${outpath}/peakCalling/MACS2/consensusPeaks/bySameChip/${re}* ${outpath}/peakCalling/MACS2/consensusPeaks/bySameChip/mergedReplicates
         mv ${outpath}/HOMER/peakAnnotation/${re}* ${outpath}/HOMER/peakAnnotation/mergedReplicates
     fi
 done
