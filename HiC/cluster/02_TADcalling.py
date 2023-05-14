@@ -11,16 +11,16 @@ import pickle
 chroms = [f'chr{i}' for i in range(1, 20)] + ['chrX', 'chrY']
 
 # BAM file path
-bampath = "/home/jmendietaes/data/2021/HiC/mapOut/ToolsOut/DM_HiC_normal_S34/03_filtered_reads/intersection_94e4921e80.bam"
+bampath = "/home/jmendietaes/data/2021/HiC/allProcessed/Mye_HiC_normal_S2/03_filtered_reads/intersection_94e4921e80.bam"
 
 # Resolution at which to call TADs
 resol = 50000
 
 # Normalisation biases path
-biasesP = "/home/jmendietaes/data/2021/HiC/mapOut/ToolsOut/DM_HiC_normal_S34/04_normalization/biases_50kb_17d8f87d9d.pickle"
+biasesP = "/home/jmendietaes/data/2021/HiC/allProcessed/Mye_HiC_normal_S2/04_normalization/biases_50kb_17d8f87d9d.pickle"
 
 # Path to output directoy
-outpath = "/home/jmendietaes/data/2021/HiC/mapOut/ToolsOut/DM_HiC_normal_S34/06_segmentation/tadsPy_50kb"
+outpath = "/home/jmendietaes/data/2021/HiC/allProcessed/Mye_HiC_normal_S2/06_segmentation/tadsPy_50kb"
 
 # ncpus to use at the time to load the matrix and call TADs
 ncpus = 4

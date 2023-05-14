@@ -14,7 +14,7 @@
 # HOW TO RUN ME
 #sbatch /home/jmendietaes/programas/PhD/ChIP/cluster/02d_replicatePeakAnalysis.sh \
 #/home/jmendietaes/data/2021/chip/allProcessed \
-#/home/jmendietaes/data/2021/chip/allProcessed/furtherAnalysis/subsampled_noIgG \
+#/home/jmendietaes/data/2021/chip/allProcessed/furtherAnalysis/08_projectRestart \
 
 
 # path where we have the folder structure for chip analysis 
@@ -33,11 +33,25 @@ scriptsPath="/home/jmendietaes/programas/PhD"
 
 # extend variables
 bamsPath="${basePath}/bamfiles/valid/mergedReplicates"
-outpath=${basePath}"/furtherAnalysis/subsampled_noIgG/replicateAnalysis"
+mergedBamsP="${basePath}/bamfiles/valid/08_projectRestart"
+outpath=${basePath}"/furtherAnalysis/08_projectRestart/replicateAnalysis"
 
 
 allbams=$(find ${bamsPath}/*bam -printf "${bamsPath}/%f\n" | \
             { grep -v -e "_input" -v -e "_IgG" || :; })
+# Keep only the ones for which we have used the merge
+mergedbams=$(find ${mergedBamsP}/*bam -printf "%f\n" | \
+            { grep -v -e "_input" -v -e "_IgG" || :; })
+toGrep="StringForNoMatch"
+for bam in ${mergedbams}; do 
+    a=$(basename $bam); 
+    a=(${a//\./ }); a=${a[0]};
+    a=(${a//-/ }); a=${a[0]};
+    a=(${a//_/ }); a=${a[0]}_${a[1]};
+    toGrep="${toGrep}\|${a}"
+done
+allbams=$(echo "${allbams}" | grep $toGrep)
+
 allChip=$(\
     for filename in ${allbams}; do 
         mapLib=(${filename//\./ }); 
@@ -162,7 +176,7 @@ fi
 
 echo -e "Starting DESeq analysis -----------------------\n"
 for chip in ${chipCheck}; do
-    for peaktype in narrowPeak; do
+    for peaktype in narrowPeak broadPeak; do
         prefixF="${chip}_${peaktype}_consensusPeaks"
         echo ${prefixF}
         # first input is featureCounts file

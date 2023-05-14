@@ -4,7 +4,7 @@
 ##===============================================================================
 ## SLURM VARIABLES
 #SBATCH --job-name=SubsToMin
-#SBATCH --cpus-per-task=16
+#SBATCH --cpus-per-task=8
 #SBATCH --mem=8G
 #SBATCH --time=05:00:00
 #SBATCH -p short
@@ -44,20 +44,21 @@ function join_by { local IFS="$1"; shift; echo "$*"; }
 # this will overwrite it (very slow, better if you update what you need)
 #echo '' > ${bamCounts}
 cd ${bamsPath}
-for i in *bam; do 
+checkBams=$(ls *bam | grep "${subsampleCells}") # | grep "Brd9\|CTCF\|EHMT1\|RBBP4")
+for i in ${checkBams}; do 
     fileSize=$(du -k ${i} | cut -f1); 
     fileSize_prev=$({ grep $i ${bamCounts} | cut -f 1 || :; });
     # if first time we check it
     if [[ ${fileSize_prev} == "" ]] ; then
         echo $i;
-        fileLen=$(samtools view -c ${i});
+        fileLen=$(samtools idxstats ${i} | cut -f 3 | awk '{sum+=$1;} END{print sum;}');
         echo -e "${fileSize}\t${i}\t${fileLen}" >> bamCounts.txt ; 
     elif [[ ${fileSize} != ${fileSize_prev} ]]; then
         echo $i;
         # store file without this entry
         grep -v $i ${bamCounts} > bamCounts.txt_ ;
         mv bamCounts.txt_ bamCounts.txt ;
-        fileLen=$(samtools view -c ${i});
+        fileLen=$(samtools idxstats ${i} | cut -f 3 | awk '{sum+=$1;} END{print sum;}');
         echo -e "${fileSize}\t${i}\t${fileLen}" >> bamCounts.txt ; 
     fi;
 done ; for i in mergedReplicates/*bam; do 
@@ -66,14 +67,14 @@ done ; for i in mergedReplicates/*bam; do
     # if first time we check it
     if [[ ${fileSize_prev} == "" ]] ; then
         echo $i;
-        fileLen=$(samtools view -c ${i});
+        fileLen=$(samtools idxstats ${i} | cut -f 3 | awk '{sum+=$1;} END{print sum;}');
         echo -e "${fileSize}\t${i}\t${fileLen}" >> bamCounts.txt ; 
     elif [[ ${fileSize} != ${fileSize_prev} ]]; then
         echo $i;
         # store file without this entry
         grep -v $i ${bamCounts} > bamCounts.txt_ ;
         mv bamCounts.txt_ bamCounts.txt ;
-        fileLen=$(samtools view -c ${i});
+        fileLen=$(samtools idxstats ${i} | cut -f 3 | awk '{sum+=$1;} END{print sum;}');
         echo -e "${fileSize}\t${i}\t${fileLen}" >> bamCounts.txt ; 
     fi;
 done
@@ -94,7 +95,7 @@ chips=$(for fi in `cut -f 2 ${bamCounts} | tail -n +2`; do
 # for now we only subsample DM and Mye
 for chip in $chips; do
     echo $chip
-    chipFiles=$(grep $chip ${bamCounts}| cut -f 2 | \
+    chipFiles=$(grep "${chip}_\|${chip}-" ${bamCounts}| cut -f 2 | \
                     grep -v mergedReplicates | grep "${subsampleCells}")
 
     if [[ $(echo $chipFiles | wc -w) == 2 ]]; then
@@ -127,7 +128,9 @@ for chip in $chips; do
                 # if file doesnt exist
                 if [ ! -e ${subOut}/${subsName} ]; then
                     fractionOfReads=$(echo "print(${minRead}/${nReads})" | python3)
-                    sambamba view -h -t $SLURM_CPUS_PER_TASK -s $fractionOfReads -f bam --subsampling-seed=12345 ${bamsPath}/${file1} -o ${subOut}/${subsName}
+                    sambamba view -h -t $SLURM_CPUS_PER_TASK -s $fractionOfReads \
+                            -f bam --subsampling-seed=12345 ${bamsPath}/${file1} \
+                            -o ${subOut}/${subsName}
                 fi
                 
             fi
@@ -137,3 +140,40 @@ for chip in $chips; do
     fi
 done
 
+
+
+# To copy only subsampled and not subsampled files that are not common
+# chips=$(for fi in `cat ${bamCounts} | grep "${subsampleCells}" | \
+#         grep -v mergedReplicates/ | cut -f 2  | tail -n +2`; do 
+#         filename=$(basename ${fi}); 
+#         mapLib=(${filename//\./ }); 
+#         mapLib=${mapLib[0]};
+#         mapLib=(${mapLib//_/ }); 
+#         mapLib=${mapLib[1]}; 
+#         mapLib=(${mapLib//-/ }) ; 
+#         echo ${mapLib[0]};
+#     done | sort| uniq)
+
+# chips=$(for chip in $chips; do
+#     chipFiles=$(grep "${chip}_\|${chip}-" ${bamCounts}| cut -f 2 | \
+#                     grep -v mergedReplicates | grep "${subsampleCells}")
+
+#     if [[ $(echo $chipFiles | wc -w) == 2 ]]; then
+#         echo "$chip"
+#     fi
+# done)
+# cd /home/jmendietaes/data/2021/chip/allProcessed/bamfiles/valid/08_projectRestart_subsampled
+# for chip in ${chips}; do 
+#     ln -s /home/jmendietaes/data/2021/chip/allProcessed/bamfiles/valid/subsampled/DM_${chip}* .
+#     ln -s /home/jmendietaes/data/2021/chip/allProcessed/bamfiles/valid/subsampled/Mye_${chip}* .
+# done
+
+# vgrep=$(for chip in $chips; do echo "${chip}\|"; done | tr '\n' ' ')
+# vgrep=$(echo $vgrep | sed 's/ //g')
+# vgrep=${vgrep::-2}
+# for i in `ls /home/jmendietaes/data/2021/chip/allProcessed/bamfiles/valid/DM_* | grep -v "${vgrep}"`; do
+#     ln -s ${i} .
+# done
+# for i in `ls /home/jmendietaes/data/2021/chip/allProcessed/bamfiles/valid/Mye_* | grep -v "${vgrep}"`; do
+#     ln -s ${i} .
+# done

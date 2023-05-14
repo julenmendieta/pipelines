@@ -4,7 +4,7 @@
 ##===============================================================================
 ## SLURM VARIABLES
 #SBATCH --job-name=peakAnalysis
-#SBATCH --cpus-per-task=16
+#SBATCH --cpus-per-task=8
 #SBATCH --mem=10G
 #SBATCH --time=24:00:00
 #SBATCH -p short
@@ -25,7 +25,7 @@
 # as control in cells with no control. Otherwise to No
 # This Igg file has to be in the bams folder inside of a folder 
 # called cellMergeIgG
-useMergeIgG="yes"
+useMergeIgG="no"
 # Set to lowercase "yes" to get consensus peaks of all ChIPs and cells
 doAllMerge="yes"
 
@@ -73,8 +73,8 @@ gtfFile=FALSE
 
 # If we want a column focussed on repeated elements only
 # Path to Homer file with repeat element locations
-repeatsPath=/beegfs/easybuild/CentOS/7.5.1804/Skylake/software/Homer/4.10-foss-2018b/data/genomes/mm10/mm10.repeats
-#repeatsPath=FALSE
+#repeatsPath=/beegfs/easybuild/CentOS/7.5.1804/Skylake/software/Homer/4.10-foss-2018b/data/genomes/mm10/mm10.repeats
+repeatsPath=FALSE
 
 # never filter out _IgG in here
 allbams=$(find ${bamsPath}/*bam -printf "${bamsPath}/%f\n" | \
@@ -118,6 +118,7 @@ fileNotExistOrOlder () {
     # will be repeated
     else
         for tfile in $2; do
+            # If $1 is older than any $2
             if [[ $1 -ot ${tfile} ]] ; then
                 analyse="yes"
                 echo $1" older than "${tfile}
@@ -238,12 +239,6 @@ for bam in ${allbams}; do
 
         total_reads="empty"
 
-        # echo file and control
-        echo "Bams used for peak calling:"
-        echo $bam
-        echo $controlbam
-        echo
-
         # narrow peaks
         peaktype='narrowPeak'
 
@@ -252,6 +247,12 @@ for bam in ${allbams}; do
         # this outputs analyse as yes or no in lowercase
 
         if [[ ${analyse} == "yes" ]]; then
+            # echo file and control
+            echo "Bams used for peak calling:"
+            echo $bam
+            echo $controlbam
+            echo
+
             total_reads=$(samtools view -c ${bam})
 
             macs2 callpeak \
@@ -674,7 +675,8 @@ for chip in ${more1Chip}; do
         fileNotExistOrOlder "${boolAnotMatr}" "${consensusPeakBed}"
         # this outputs analyse as yes or no in lowercase
         if [[ ${analyse} == "yes" ]]; then
-
+            echo ${prefix}
+            
             annotatePeaks.pl \
                     ${consensusPeakBed} \
                     ${speciesGenome} \

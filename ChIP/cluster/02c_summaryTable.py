@@ -161,7 +161,7 @@ for chip in sorted(fileAssoc):
                 content += f'{int(round((p/m) * 100,0))}\t'
             except:
                 print(fi)
-                content+='None\tNone\tNone\t'
+                content+='None\tNone\tNone\tNone\t'
         
             # header += f'FinalReadPairs\t'
             content += f'{data[posIndex[2]+2].split()[0]}\t'
@@ -177,7 +177,7 @@ for chip in sorted(fileAssoc):
             # id
             content += f"{'_'.join(fi2.split('.')[0].split('_')[1:])}\t"
             # areas we cannot know without a lot of work
-            content += '\t\t\t\t'
+            content += '\t\t\t\t\t'
             if '-sub' in fi2.split('_')[2]:
                 finalReads = fi2.split('.')[0].split('_')[2].split('sub')[-1]
                 

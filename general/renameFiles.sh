@@ -17,7 +17,7 @@
 #inTable="/home/jmendietaes/prueba/rename.txt"
 inTable="/scratch/julen/pruebas/renameScripts/rename_220906_iChIP_18_19_20.txt"
 # path in which we will do the search and name changing
-focusPath="/media/julen/Arnau/ichip/experiments/220906_iChIP_18_19_20"
+focusPath="/home/jmendietaes/data/2021/chip/sequencedData/NextSeq2000.RUN143.230201/demux_fastq"
 # If we want to do a test printing the change but not doing anything
 # posible answers are lowercase "yes" (ony print) or "no" (print and change)
 onlyTest="yes"
@@ -38,7 +38,7 @@ for ni in "${!strings[@]}"; do
     string_=${strings[${ni}]}
     substitute_=${substitutes[${ni}]}
     # removing -maxdepth 1 to do the change recursively 
-    #file=$(find ${focusPath} -maxdepth 1 -name "*${string_}*" | grep .)
+    #file=$(find ${focusPath} -name "*${string_}*" | grep .)
     file=$(find ${focusPath} -name "*${string_}*" | grep .)
 
     # if we found a match

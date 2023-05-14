@@ -5,12 +5,12 @@
 ## SLURM VARIABLES
 #SBATCH --job-name=Chip_fqToBw
 #SBATCH --cpus-per-task=12
-#SBATCH --mem=30G
-#SBATCH --time=00-08:00:00
-#SBATCH -p medium
+#SBATCH --mem=40G
+#SBATCH --time=00-05:00:00
+#SBATCH -p short
 #SBATCH -o /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.out  
 #SBATCH -e /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.err 
-##SBATCH --dependency=afterany:624523
+##SBATCH --dependency=afterany:793158
 
 
 ##SBATCH --mail-type=END
@@ -195,13 +195,16 @@ echo -e "Starting Trimming and FASTQC -------------------------------------- \n"
 # check content of second line of step control file
 linec=`sed "2q;d" ${stepControl}`
 if [[ ${linec} != "Trim" ]]; then 
+    # Trim_galore recommends less than 8 cpu
+    trimCPU=$([ $SLURM_CPUS_PER_TASK -le 7 ] && echo "$SLURM_CPUS_PER_TASK" \
+            || echo "7")
     if [ ! -e ${EDITED_DIR}/fastQC/ ]; then
         mkdir -p ${EDITED_DIR}/trimming/  
         mkdir -p ${EDITED_DIR}/fastQC/
     fi
 
     if [ ! -e ${EDITED_DIR}/fastQC/${filename}_R2_001.fastq_fastqc.html ]; then
-        trim_galore --cores $SLURM_CPUS_PER_TASK --paired --fastqc --gzip \
+        trim_galore --cores $trimCPU --paired --fastqc --gzip \
         --output_dir ${EDITED_DIR}/trimming/ --fastqc_args "--outdir ${EDITED_DIR}/fastQC/" \
         ${read1_path} ${read2_path}
     fi

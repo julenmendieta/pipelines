@@ -88,351 +88,358 @@ if (file.exists(opt$outdir) == FALSE) {
 }
 setwd(opt$outdir)
 
-samples.vec <- sort(colnames(count.table))
-# JULEN: changed it to get as group the cell type and chip (or batch)
-#groups <- sub("_.*$", "", samples.vec)
-groups <- sub("^([^_]*_[^_]*).*", "\\1", samples.vec)
-groups <- sub("^([^-]*-[^-]*).*", "\\1", groups)
-labels <- gsub("_.*","",samples.vec)
-ko <- gsub("^.*-", "", labels)
-batches <- gsub("^.*_", "", groups)
-cell <- unique(sub("-.*", "\\1", groups))
+samples.vec_ <- sort(colnames(count.table))
+cells <- unique(sub("-.*", "\\1", samples.vec_))
 
-# Ensure we only have on cell
-if (length(cell) != 1) {
-    stop("Only same-cell comparisons are allowed.", call.=FALSE)
-}
+for (cell in cells) {
+    samples.vec <- grep(cell, samples.vec_, value=T)
 
-# convert controls string to list
-controls <- strsplit(opt$controls, ',')[[1]]
+    # JULEN: changed it to get as group the cell type and chip (or batch)
+    #groups <- sub("_.*$", "", samples.vec)
+    groups <- sub("^([^_]*_[^_]*).*", "\\1", samples.vec)
+    groups <- sub("^([^-]*-[^-]*).*", "\\1", groups)
+    labels <- gsub("_.*","",samples.vec)
+    ko <- gsub("^.*-", "", labels)
+    batches <- gsub("^.*_", "", groups)
 
-print(unique(groups))
-if (length(unique(groups)) == 1) {
-    quit(save = "no", status = 0, runLast = FALSE)
-}
-
-
-counts <- count.table[,samples.vec,drop=FALSE]
-coldata <- data.frame(row.names=colnames(counts),
-            condition=groups, batch=batches, labels=labels,
-            ko=ko)
-coldata2 <- data.frame(row.names=colnames(counts),
-            condition=groups, batch=batches, labels=labels,
-            ko=ko)
-
-# Now we want to check if we have the same condition in more than one batch
-# and filter out one-batch comparisons and controls
-getBatchCorrected <- c()
-for (con in unique(coldata2[,"labels"])) {
-    pos <- coldata2[,"labels"] == con
-    if (length(unique(coldata2[pos, "batch"])) > 1) {
-        getBatchCorrected <- c(getBatchCorrected, con)
-        
+    # Ensure we only have on cell
+    if (length(cell) != 1) {
+        stop("Only same-cell comparisons are allowed.", call.=FALSE)
     }
-}
-coldata2 <- coldata2[coldata2[,"labels"] %in% getBatchCorrected,]
-coldata2 = coldata2[!(coldata2[,'ko'] %in% controls),]
-coldata[coldata[,"ko"] %in% controls, "ko"] = 'Control'
-ko_list <- ko
-ko_list[ko %in% controls] = 'Control'
 
-# We iterate over labels to compare diff batches
-batchGroups <- c()
-i = 1
-for (la in unique(coldata2[,"labels"])) {
-    pos <- coldata2[,'labels'] == la
-    batchGroups[[i]] <- sort(unique(coldata2[pos,"batch"]))
-    i <- i + 1
-}
-batchGroups <- unique(batchGroups)
+    # convert controls string to list
+    controls <- strsplit(opt$controls, ',')[[1]]
 
-for (bag in batchGroups) {
-    bag <- sort(bag)
-    compareID <- paste(bag, collapse='-')
-    DDSFile <- paste(opt$outprefix,"_", compareID, ".dds.rld.RData",sep="")
-    if (file.exists(DDSFile) == FALSE) {
+    print(unique(groups))
+    if (length(unique(groups)) == 1) {
+        quit(save = "no", status = 0, runLast = FALSE)
+    }
 
-        print(bag)
-        coldataSel <- coldata2[coldata2[, "batch"] %in% bag, ]
-        # Keep samples with data in both batches
-        getBatchCorrected2 <- c()
-        for (con in unique(coldataSel[,"labels"])) {
-            pos <- coldataSel[,"labels"] == con
-            if (length(unique(coldataSel[pos, "batch"])) > 1) {
-                getBatchCorrected2 <- c(getBatchCorrected2, con)
-                
-            }
+
+    counts <- count.table[,samples.vec,drop=FALSE]
+    coldata <- data.frame(row.names=colnames(counts),
+                condition=groups, batch=batches, labels=labels,
+                ko=ko)
+    coldata2 <- data.frame(row.names=colnames(counts),
+                condition=groups, batch=batches, labels=labels,
+                ko=ko)
+
+    # Now we want to check if we have the same condition in more than one batch
+    # and filter out one-batch comparisons and controls
+    getBatchCorrected <- c()
+    for (con in unique(coldata2[,"labels"])) {
+        pos <- coldata2[,"labels"] == con
+        if (length(unique(coldata2[pos, "batch"])) > 1) {
+            getBatchCorrected <- c(getBatchCorrected, con)
+            
         }
-        coldataSel <- coldataSel[coldataSel[, "labels"] %in% getBatchCorrected2, ]
-        # Add controls
-        coldataSel <- rbind(coldataSel, 
-            coldata[(coldata[,"batch"] %in% bag) & (coldata[,"ko"] == "Control"), ])
+    }
+    coldata2 <- coldata2[coldata2[,"labels"] %in% getBatchCorrected,]
+    coldata2 = coldata2[!(coldata2[,'ko'] %in% controls),]
+    coldata[coldata[,"ko"] %in% controls, "ko"] = 'Control'
+    ko_list <- ko
+    ko_list[ko %in% controls] = 'Control'
 
-        dds <- DESeqDataSetFromMatrix(countData = round(counts[, rownames(coldataSel) ]), 
-                        colData = coldataSel[, c("ko", "batch")], design = ~ batch + ko)
-        dds <- DESeq(dds, parallel=TRUE, BPPARAM=MulticoreParam(opt$cores))
+    # We iterate over labels to compare diff batches
+    batchGroups <- c()
+    i = 1
+    for (la in unique(coldata2[,"labels"])) {
+        pos <- coldata2[,'labels'] == la
+        batchGroups[[i]] <- sort(unique(coldata2[pos,"batch"]))
+        i <- i + 1
+    }
+    batchGroups <- unique(batchGroups)
 
-        if (!opt$vst) {
-            rld <- rlog(dds)
+    for (bag in batchGroups) {
+        bag <- sort(bag)
+        compareID <- paste(c(cell, bag), collapse='-')
+        DDSFile <- paste(opt$outprefix,"_", compareID, ".dds.rld.RData",sep="")
+        if (file.exists(DDSFile) == FALSE) {
+
+            print(bag)
+            coldataSel <- coldata2[coldata2[, "batch"] %in% bag, ]
+            # Keep samples with data in all batches
+            getBatchCorrected2 <- c()
+            for (con in unique(coldataSel[,"labels"])) {
+                pos <- coldata2[,"labels"] == con
+                if (identical(sort(unique(coldata2[pos, "batch"])), bag)) {
+                    getBatchCorrected2 <- c(getBatchCorrected2, con)
+                    
+                }
+            }
+            coldataSel <- coldataSel[coldataSel[, "labels"] %in% getBatchCorrected2, ]
+            # Add controls
+            coldataSel <- rbind(coldataSel, 
+                coldata[(coldata[,"batch"] %in% bag) & (coldata[,"ko"] == "Control"), ])
+
+            dds <- DESeqDataSetFromMatrix(countData = round(counts[, rownames(coldataSel) ]), 
+                            colData = coldataSel[, c("ko", "batch")], design = ~ batch + ko)
+            dds <- DESeq(dds, parallel=TRUE, BPPARAM=MulticoreParam(opt$cores))
+
+            if (!opt$vst) {
+                rld <- rlog(dds)
+            } else {
+                rld <- vst(dds)
+            }
+
+            normalized_counts <- counts(dds, normalized = TRUE)
+            vsd <- vst(dds, blind = FALSE)
+            mat <- assay(vsd)
+            mat <- limma::removeBatchEffect(mat, vsd$batch)
+            assay(vsd) <- mat
+            save(dds,rld,vsd, file=DDSFile)
         } else {
-            rld <- vst(dds)
-        }
-
-        normalized_counts <- counts(dds, normalized = TRUE)
-        vsd <- vst(dds, blind = FALSE)
-        mat <- assay(vsd)
-        mat <- limma::removeBatchEffect(mat, vsd$batch)
-        assay(vsd) <- mat
-        save(dds,rld,vsd, file=DDSFile)
-    } else {
-        load(DDSFile)
-        counts <- count.table[,samples.vec,drop=FALSE]
-        coldataSel <- coldata2[coldata2[, "batch"] %in% bag, ]
-        # Keep samples with data in both batches
-        getBatchCorrected2 <- c()
-        for (con in unique(coldataSel[,"labels"])) {
-            pos <- coldataSel[,"labels"] == con
-            if (length(unique(coldataSel[pos, "batch"])) > 1) {
-                getBatchCorrected2 <- c(getBatchCorrected2, con)
-                
+            load(DDSFile)
+            counts <- count.table[,samples.vec,drop=FALSE]
+            coldataSel <- coldata2[coldata2[, "batch"] %in% bag, ]
+            # Keep samples with data in both batches
+            getBatchCorrected2 <- c()
+            for (con in unique(coldataSel[,"labels"])) {
+                pos <- coldata2[,"labels"] == con
+                if (identical(sort(unique(coldata2[pos, "batch"])), bag)) {
+                    getBatchCorrected2 <- c(getBatchCorrected2, con)
+                    
+                }
             }
+            coldataSel <- coldataSel[coldataSel[, "labels"] %in% getBatchCorrected2, ]
+            # Add controls
+            coldataSel <- rbind(coldataSel, 
+                coldata[(coldata[,"batch"] %in% bag) & (coldata[,"ko"] == "Control"), ])
+
         }
-        coldataSel <- coldataSel[coldataSel[, "labels"] %in% getBatchCorrected2, ]
-        # Add controls
-        coldataSel <- rbind(coldataSel, 
-            coldata[(coldata[,"batch"] %in% bag) & (coldata[,"ko"] == "Control"), ])
+        ################################################
+        ################################################
+        ## PLOT QC                                    ##
+        ################################################
+        ################################################
 
-    }
-    ################################################
-    ################################################
-    ## PLOT QC                                    ##
-    ################################################
-    ################################################
+        PlotFile <- paste(opt$outprefix, "_", compareID, ".plots.pdf",sep="")
+        if (file.exists(PlotFile) == FALSE) {
+            pdf(file=PlotFile,onefile=TRUE,width=7,height=7)
 
-    PlotFile <- paste(opt$outprefix, "_", compareID, ".plots.pdf",sep="")
-    if (file.exists(PlotFile) == FALSE) {
-        pdf(file=PlotFile,onefile=TRUE,width=7,height=7)
+            ## PCA
+            pca.data <- DESeq2::plotPCA(rld,intgroup=c("ko"),returnData=TRUE)
+            percentVar <- round(100 * attr(pca.data, "percentVar"))
+            plot <- ggplot(pca.data, aes(PC1, PC2, color=ko)) +
+                    geom_point(size=3) +
+                    xlab(paste0("PC1: ",percentVar[1],"% variance")) +
+                    ylab(paste0("PC2: ",percentVar[2],"% variance")) +
+                    theme(panel.grid.major = element_blank(),
+                        panel.grid.minor = element_blank(),
+                        panel.background = element_blank(),
+                        panel.border = element_rect(colour = "black", fill=NA, size=1))
+            print(plot)
 
-        ## PCA
-        pca.data <- DESeq2::plotPCA(rld,intgroup=c("ko"),returnData=TRUE)
-        percentVar <- round(100 * attr(pca.data, "percentVar"))
-        plot <- ggplot(pca.data, aes(PC1, PC2, color=ko)) +
-                geom_point(size=3) +
-                xlab(paste0("PC1: ",percentVar[1],"% variance")) +
-                ylab(paste0("PC2: ",percentVar[2],"% variance")) +
-                theme(panel.grid.major = element_blank(),
-                    panel.grid.minor = element_blank(),
-                    panel.background = element_blank(),
-                    panel.border = element_rect(colour = "black", fill=NA, size=1))
-        print(plot)
+            ## WRITE PC1 vs PC2 VALUES TO FILE
+            pca.vals <- pca.data[,1:2]
+            colnames(pca.vals) <- paste(colnames(pca.vals),
+                            paste(percentVar,'% variance',sep=""), sep=": ")
+            pca.vals <- cbind(sample = rownames(pca.vals), pca.vals)
+            write.table(pca.vals,file=paste(opt$outprefix,"_", compareID,".pca.vals.txt",sep=""),
+                        row.names=FALSE,col.names=TRUE,sep="\t",quote=TRUE)
 
-        ## WRITE PC1 vs PC2 VALUES TO FILE
-        pca.vals <- pca.data[,1:2]
-        colnames(pca.vals) <- paste(colnames(pca.vals),
-                        paste(percentVar,'% variance',sep=""), sep=": ")
-        pca.vals <- cbind(sample = rownames(pca.vals), pca.vals)
-        write.table(pca.vals,file=paste(opt$outprefix,"_", compareID,".pca.vals.txt",sep=""),
+            ## SAMPLE CORRELATION HEATMAP
+            sampleDists <- dist(t(assay(rld)))
+            sampleDistMatrix <- as.matrix(sampleDists)
+            colors <- colorRampPalette( rev(brewer.pal(9, "Blues")) )(255)
+            pheatmap(sampleDistMatrix,clustering_distance_rows=sampleDists,
+                    clustering_distance_cols=sampleDists,col=colors)
+
+            ## WRITE SAMPLE DISTANCES TO FILE
+            write.table(cbind(sample = rownames(sampleDistMatrix), sampleDistMatrix),
+                        file=paste(opt$outprefix,"_", compareID,".sample.dists.txt",sep=""),
+                        row.names=FALSE,col.names=TRUE,sep="\t",quote=FALSE)
+
+            dev.off()
+        }
+
+        PlotFile <- paste(opt$outprefix,"_", compareID, ".batchCorrected.plots.pdf",sep="")
+        if (file.exists(PlotFile) == FALSE) {
+            pdf(file=PlotFile,onefile=TRUE,width=7,height=7)
+
+            ## PCA
+            pca.data <- DESeq2::plotPCA(vsd,intgroup=c("ko"),returnData=TRUE)
+            percentVar <- round(100 * attr(pca.data, "percentVar"))
+            plot <- ggplot(pca.data, aes(PC1, PC2, color=ko)) +
+                    geom_point(size=3) +
+                    xlab(paste0("PC1: ",percentVar[1],"% variance")) +
+                    ylab(paste0("PC2: ",percentVar[2],"% variance")) +
+                    theme(panel.grid.major = element_blank(),
+                        panel.grid.minor = element_blank(),
+                        panel.background = element_blank(),
+                        panel.border = element_rect(colour = "black", fill=NA, size=1))
+            print(plot)
+
+            ## WRITE PC1 vs PC2 VALUES TO FILE
+            pca.vals <- pca.data[,1:2]
+            colnames(pca.vals) <- paste(colnames(pca.vals),paste(percentVar,'% variance',sep=""),
+                                    sep=": ")
+            pca.vals <- cbind(sample = rownames(pca.vals), pca.vals)
+            write.table(pca.vals,file=paste(opt$outprefix,"_", compareID, ".batchCorrected.pca.vals.txt",sep=""),
                     row.names=FALSE,col.names=TRUE,sep="\t",quote=TRUE)
 
-        ## SAMPLE CORRELATION HEATMAP
-        sampleDists <- dist(t(assay(rld)))
-        sampleDistMatrix <- as.matrix(sampleDists)
-        colors <- colorRampPalette( rev(brewer.pal(9, "Blues")) )(255)
-        pheatmap(sampleDistMatrix,clustering_distance_rows=sampleDists,
-                clustering_distance_cols=sampleDists,col=colors)
+            ## SAMPLE CORRELATION HEATMAP
+            sampleDists <- dist(t(assay(vsd)))
+            sampleDistMatrix <- as.matrix(sampleDists)
+            colors <- colorRampPalette( rev(brewer.pal(9, "Blues")) )(255)
+            pheatmap(sampleDistMatrix,clustering_distance_rows=sampleDists,
+                    clustering_distance_cols=sampleDists,col=colors)
 
-        ## WRITE SAMPLE DISTANCES TO FILE
-        write.table(cbind(sample = rownames(sampleDistMatrix), sampleDistMatrix),
-                    file=paste(opt$outprefix,"_", compareID,".sample.dists.txt",sep=""),
-                    row.names=FALSE,col.names=TRUE,sep="\t",quote=FALSE)
+            ## WRITE SAMPLE DISTANCES TO FILE
+            write.table(cbind(sample = rownames(sampleDistMatrix), sampleDistMatrix),
+                        file=paste(opt$outprefix,"_", compareID, ".batchCorrected.sample.dists.txt",sep=""),
+                        row.names=FALSE,col.names=TRUE,sep="\t",quote=FALSE)
 
-        dev.off()
-    }
+            dev.off()
+        }
+        
+        ################################################
+        ################################################
+        ## SAVE SIZE FACTORS                          ##
+        ################################################
+        ################################################
 
-    PlotFile <- paste(opt$outprefix,"_", compareID, ".batchCorrected.plots.pdf",sep="")
-    if (file.exists(PlotFile) == FALSE) {
-        pdf(file=PlotFile,onefile=TRUE,width=7,height=7)
+        SizeFactorsDir <- "sizeFactors/"
+        if (file.exists(SizeFactorsDir) == FALSE) {
+            dir.create(SizeFactorsDir,recursive=TRUE)
+        }
 
-        ## PCA
-        pca.data <- DESeq2::plotPCA(vsd,intgroup=c("ko"),returnData=TRUE)
-        percentVar <- round(100 * attr(pca.data, "percentVar"))
-        plot <- ggplot(pca.data, aes(PC1, PC2, color=ko)) +
-                geom_point(size=3) +
-                xlab(paste0("PC1: ",percentVar[1],"% variance")) +
-                ylab(paste0("PC2: ",percentVar[2],"% variance")) +
-                theme(panel.grid.major = element_blank(),
-                    panel.grid.minor = element_blank(),
-                    panel.background = element_blank(),
-                    panel.border = element_rect(colour = "black", fill=NA, size=1))
-        print(plot)
+        NormFactorsFile <- paste(SizeFactorsDir,opt$outprefix,"_", compareID, ".sizeFactors.RData",sep="")
+        if (file.exists(NormFactorsFile) == FALSE) {
+            normFactors <- sizeFactors(dds)
+            save(normFactors,file=NormFactorsFile)
 
-        ## WRITE PC1 vs PC2 VALUES TO FILE
-        pca.vals <- pca.data[,1:2]
-        colnames(pca.vals) <- paste(colnames(pca.vals),paste(percentVar,'% variance',sep=""),
-                                sep=": ")
-        pca.vals <- cbind(sample = rownames(pca.vals), pca.vals)
-        write.table(pca.vals,file=paste(opt$outprefix,"_", compareID, ".batchCorrected.pca.vals.txt",sep=""),
-                row.names=FALSE,col.names=TRUE,sep="\t",quote=TRUE)
-
-        ## SAMPLE CORRELATION HEATMAP
-        sampleDists <- dist(t(assay(vsd)))
-        sampleDistMatrix <- as.matrix(sampleDists)
-        colors <- colorRampPalette( rev(brewer.pal(9, "Blues")) )(255)
-        pheatmap(sampleDistMatrix,clustering_distance_rows=sampleDists,
-                clustering_distance_cols=sampleDists,col=colors)
-
-        ## WRITE SAMPLE DISTANCES TO FILE
-        write.table(cbind(sample = rownames(sampleDistMatrix), sampleDistMatrix),
-                    file=paste(opt$outprefix,"_", compareID, ".batchCorrected.sample.dists.txt",sep=""),
-                    row.names=FALSE,col.names=TRUE,sep="\t",quote=FALSE)
-
-        dev.off()
-    }
-    
-    ################################################
-    ################################################
-    ## SAVE SIZE FACTORS                          ##
-    ################################################
-    ################################################
-
-    SizeFactorsDir <- "sizeFactors/"
-    if (file.exists(SizeFactorsDir) == FALSE) {
-        dir.create(SizeFactorsDir,recursive=TRUE)
-    }
-
-    NormFactorsFile <- paste(SizeFactorsDir,opt$outprefix,"_", compareID, ".sizeFactors.RData",sep="")
-    if (file.exists(NormFactorsFile) == FALSE) {
-        normFactors <- sizeFactors(dds)
-        save(normFactors,file=NormFactorsFile)
-
-        for (name in names(sizeFactors(dds))) {
-            sizeFactorFile <- paste(SizeFactorsDir,name,opt$outsuffix,"_", compareID, ".sizeFactor.txt",sep="")
-            if (file.exists(sizeFactorFile) == FALSE) {
-                write(as.numeric(sizeFactors(dds)[name]),file=sizeFactorFile)
+            for (name in names(sizeFactors(dds))) {
+                sizeFactorFile <- paste(SizeFactorsDir,name,opt$outsuffix,"_", compareID, ".sizeFactor.txt",sep="")
+                if (file.exists(sizeFactorFile) == FALSE) {
+                    write(as.numeric(sizeFactors(dds)[name]),file=sizeFactorFile)
+                }
             }
         }
-    }
 
-    ################################################
-    ################################################
-    ## WRITE LOG FILE                             ##
-    ################################################
-    ################################################
+        ################################################
+        ################################################
+        ## WRITE LOG FILE                             ##
+        ################################################
+        ################################################
 
-    LogFile <- paste(opt$outprefix,"_", compareID, ".log",sep="")
-    if (file.exists(LogFile) == FALSE) {
-        cat("\nSamples =",samples.vec,"\n\n",file=LogFile,append=FALSE,sep=', ')
-        cat("Groups =",groups,"\n\n",file=LogFile,append=TRUE,sep=', ')
-        cat("Batches =",batches,"\n\n",file=LogFile,append=TRUE,sep=', ')
-        cat("Dimensions of count matrix =",dim(counts),"\n\n",file=LogFile,append=TRUE,sep=' ')
-        cat("\n",file=LogFile,append=TRUE,sep='')
-    }
+        LogFile <- paste(opt$outprefix,"_", compareID, ".log",sep="")
+        if (file.exists(LogFile) == FALSE) {
+            cat("\nSamples =",samples.vec,"\n\n",file=LogFile,append=FALSE,sep=', ')
+            cat("Groups =",groups,"\n\n",file=LogFile,append=TRUE,sep=', ')
+            cat("Batches =",batches,"\n\n",file=LogFile,append=TRUE,sep=', ')
+            cat("Dimensions of count matrix =",dim(counts),"\n\n",file=LogFile,append=TRUE,sep=' ')
+            cat("\n",file=LogFile,append=TRUE,sep='')
+        }
 
-    ################################################
-    ################################################
-    ## LOOP THROUGH COMPARISONS                   ##
-    ################################################
-    ################################################
+        ################################################
+        ################################################
+        ## LOOP THROUGH COMPARISONS                   ##
+        ################################################
+        ################################################
 
-    raw.counts <- counts(dds,normalized=FALSE)
-    colnames(raw.counts) <- paste(colnames(raw.counts),'raw',sep='.')
-    pseudo.counts <- counts(dds,normalized=TRUE)
-    colnames(pseudo.counts) <- paste(colnames(pseudo.counts),'pseudo',sep='.')
-    batchC.counts <- assay(vsd)
-    colnames(batchC.counts) <- paste(colnames(batchC.counts),'unbatched',sep='.')
+        raw.counts <- counts(dds,normalized=FALSE)
+        colnames(raw.counts) <- paste(colnames(raw.counts),'raw',sep='.')
+        pseudo.counts <- counts(dds,normalized=TRUE)
+        colnames(pseudo.counts) <- paste(colnames(pseudo.counts),'pseudo',sep='.')
+        batchC.counts <- assay(vsd)
+        colnames(batchC.counts) <- paste(colnames(batchC.counts),'unbatched',sep='.')
 
-    ResultsFile <- paste(opt$outprefix, ".results_", compareID,".txt",sep="")
+        ResultsFile <- paste(opt$outprefix, ".results_", compareID,".txt",sep="")
 
-    if (file.exists(ResultsFile) == FALSE) {
+        if (file.exists(ResultsFile) == FALSE) {
 
-        deseq2_results_list <- list()
-        comparisons <- combn(unique(coldataSel[,'ko']),2)
+            deseq2_results_list <- list()
+            comparisons <- combn(unique(coldataSel[,'ko']),2)
 
-        for (idx in 1:ncol(comparisons)) {
+            for (idx in 1:ncol(comparisons)) {
 
-            control.group <- comparisons[1,idx]
-            treat.group <- comparisons[2,idx]
-            CompPrefix <- paste(paste0(cell, "-", control.group, "_", compareID), 
-                                paste0(cell, "-", treat.group, "_", compareID),sep="-vs-")
-            cat("Saving results for ",CompPrefix," ...\n",sep="")
+                # We only want to compare KO vs Controls
+                if (sum(comparisons[,idx] %in% c("Control")) == 1) {
 
-            CompOutDir <- paste(CompPrefix,'/',sep="")
-            if (file.exists(CompOutDir) == FALSE) {
-                dir.create(CompOutDir,recursive=TRUE)
-            }
+                    control.group <- comparisons[1,idx]
+                    treat.group <- comparisons[2,idx]
+                    CompPrefix <- paste(paste0(cell, "-", control.group, "_", paste(bag, collapse='-')), 
+                                        paste0(cell, "-", treat.group, "_", paste(bag, collapse='-')),sep="-vs-")
+                    cat("Saving results for ",CompPrefix," ...\n",sep="")
 
-            control.samples <- rownames(coldataSel[coldataSel['ko'] == control.group,])
-            treat.samples <- rownames(coldataSel[coldataSel['ko'] == treat.group,]) 
-            comp.samples <- c(control.samples,treat.samples)
+                    CompOutDir <- paste(CompPrefix,'/',sep="")
+                    if (file.exists(CompOutDir) == FALSE) {
+                        dir.create(CompOutDir,recursive=TRUE)
+                    }
 
-            comp.results <- results(dds,contrast=c("ko",c(control.group,treat.group)))
-            comp.df <- as.data.frame(comp.results)
-            comp.table <- cbind(interval.table, as.data.frame(comp.df), 
-                        raw.counts[,paste(comp.samples,'raw',sep='.')], 
-                        pseudo.counts[,paste(comp.samples,'pseudo',sep='.')],
-                        batchC.counts[,paste(comp.samples,'unbatched',sep='.')])
+                    control.samples <- rownames(coldataSel[coldataSel['ko'] == control.group,])
+                    treat.samples <- rownames(coldataSel[coldataSel['ko'] == treat.group,]) 
+                    comp.samples <- c(control.samples,treat.samples)
 
+                    comp.results <- results(dds,contrast=c("ko",c(control.group,treat.group)))
+                    comp.df <- as.data.frame(comp.results)
+                    comp.table <- cbind(interval.table, as.data.frame(comp.df), 
+                                raw.counts[,paste(comp.samples,'raw',sep='.')], 
+                                pseudo.counts[,paste(comp.samples,'pseudo',sep='.')],
+                                batchC.counts[,paste(comp.samples,'unbatched',sep='.')])
 
-            ## WRITE RESULTS FILE
-            CompResultsFile <- paste(CompOutDir,CompPrefix,opt$outsuffix,".deseq2.results.txt",sep="")
-            write.table(comp.table, file=CompResultsFile, col.names=TRUE, row.names=FALSE, sep='\t', quote=FALSE)
-
-            ## FILTER RESULTS BY FDR & LOGFC AND WRITE RESULTS FILE
-            if (length(comp.samples) > 2) {
-                pdf(file=paste(CompOutDir,CompPrefix,opt$outsuffix,".deseq2.plots.pdf",sep=""),width=10,height=8)
-                for (MIN_FDR in c(0.01,0.05)) {
-
-                    ## SUBSET RESULTS BY FDR
-                    pass.fdr.table <- subset(comp.table, padj < MIN_FDR)
-                    pass.fdr.up.table <- subset(comp.table, padj < MIN_FDR & log2FoldChange > 0)
-                    pass.fdr.down.table <- subset(comp.table, padj < MIN_FDR & log2FoldChange < 0)
-
-                    ## SUBSET RESULTS BY FDR AND LOGFC
-                    pass.fdr.logFC.table <- subset(comp.table, padj < MIN_FDR & abs(log2FoldChange) >= 1)
-                    pass.fdr.logFC.up.table <- subset(comp.table, padj < MIN_FDR & abs(log2FoldChange) >= 1 & log2FoldChange > 0)
-                    pass.fdr.logFC.down.table <- subset(comp.table, padj < MIN_FDR & abs(log2FoldChange) >= 1 & log2FoldChange < 0)
 
                     ## WRITE RESULTS FILE
-                    CompResultsFile <- paste(CompOutDir,CompPrefix,opt$outsuffix,".deseq2.FDR",MIN_FDR,".results.txt",sep="")
-                    CompBEDFile <- paste(CompOutDir,CompPrefix,opt$outsuffix,".deseq2.FDR",MIN_FDR,".results.bed",sep="")
-                    write.table(pass.fdr.table, file=CompResultsFile, col.names=TRUE, row.names=FALSE, sep='\t', quote=FALSE)
-                    write.table(pass.fdr.table[,c("Chr","Start","End","Geneid","log2FoldChange","Strand")], file=CompBEDFile, col.names=FALSE, row.names=FALSE, sep='\t', quote=FALSE)
+                    CompResultsFile <- paste(CompOutDir,CompPrefix,opt$outsuffix,".deseq2.results.txt",sep="")
+                    write.table(comp.table, file=CompResultsFile, col.names=TRUE, row.names=FALSE, sep='\t', quote=FALSE)
 
-                    ## MA PLOT & VOLCANO PLOT
-                    DESeq2::plotMA(comp.results, main=paste("MA plot FDR <= ",MIN_FDR,sep=""), ylim=c(-2,2),alpha=MIN_FDR)
-                    plot(comp.table$log2FoldChange, -1*log10(comp.table$padj), col=ifelse(comp.table$padj<=MIN_FDR, "red", "black"), xlab="logFC", ylab="-1*log10(FDR)", main=paste("Volcano plot FDR <=",MIN_FDR,sep=" "), pch=20)
+                    ## FILTER RESULTS BY FDR & LOGFC AND WRITE RESULTS FILE
+                    if (length(comp.samples) > 2) {
+                        pdf(file=paste(CompOutDir,CompPrefix,opt$outsuffix,".deseq2.plots.pdf",sep=""),width=10,height=8)
+                        for (MIN_FDR in c(0.01,0.05)) {
 
-                    ## ADD COUNTS TO LOGFILE
-                    cat(CompPrefix," genes with FDR <= ",MIN_FDR,": ",
-                        nrow(pass.fdr.table)," (up=",
-                        nrow(pass.fdr.up.table),", down=",
-                        nrow(pass.fdr.down.table),")","\n",
-                        file=LogFile,append=TRUE,sep="")
-                    cat(CompPrefix," genes with FDR <= ",MIN_FDR," & FC > 2: ",
-                        nrow(pass.fdr.logFC.table)," (up=",
-                        nrow(pass.fdr.logFC.up.table),", down=",
-                        nrow(pass.fdr.logFC.down.table),")","\n",
-                        file=LogFile,append=TRUE,sep="")
+                            ## SUBSET RESULTS BY FDR
+                            pass.fdr.table <- subset(comp.table, padj < MIN_FDR)
+                            pass.fdr.up.table <- subset(comp.table, padj < MIN_FDR & log2FoldChange > 0)
+                            pass.fdr.down.table <- subset(comp.table, padj < MIN_FDR & log2FoldChange < 0)
 
+                            ## SUBSET RESULTS BY FDR AND LOGFC
+                            pass.fdr.logFC.table <- subset(comp.table, padj < MIN_FDR & abs(log2FoldChange) >= 1)
+                            pass.fdr.logFC.up.table <- subset(comp.table, padj < MIN_FDR & abs(log2FoldChange) >= 1 & log2FoldChange > 0)
+                            pass.fdr.logFC.down.table <- subset(comp.table, padj < MIN_FDR & abs(log2FoldChange) >= 1 & log2FoldChange < 0)
+
+                            ## WRITE RESULTS FILE
+                            CompResultsFile <- paste(CompOutDir,CompPrefix,opt$outsuffix,".deseq2.FDR",MIN_FDR,".results.txt",sep="")
+                            CompBEDFile <- paste(CompOutDir,CompPrefix,opt$outsuffix,".deseq2.FDR",MIN_FDR,".results.bed",sep="")
+                            write.table(pass.fdr.table, file=CompResultsFile, col.names=TRUE, row.names=FALSE, sep='\t', quote=FALSE)
+                            write.table(pass.fdr.table[,c("Chr","Start","End","Geneid","log2FoldChange","Strand")], file=CompBEDFile, col.names=FALSE, row.names=FALSE, sep='\t', quote=FALSE)
+
+                            ## MA PLOT & VOLCANO PLOT
+                            DESeq2::plotMA(comp.results, main=paste("MA plot FDR <= ",MIN_FDR,sep=""), ylim=c(-2,2),alpha=MIN_FDR)
+                            plot(comp.table$log2FoldChange, -1*log10(comp.table$padj), col=ifelse(comp.table$padj<=MIN_FDR, "red", "black"), xlab="logFC", ylab="-1*log10(FDR)", main=paste("Volcano plot FDR <=",MIN_FDR,sep=" "), pch=20)
+
+                            ## ADD COUNTS TO LOGFILE
+                            cat(CompPrefix," genes with FDR <= ",MIN_FDR,": ",
+                                nrow(pass.fdr.table)," (up=",
+                                nrow(pass.fdr.up.table),", down=",
+                                nrow(pass.fdr.down.table),")","\n",
+                                file=LogFile,append=TRUE,sep="")
+                            cat(CompPrefix," genes with FDR <= ",MIN_FDR," & FC > 2: ",
+                                nrow(pass.fdr.logFC.table)," (up=",
+                                nrow(pass.fdr.logFC.up.table),", down=",
+                                nrow(pass.fdr.logFC.down.table),")","\n",
+                                file=LogFile,append=TRUE,sep="")
+
+                        }
+                        cat("\n",file=LogFile,append=TRUE,sep="")
+                        dev.off()
+                    }
                 }
-                cat("\n",file=LogFile,append=TRUE,sep="")
-                dev.off()
+                
+                colnames(comp.df) <- paste(CompPrefix,".",colnames(comp.df),sep="")
+                deseq2_results_list[[idx]] <- comp.df
             }
+            ## WRITE RESULTS FROM ALL COMPARISONS TO FILE
+            deseq2_results_table <- cbind(interval.table,do.call(cbind, deseq2_results_list),
+                                        raw.counts,pseudo.counts, batchC.counts)
+            write.table(deseq2_results_table, file=ResultsFile, col.names=TRUE, 
+                            row.names=FALSE, sep='\t', quote=FALSE)
 
-            
-            colnames(comp.df) <- paste(CompPrefix,".",colnames(comp.df),sep="")
-            deseq2_results_list[[idx]] <- comp.df
         }
-        ## WRITE RESULTS FROM ALL COMPARISONS TO FILE
-        deseq2_results_table <- cbind(interval.table,do.call(cbind, deseq2_results_list),
-                                    raw.counts,pseudo.counts, batchC.counts)
-        write.table(deseq2_results_table, file=ResultsFile, col.names=TRUE, 
-                        row.names=FALSE, sep='\t', quote=FALSE)
 
     }
-
 }
-
 
 ################################################
 ################################################

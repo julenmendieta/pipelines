@@ -89,22 +89,16 @@ if (file.exists(opt$outdir) == FALSE) {
 setwd(opt$outdir)
 
 samples.vec <- sort(colnames(count.table))
-# JULEN: changed it to get as group the cell type and chip (or batch)
+# JULEN: changed it to get as group the cell type, batch, and replicate
 #groups <- sub("_.*$", "", samples.vec)
-groups <- sub("^([^_]*_[^_]*).*", "\\1", samples.vec)
-groups <- sub("^([^-]*-[^-]*).*", "\\1", groups)
+id1 <- sub("^([^_]*_[^_]*_[^_]*).*", "\\1", samples.vec)
+groups <- sub("^.*_([^_]*_[^_])", "\\1", id1)
 labels <- gsub("_.*","",samples.vec)
-ko <- gsub("^.*-", "", labels)
-batches <- gsub("^.*_", "", groups)
-cell <- unique(sub("-.*", "\\1", groups))
-
-# Ensure we only have on cell
-if (length(cell) != 1) {
-    stop("Only same-cell comparisons are allowed.", call.=FALSE)
-}
+batches <- sub("([^_]*).*_*", "\\1", groups)
+cell <- unique(labels)
 
 # convert controls string to list
-controls <- strsplit(opt$controls, ',')[[1]]
+#controls <- strsplit(opt$controls, ',')[[1]]
 
 print(unique(groups))
 if (length(unique(groups)) == 1) {
@@ -114,11 +108,9 @@ if (length(unique(groups)) == 1) {
 
 counts <- count.table[,samples.vec,drop=FALSE]
 coldata <- data.frame(row.names=colnames(counts),
-            condition=groups, batch=batches, labels=labels,
-            ko=ko)
+            condition=groups, batch=batches, labels=labels)
 coldata2 <- data.frame(row.names=colnames(counts),
-            condition=groups, batch=batches, labels=labels,
-            ko=ko)
+            condition=groups, batch=batches, labels=labels)
 
 # Now we want to check if we have the same condition in more than one batch
 # and filter out one-batch comparisons and controls
@@ -131,10 +123,10 @@ for (con in unique(coldata2[,"labels"])) {
     }
 }
 coldata2 <- coldata2[coldata2[,"labels"] %in% getBatchCorrected,]
-coldata2 = coldata2[!(coldata2[,'ko'] %in% controls),]
-coldata[coldata[,"ko"] %in% controls, "ko"] = 'Control'
-ko_list <- ko
-ko_list[ko %in% controls] = 'Control'
+#coldata2 = coldata2[!(coldata2[,'ko'] %in% controls),]
+#coldata[coldata[,"ko"] %in% controls, "ko"] = 'Control'
+#ko_list <- ko
+#ko_list[ko %in% controls] = 'Control'
 
 # We iterate over labels to compare diff batches
 batchGroups <- c()
@@ -146,6 +138,7 @@ for (la in unique(coldata2[,"labels"])) {
 }
 batchGroups <- unique(batchGroups)
 
+# Iterate over groups of batches present in the compared cells
 for (bag in batchGroups) {
     bag <- sort(bag)
     compareID <- paste(bag, collapse='-')
@@ -163,13 +156,11 @@ for (bag in batchGroups) {
                 
             }
         }
-        coldataSel <- coldataSel[coldataSel[, "labels"] %in% getBatchCorrected2, ]
-        # Add controls
-        coldataSel <- rbind(coldataSel, 
-            coldata[(coldata[,"batch"] %in% bag) & (coldata[,"ko"] == "Control"), ])
 
+        coldataSel <- coldataSel[coldataSel[, "labels"] %in% getBatchCorrected2, ]
         dds <- DESeqDataSetFromMatrix(countData = round(counts[, rownames(coldataSel) ]), 
-                        colData = coldataSel[, c("ko", "batch")], design = ~ batch + ko)
+                        colData = coldataSel[, c("labels", "batch")], 
+                        design = ~ batch + labels)
         dds <- DESeq(dds, parallel=TRUE, BPPARAM=MulticoreParam(opt$cores))
 
         if (!opt$vst) {
@@ -198,10 +189,7 @@ for (bag in batchGroups) {
             }
         }
         coldataSel <- coldataSel[coldataSel[, "labels"] %in% getBatchCorrected2, ]
-        # Add controls
-        coldataSel <- rbind(coldataSel, 
-            coldata[(coldata[,"batch"] %in% bag) & (coldata[,"ko"] == "Control"), ])
-
+        
     }
     ################################################
     ################################################
@@ -214,9 +202,10 @@ for (bag in batchGroups) {
         pdf(file=PlotFile,onefile=TRUE,width=7,height=7)
 
         ## PCA
-        pca.data <- DESeq2::plotPCA(rld,intgroup=c("ko"),returnData=TRUE)
+        pca.data <- DESeq2::plotPCA(rld,intgroup=c("labels"),returnData=TRUE)
+        pca.data$ids <- sub("^([^_]*_[^_]*).*", "\\1", pca.data$name)
         percentVar <- round(100 * attr(pca.data, "percentVar"))
-        plot <- ggplot(pca.data, aes(PC1, PC2, color=ko)) +
+        plot <- ggplot(pca.data, aes(PC1, PC2, color=ids)) +
                 geom_point(size=3) +
                 xlab(paste0("PC1: ",percentVar[1],"% variance")) +
                 ylab(paste0("PC2: ",percentVar[2],"% variance")) +
@@ -254,9 +243,10 @@ for (bag in batchGroups) {
         pdf(file=PlotFile,onefile=TRUE,width=7,height=7)
 
         ## PCA
-        pca.data <- DESeq2::plotPCA(vsd,intgroup=c("ko"),returnData=TRUE)
+        pca.data <- DESeq2::plotPCA(vsd,intgroup=c("labels"),returnData=TRUE)
+        pca.data$ids <- sub("^([^_]*_[^_]*).*", "\\1", pca.data$name)
         percentVar <- round(100 * attr(pca.data, "percentVar"))
-        plot <- ggplot(pca.data, aes(PC1, PC2, color=ko)) +
+        plot <- ggplot(pca.data, aes(PC1, PC2, color=ids)) +
                 geom_point(size=3) +
                 xlab(paste0("PC1: ",percentVar[1],"% variance")) +
                 ylab(paste0("PC2: ",percentVar[2],"% variance")) +
@@ -346,14 +336,14 @@ for (bag in batchGroups) {
     if (file.exists(ResultsFile) == FALSE) {
 
         deseq2_results_list <- list()
-        comparisons <- combn(unique(coldataSel[,'ko']),2)
+        comparisons <- combn(unique(coldataSel[,'labels']),2)
 
         for (idx in 1:ncol(comparisons)) {
 
             control.group <- comparisons[1,idx]
             treat.group <- comparisons[2,idx]
-            CompPrefix <- paste(paste0(cell, "-", control.group, "_", compareID), 
-                                paste0(cell, "-", treat.group, "_", compareID),sep="-vs-")
+            CompPrefix <- paste(paste0(control.group, "_", compareID), 
+                                paste0(treat.group, "_", compareID),sep="-vs-")
             cat("Saving results for ",CompPrefix," ...\n",sep="")
 
             CompOutDir <- paste(CompPrefix,'/',sep="")
@@ -361,11 +351,11 @@ for (bag in batchGroups) {
                 dir.create(CompOutDir,recursive=TRUE)
             }
 
-            control.samples <- rownames(coldataSel[coldataSel['ko'] == control.group,])
-            treat.samples <- rownames(coldataSel[coldataSel['ko'] == treat.group,]) 
+            control.samples <- rownames(coldataSel[coldataSel['labels'] == control.group,])
+            treat.samples <- rownames(coldataSel[coldataSel['labels'] == treat.group,]) 
             comp.samples <- c(control.samples,treat.samples)
 
-            comp.results <- results(dds,contrast=c("ko",c(control.group,treat.group)))
+            comp.results <- results(dds,contrast=c("labels",c(control.group,treat.group)))
             comp.df <- as.data.frame(comp.results)
             comp.table <- cbind(interval.table, as.data.frame(comp.df), 
                         raw.counts[,paste(comp.samples,'raw',sep='.')], 
