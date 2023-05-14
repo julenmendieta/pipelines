@@ -237,7 +237,7 @@ def motifsBySubset_atac(outpath, size, foldChanges, chip, cell1, cell2, df_new,
     outMotif1 = f'{outpath}/by_FoldChange/{chip}/{cell1}-Yes-{foldChanges[0]}_{cell2}-No-{foldChanges[1]}_cellBg'
     outMotif1_noBg = f'{outpath}/by_FoldChange/{chip}/{cell1}-Yes-{foldChanges[0]}_{cell2}-No-{foldChanges[1]}_defaultBg'
     if size == True:
-        # remove intersecting coordinates
+        # get intersecting coordinates
         b = pybedtools.BedTool(atac[cell1.split('_')[0]][[
                     'chr', 
                       'start', 
@@ -262,7 +262,7 @@ def motifsBySubset_atac(outpath, size, foldChanges, chip, cell1, cell2, df_new,
         outMotif1_noBg += f'/{seqlen}'
 
     else:
-        # remove intersecting coordinates
+        # get intersecting coordinates
         b = pybedtools.BedTool(atac[cell1.split('_')[0]][[
                     'chr', 
                       'start', 
