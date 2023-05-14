@@ -9,8 +9,10 @@
 
 #basePath="/scratch/julen/ChIP/allData/04_subsamplingNoIgG/outdata/csaw"
 basePath=$1
+# Input consensus peak file
+binnedPeaks=$2
 #nCPU=16
-nCPU=$2
+nCPU=$3
 inpath="${basePath}/binnedPeaks"
 outpath="${basePath}/finalTables/01_Annot"
 
@@ -81,110 +83,86 @@ fi
 
 echo -e "Starting consensus peak annotations ------------------------------\n"
 
-consensusFiles=$(find ${inpath}/*tsv -printf "${inpath}/%f\n" | \
-            tr '\n' ' ')
+
 chip="allmerged"
-for binnedPeaks in ${consensusFiles}; do
-    peaktype="binnedPeak"
-    prefix=$(basename $binnedPeaks | cut -d '.' -f 1) # | sed 's/allChIPCounts_//g')
 
-    prefix="${prefix}"
+peaktype="binnedPeak"
+prefix=$(basename $binnedPeaks | cut -d '.' -f 1) # | sed 's/allChIPCounts_//g')
 
-    ## First part
-    mergecols=`seq 2 9 | tr '\n' ','`
-    expandparam=''
+prefix="${prefix}"
+
+## First part
+mergecols=`seq 2 9 | tr '\n' ','`
+expandparam=''
 
 
 
-    ## Second part
-    # check if the file exists or it was created with a previous peaks version 
-    boolAnotMatr=${outpath}/${prefix}.boolean.annotatePeaks.txt
-    fileNotExistOrOlder "${boolAnotMatr}" "${binnedPeaks}"
-    # this outputs analyse as yes or no in lowercase
-    if [[ ${analyse} == "yes" ]]; then
+## Second part
+# check if the file exists or it was created with a previous peaks version 
+boolAnotMatr=${outpath}/${prefix}.boolean.annotatePeaks.txt
+fileNotExistOrOlder "${boolAnotMatr}" "${binnedPeaks}"
+# this outputs analyse as yes or no in lowercase
+if [[ ${analyse} == "yes" ]]; then
 
+    annotatePeaks.pl \
+            ${binnedPeaks} \
+            ${speciesGenome} \
+            -gid \
+            ${extraAnnot} \
+            -cpu ${nCPU} \
+            -annStats ${outpath}/${prefix}.annotateStats.txt \
+            > ${outpath}/${prefix}.annotatePeaks.txt
+
+    cut -f2- ${outpath}/${prefix}.annotatePeaks.txt | \
+        awk 'NR==1; NR > 1 {print $0 | "sort -T '.' -k1,1 -k2,2n"}' | \
+        cut -f6- > ${outpath}/tmp.txt
+    paste ${binnedPeaks} \
+        ${outpath}/tmp.txt > ${boolAnotMatr}
+
+
+    # external GTF file annotation gives error in Annotation columns, so I 
+    # will get this one appart
+    if [[ $gtfFile != "FALSE" ]]; then
         annotatePeaks.pl \
                 ${binnedPeaks} \
                 ${speciesGenome} \
                 -gid \
-                ${extraAnnot} \
                 -cpu ${nCPU} \
                 -annStats ${outpath}/${prefix}.annotateStats.txt \
                 > ${outpath}/${prefix}.annotatePeaks.txt
 
         cut -f2- ${outpath}/${prefix}.annotatePeaks.txt | \
             awk 'NR==1; NR > 1 {print $0 | "sort -T '.' -k1,1 -k2,2n"}' | \
-            cut -f6- > ${outpath}/tmp.txt
-        paste ${binnedPeaks} \
-            ${outpath}/tmp.txt > ${boolAnotMatr}
-
-
-        # external GTF file annotation gives error in Annotation columns, so I 
-        # will get this one appart
-        if [[ $gtfFile != "FALSE" ]]; then
-            annotatePeaks.pl \
-                    ${binnedPeaks} \
-                    ${speciesGenome} \
-                    -gid \
-                    -cpu ${nCPU} \
-                    -annStats ${outpath}/${prefix}.annotateStats.txt \
-                    > ${outpath}/${prefix}.annotatePeaks.txt
-
-            cut -f2- ${outpath}/${prefix}.annotatePeaks.txt | \
-                awk 'NR==1; NR > 1 {print $0 | "sort -T '.' -k1,1 -k2,2n"}' | \
-                cut -f7 > ${outpath}/tmp.txt
-            rm ${outpath}/${prefix}.annotatePeaks.txt
-            # rename header and paste to consensus table
-            sed -i 's/Annotation/Annotation2/g' ${outpath}/tmp.txt
-            paste ${boolAnotMatr} \
-                ${outpath}/tmp.txt > ${outpath}/tmp2.txt
-            mv ${outpath}/tmp2.txt ${boolAnotMatr}
-        fi
-        
-        # external GTF file annotation gives error in Annotation columns, so I 
-        # will get this one appart
-        if [[ $gtfFile != "FALSE" ]]; then
-            annotatePeaks.pl \
-                    ${binnedPeaks} \
-                    ${speciesGenome} \
-                    -gid \
-                    -cpu ${nCPU} \
-                    -annStats ${outpath}/${prefix}.annotateStats.txt \
-                    > ${outpath}/${prefix}.annotatePeaks.txt
-
-            cut -f2- ${outpath}/${prefix}.annotatePeaks.txt | \
-                awk 'NR==1; NR > 1 {print $0 | "sort -T '.' -k1,1 -k2,2n"}' | \
-                cut -f7 > ${outpath}/tmp.txt
-            rm ${outpath}/${prefix}.annotatePeaks.txt
-            # rename header and paste to consensus table
-            sed -i 's/Annotation/Annotation2/g' ${outpath}/tmp.txt
-            paste ${boolAnotMatr} \
-                ${outpath}/tmp.txt > ${outpath}/tmp2.txt
-            mv ${outpath}/tmp2.txt ${boolAnotMatr}
-        fi
-
-        # We add a column for annotations regarding repeat elements
-        if [[ $repeatsPath != "FALSE" ]]; then
-            annotatePeaks.pl \
-                    ${binnedPeaks} \
-                    ${speciesGenome} \
-                    -gid \
-                    -ann ${repeatsPath} \
-                    -cpu ${nCPU} \
-                    > ${outpath}/${prefix}.annotatePeaks_rep.txt
-
-            cut -f2- ${outpath}/${prefix}.annotatePeaks_rep.txt | \
-                awk 'NR==1; NR > 1 {print $0 | "sort -T '.' -k1,1 -k2,2n"}' | \
-                cut -f7 > ${outpath}/tmp.txt
-            rm ${outpath}/${prefix}.annotatePeaks_rep.txt
-            # rename header and paste to consensus table
-            sed -i 's/Annotation/Repeats Annotation/g' ${outpath}/tmp.txt
-            paste ${boolAnotMatr} \
-                ${outpath}/tmp.txt > ${outpath}/tmp2.txt
-            mv ${outpath}/tmp2.txt ${boolAnotMatr}
-        fi
-            
+            cut -f7 > ${outpath}/tmp.txt
+        rm ${outpath}/${prefix}.annotatePeaks.txt
+        # rename header and paste to consensus table
+        sed -i 's/Annotation/Annotation2/g' ${outpath}/tmp.txt
+        paste ${boolAnotMatr} \
+            ${outpath}/tmp.txt > ${outpath}/tmp2.txt
+        mv ${outpath}/tmp2.txt ${boolAnotMatr}
     fi
-done
+
+    # We add a column for annotations regarding repeat elements
+    if [[ $repeatsPath != "FALSE" ]]; then
+        annotatePeaks.pl \
+                ${binnedPeaks} \
+                ${speciesGenome} \
+                -gid \
+                -ann ${repeatsPath} \
+                -cpu ${nCPU} \
+                > ${outpath}/${prefix}.annotatePeaks_rep.txt
+
+        cut -f2- ${outpath}/${prefix}.annotatePeaks_rep.txt | \
+            awk 'NR==1; NR > 1 {print $0 | "sort -T '.' -k1,1 -k2,2n"}' | \
+            cut -f7 > ${outpath}/tmp.txt
+        rm ${outpath}/${prefix}.annotatePeaks_rep.txt
+        # rename header and paste to consensus table
+        sed -i 's/Annotation/Repeats Annotation/g' ${outpath}/tmp.txt
+        paste ${boolAnotMatr} \
+            ${outpath}/tmp.txt > ${outpath}/tmp2.txt
+        mv ${outpath}/tmp2.txt ${boolAnotMatr}
+    fi
+        
+fi
 
 echo -e "consensus peak annotations - Finished ---------------------\n"

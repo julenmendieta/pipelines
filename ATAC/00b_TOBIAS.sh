@@ -9,6 +9,29 @@
 # specified in the name after the first _
 # cell-condition_batch-[extra]_...
 
+# # base bams path
+# bambase=/scratch/julen/ATAC/allData/08_paperChip/bams/merged
+# # base peaks path
+# peakbase=/scratch/julen/ATAC/allData/08_paperChip/peaks
+# # base output dir
+# outdirbase=/scratch/julen/ATAC/allData/08_paperChip/TOBIAS
+# # Cell type of interest
+# cell=DM
+# # Specify control conditions string in name
+# controlCell=Mye
+
+
+# base bams path
+bambase=/scratch/julen/ATAC/allData/05_laura/bams/onlyNTC
+# base peaks path
+peakbase=/scratch/julen/ATAC/allData/05_laura/peaks
+# base output dir
+outdirbase=/scratch/julen/ATAC/allData/05_laura/TOBIAS
+# Cell type of interest
+cell=Activated-NtC5
+# Specify control conditions string in name
+controlCell=Quiescent-NtC5
+
 # Path to TOBIAS
 TOBIAS=/home/julen/miniconda3/envs/TOBIAS/bin/TOBIAS
 # Path to R environment
@@ -17,20 +40,10 @@ R=/home/julen/miniconda3/envs/onlyR/bin/R
 uropa="/home/julen/miniconda3/envs/TOBIAS/bin/uropa"
 # best factors script
 bestFactors="/home/julen/programas/PhD/ATAC/get_best_bingfactors.py"
-# base bams path
-bambase=/home/julen/extraData/ATAC/allData/05_laura/bams/merged
-# base peaks path
-peakbase=/scratch/julen/ATAC/allData/05_laura/peaks
-# base output dir
-outdirbase=/scratch/julen/ATAC/allData/05_laura/TOBIAS
 # Path to motifs to be check (In format suited for TOBIAS)
 motifsCheck=/scratch/julen/ATAC/allData/02_firstATAC/TOBIAS/motifs/known_jaspar_t100.motifs
 # Path to reference genome
 refGenome=/home/julen/genomes/mm10_reordered/mm10.reordered.fa
-# Cell type of interest
-cell=Activated
-# Specify control conditions string in name
-controlCondition=NtC5
 # define peak type
 peaktype=broadPeak
 # path for the location of the pipeline scripts
@@ -67,12 +80,12 @@ fileNotExistOrOlder () {
 ##===============================================================================
 
 outdir="${outdirbase}/${peaktype}"
-if [ ! -e ${outdir}/${cell} ]; then
-	mkdir -p ${outdir}/${cell}
+if [ ! -e ${outdir}/${cell}-vs-${controlCell} ]; then
+	mkdir -p ${outdir}/${cell}-vs-${controlCell}
 fi
 
 # get NTC and all KO
-allbams=$(find -L ${bambase}/${cell}*bam)
+allbams=$(find -L ${bambase}/*bam | grep "${cell}\|${controlCell}")
 
 # lets split by batches
 batches=$(for ba in $allbams; do
@@ -84,18 +97,17 @@ batches=$(for ba in $allbams; do
     echo $ba;
 done | sort | uniq)
  
-for batch in ATAC3; do
+for batch in ATAC5; do
 
     echo "Processing batch ${batch}"
 
-    NTC_bam=$(echo $allbams| tr ' ' '\n' | grep "${cell}-${controlCondition}_${batch}-\|${cell}-${controlCondition}_${batch}_") 
-    ko_bams=$(echo $allbams| tr ' ' '\n' | grep -v "${cell}-${controlCondition}_") 
-    ko_bams=$(echo $ko_bams| tr ' ' '\n' | grep "${cell}-.*_${batch}-\|${cell}-.*_${batch}_") 
+    control_bam=$(echo $allbams| tr ' ' '\n' | grep "${controlCell}_${batch}-\|${controlCell}_${batch}_") 
+    ko_bams=$(echo $allbams| tr ' ' '\n' | grep "${cell}_${batch}-\|${cell}_${batch}_") 
     
     # Proceed only if we have both control and ko
     continue="yes"
-    if [ -z "$NTC_bam" ] ; then 
-        echo "No control ${controlCondition} found in ${batch}"
+    if [ -z "$control_bam" ] ; then 
+        echo "No control ${controlCell} found in ${batch}"
         continue="no"
     fi
     if [ -z "$ko_bams" ] ; then 
@@ -110,9 +122,9 @@ for batch in ATAC3; do
             echo "Processing KO ${ko_bam}"
 
             prefix_ko=$(basename ${ko_bam} | sed 's/.sort.rmdup.*.bam//g')
-            outKo=${outdir}/${cell}/${prefix_ko}
-            prefix_ntc=$(basename ${NTC_bam} | sed 's/.sort.rmdup.*.bam//g')
-            outNTC=${outdir}/${cell}/${prefix_ko}/${prefix_ntc}
+            outKo=${outdir}/${cell}-vs-${controlCell}/${prefix_ko}
+            prefix_ntc=$(basename ${control_bam} | sed 's/.sort.rmdup.*.bam//g')
+            outNTC=${outdir}/${cell}-vs-${controlCell}/${prefix_ko}/${prefix_ntc}
 
             mkdir -p ${outKo}
 
@@ -122,7 +134,7 @@ for batch in ATAC3; do
             #########################
 
             # get all file names to use
-            consensusPeakBed=${outdir}/${cell}/${prefix_ko}/${cell}.bed
+            consensusPeakBed=${outdir}/${cell}-vs-${controlCell}/${prefix_ko}/${cell}.bed
             annotPeaks=${consensusPeakBed::-4}  
             consensusPeakBed_annot=${annotPeaks}_annotated.bed
 
@@ -130,10 +142,10 @@ for batch in ATAC3; do
             if [ ! -e "${outKo}/${prefix_ko}_footprints.bw" ]; then
 
                 # check if the file exists of it was created with a previous bam version 
-                fileNotExistOrOlder "${consensusPeakBed_annot}" "${NTC_bam} ${ko_bam}"
+                fileNotExistOrOlder "${consensusPeakBed_annot}" "${control_bam} ${ko_bam}"
                 # this outputs analyse as yes or no in lowercase
                 if [ ! -e ${consensusPeakBed_annot} ]; then
-                    echo "Processing consensus peaks for ${cell}-${controlCondition}_${batch}_${prefix_ko}"
+                    echo "Processing consensus peaks for ${controlCell}_${batch}_${prefix_ko}"
                 
                 #if [[ ${analyse} == "yes" ]]; then
                     # Lets create a consensus peak coordinates file for all the conditions of same cell
@@ -148,27 +160,27 @@ for batch in ATAC3; do
                     fileLabels=$(for f in $allPeaks; do echo ${f##*/} |sed "s/_peaks.${peaktype}//g"; done | tr '\n' ',')
 
                     sort -T '.' -k1,1 -k2,2n ${allPeaks} \
-                                    | mergeBed -c $mergecols -o collapse > ${outdir}/${cell}/${prefix_ko}/${cell}_consenus.txt
-                    python ${scriptsPath}/ChIP/cluster/02_NR_macs2_merged_expand.py ${outdir}/${cell}/${prefix_ko}/${cell}_consenus.txt \
+                                    | mergeBed -c $mergecols -o collapse > ${outdir}/${cell}-vs-${controlCell}/${prefix_ko}/${cell}_consenus.txt
+                    python ${scriptsPath}/ChIP/cluster/02_NR_macs2_merged_expand.py ${outdir}/${cell}-vs-${controlCell}/${prefix_ko}/${cell}_consenus.txt \
                                         ${fileLabels} \
-                                        ${outdir}/${cell}/${prefix_ko}/${cell}_consenus.boolean.txt \
+                                        ${outdir}/${cell}-vs-${controlCell}/${prefix_ko}/${cell}_consenus.boolean.txt \
                                         $expandparam
 
                     
                     awk -v FS='\t' -v OFS='\t' 'FNR > 1 { print $1, $2, $3, $4, "0", "+" }' \
-                        ${outdir}/${cell}/${prefix_ko}/${cell}_consenus.boolean.txt > ${consensusPeakBed}
-                    rm ${outdir}/${cell}/${prefix_ko}/${cell}_consenus.txt
-                    rm ${outdir}/${cell}/${prefix_ko}/${cell}_consenus.boolean.txt
+                        ${outdir}/${cell}-vs-${controlCell}/${prefix_ko}/${cell}_consenus.boolean.txt > ${consensusPeakBed}
+                    rm ${outdir}/${cell}-vs-${controlCell}/${prefix_ko}/${cell}_consenus.txt
+                    rm ${outdir}/${cell}-vs-${controlCell}/${prefix_ko}/${cell}_consenus.boolean.txt
 
                     # Annotate the peaks
                     $uropa --bed ${consensusPeakBed} --gtf ${gtfFile} \
                                 --show_attributes gene_id gene_name --feature_anchor start \
-                                --distance 20000 10000 --feature gene --outdir ${outdir}/${cell}/${prefix_ko}
+                                --distance 20000 10000 --feature gene --outdir ${outdir}/${cell}-vs-${controlCell}/${prefix_ko}
                             
                     cut -f 1-6,16-17 ${annotPeaks}_finalhits.txt | head -n 1 > ${annotPeaks}_annotated_header.txt
                     cut -f 1-6,16-17 ${annotPeaks}_finalhits.txt | tail -n +2 > ${annotPeaks}_annotated.bed
                 else
-                    echo "Consensus peaks for ${cell}-${controlCondition}_${batch}_${prefix_ko} already processed"
+                    echo "Consensus peaks for ${controlCell}_${batch}_${prefix_ko} already processed"
                 fi
 
                 #########################
@@ -180,7 +192,7 @@ for batch in ATAC3; do
                 # this outputs analyse as yes or no in lowercase
                 if [ ! -e "${outKo}/${prefix_ko}_footprints.bw" ]; then
                 #if [[ ${analyse} == "yes" ]]; then
-                    echo "Processing footprints for ${cell}-${controlCondition}_${batch}_${prefix_ko}"
+                    echo "Processing footprints for ${controlCell}_${batch}_${prefix_ko}"
 
                     ### In NTC
                     bamfile=${bambase}/${prefix_ntc}.sort.rmdup.rmblackls.rmchr.Tn5.bam
@@ -213,7 +225,7 @@ for batch in ATAC3; do
                                     ${outKo}/${prefix_ko}_footprints.log
                     #TOBIAS ScoreBigwig --signal ${correctedbw} ${footprinting} --regions $allmerged ${footprinting} --cores 99 --output ${condition}_footprints.bw &> ${condition}_footprinting.log
                 else
-                    echo "Footprints for ${cell}-${controlCondition}_${batch}_${prefix_ko} already processed"
+                    echo "Footprints for ${controlCell}_${batch}_${prefix_ko} already processed"
                 fi
 
 
@@ -231,7 +243,7 @@ for batch in ATAC3; do
                 # this outputs analyse as yes or no in lowercase
                 if [ ! -e "${outKo}/bindetect_output/bindetect-${outprefix}_figures.pdf" ]; then
                 #if [[ ${analyse} == "yes" ]]; then
-                    echo "Processing motifs for ${cell}-${controlCondition}_${batch}_${prefix_ko}"
+                    echo "Processing motifs for ${controlCell}_${batch}_${prefix_ko}"
                     #Estimate bound sites from scored */
                     # here we also can do differential
                     # It works as it should when you use raw PFM motif files
@@ -245,7 +257,7 @@ for batch in ATAC3; do
                                     --outdir ${outKo}/bindetect_output &> ${outKo}/${outprefix}_bindetect.log
                     #TOBIAS BINDetect --motifs ${motifsCheck} --signals $footprints ${bindetect} --genome $fasta --peaks  $annotated_headerbed --peak_header $annotated_header --cores 99 --cond_names $condition --outdir TFBS &> bindetect.log
                 else
-                    echo "Motifs for ${cell}-${controlCondition}_${batch}_${prefix_ko} already processed"
+                    echo "Motifs for ${controlCell}_${batch}_${prefix_ko} already processed"
                 fi
 
                 #########################
@@ -258,7 +270,7 @@ for batch in ATAC3; do
                 # # this outputs analyse as yes or no in lowercase
                 # if [ ! -e "${outKo}/bindetect_output/network_${prefix_ko}/edges.txt" ]; then
                 # #if [[ ${analyse} == "yes" ]]; then
-                #     echo "Processing networks for ${cell}-${controlCondition}_${batch}_${prefix_ko}"
+                #     echo "Processing networks for ${controlCell}_${batch}_${prefix_ko}"
                 #     ### Network analysis
                 #     # You can get the TF IDs from the motif file and add them here to get the gene symbol
                 #     # https://www.genenames.org/tools/multi-symbol-checker/
@@ -272,7 +284,7 @@ for batch in ATAC3; do
                 #     $TOBIAS CreateNetwork --TFBS ${outKo}/bindetect_output/*/beds/*${prefix_ntc}_bound.bed \
                 #         --origin ${origin} --outdir ${outKo}/bindetect_output/network_${prefix_ntc}
                 # else
-                #     echo "Networks for ${cell}-${controlCondition}_${batch}_${prefix_ko} already processed"
+                #     echo "Networks for ${controlCell}_${batch}_${prefix_ko} already processed"
                 # fi
 
                 if [ $clean == "yes" ]; then
