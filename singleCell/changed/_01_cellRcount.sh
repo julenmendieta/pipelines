@@ -16,7 +16,7 @@
 # original ram was 258Gb, and cpu 24
 
 # HOW TO RUN ME
-#sbatch /home/jmendietaes/programas/PhD/singleCell/changed/01_cellRcount.sh
+#sbatch /home/jmendietaes/programas/pipelines/singleCell/changed/01_cellRcount.sh
 
 # OBJECTIVE
 # run cellRanger

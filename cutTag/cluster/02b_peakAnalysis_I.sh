@@ -16,7 +16,7 @@
 #   into account
 
 # HOW TO RUN ME
-#sbatch /home/jmendietaes/programas/PhD/cutTag/cluster/02b_peakAnalysis_I.sh \
+#sbatch /home/jmendietaes/programas/pipelines/cutTag/cluster/02b_peakAnalysis_I.sh \
 #/home/jmendietaes/data/2021/cutTag/allProcessed \
 
 # OBJECTIVE
@@ -80,7 +80,7 @@ REFERENCE_DIR="/home/jmendietaes/referenceGenomes/mm10_reordered/mm10.reordered"
 chr_genome_size=$REFERENCE_DIR".sizes"
 
 # Path to bedgraphToBigwig script
-bedGraphToBigWig="/home/jmendietaes/programas/PhD/general/bedGraphToBigWig"
+bedGraphToBigWig="/home/jmendietaes/programas/pipelines/general/bedGraphToBigWig"
 
 # never filter out _IgG in here
 allbams=$(find ${bamsPath}/*bam -printf "${bamsPath}/%f\n" | \

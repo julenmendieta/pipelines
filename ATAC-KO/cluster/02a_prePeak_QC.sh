@@ -14,7 +14,7 @@
 
 # HOW TO RUN ME
 # create file with ChIP names in bams folder
-#sbatch /home/jmendietaes/programas/PhD/ChIP/cluster/02a_prePeak_QC.sh \
+#sbatch /home/jmendietaes/programas/pipelines/ChIP/cluster/02a_prePeak_QC.sh \
 #/home/jmendietaes/data/2021/chip/allProcessed \
 #/home/jmendietaes/data/2021/chip/analysisFiles
 

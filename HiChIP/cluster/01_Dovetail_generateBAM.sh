@@ -15,7 +15,7 @@
 # HOW TO RUN ME
 #for i in *fastq.gz; do echo $i | sed 's/_R._001.fastq.gz//g' ; done | sort | uniq > samplesNames.txt  
 # N=`cat samplesNames.txt | wc -l`
-# sbatch --array=1-${N} /home/jmendietaes/programas/PhD/HiChIP/cluster/01_Dovetail_generateBAM.sh \
+# sbatch --array=1-${N} /home/jmendietaes/programas/pipelines/HiChIP/cluster/01_Dovetail_generateBAM.sh \
 #/home/jmendietaes/data/2021/HiChIP/sequencedData/SLX-20756_hichip \
 #/home/jmendietaes/data/2021/HiChIP/allProcessed \
 #/home/jmendietaes/referenceGenomes/mm10_reordered/mm10.reordered
@@ -59,7 +59,7 @@ GenomeIndex=$REFERENCE_DIR
 
 
 ## load modules
-hichipScripts="/home/jmendietaes/programas/PhD/HiChIP/cluster"
+hichipScripts="/home/jmendietaes/programas/pipelines/HiChIP/cluster"
 # set to lowercase yes or not
 removeTemp="no"
 export PATH="/home/jmendietaes/programas/miniconda3/bin:$PATH"

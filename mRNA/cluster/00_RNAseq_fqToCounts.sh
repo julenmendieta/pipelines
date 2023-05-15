@@ -18,7 +18,7 @@
 # HOW TO RUN ME
 # for i in *fastq.gz; do echo $i | sed 's/_R._001.fastq.gz//g' ; done | sort | uniq > samplesNames.txt  
 # N=`cat samplesNames.txt | wc -l`
-# sbatch --array=1-${N} /home/jmendietaes/programas/PhD/mRNA/cluster/00_RNAseq_fqToCounts.sh \
+# sbatch --array=1-${N} /home/jmendietaes/programas/pipelines/mRNA/cluster/00_RNAseq_fqToCounts.sh \
 #/home/jmendietaes/data/2021/mRNA/sequencedData/NextSeq2000.RUN150.20230216 \
 #/home/jmendietaes/data/2021/mRNA/allProcessed \
 #/home/jmendietaes/referenceGenomes/mm10_reordered/STAR/mm10.reordered \
@@ -76,7 +76,7 @@ indexOutP=$(dirname ${GenomeIndex})
 useGTF=$(realpath ${indexOutP}/genes/*gtf)
 
 # Path to nextflow scripts
-nfScripts="/home/jmendietaes/programas/PhD/mRNA/cluster/nf-scripts"
+nfScripts="/home/jmendietaes/programas/pipelines/mRNA/cluster/nf-scripts"
 # Path to rRNA fasta files (to filter them)
 # Names must end with .fasta
 rRNAp="/home/jmendietaes/programas/sortmerna/sortmerna-4.3.6-Linux/database"

@@ -18,7 +18,7 @@
 # HOW TO RUN ME
 # for i in *fastq.gz; do echo $i | sed 's/_R._001.fastq.gz//g' ; done | sort | uniq > samplesNames.txt  
 # N=`cat samplesNames.txt | wc -l`
-# sbatch --array=1-${N} /home/jmendietaes/programas/PhD/HiC/cluster/01_tadbitTools.sh
+# sbatch --array=1-${N} /home/jmendietaes/programas/pipelines/HiC/cluster/01_tadbitTools.sh
 
 # TADbit tools tutorial (not published)
 #https://docs.google.com/document/d/16YseE-v9NwYXZRKKevkGohtJiNdl3VX42wfBPWfkZ-M/edit
@@ -27,7 +27,7 @@
 # How to run me
 # realpath *fastq.gz > toMapp.txt in the location with the fastqs
 #and assign it in "filesPath" variable
-# python /home/jmendietaes/programas/PhD/HiC/cluster/00_createMappChia.py
+# python /home/jmendietaes/programas/pipelines/HiC/cluster/00_createMappChia.py
 ######################  TO CHANGE #####################
 # path to file with read1 and read 2 of each experiment
 filesPath='/home/jmendietaes/data/2021/HiC/sequencedData/finalDatasets'

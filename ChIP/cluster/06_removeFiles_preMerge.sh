@@ -1,6 +1,6 @@
 # Script to delete all files from analysis that will be done again
 # Add here unique IDs of each sample separated by a space
-#bash /home/jmendietaes/programas/PhD/ChIP/cluster/06_removeFiles_preMerge.sh
+#bash /home/jmendietaes/programas/pipelines/ChIP/cluster/06_removeFiles_preMerge.sh
 
 removeChip="DM_Jun"
 

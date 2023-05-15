@@ -15,7 +15,7 @@
 # HOW TO RUN ME
 #for i in *fastq.gz; do echo $i | sed 's/_R._001.fastq.gz//g' ; done | sort | uniq > samplesNames.txt  
 # N=`cat samplesNames.txt | wc -l`
-# sbatch --array=1-${N} /home/jmendietaes/programas/PhD/microC/cluster/01_Dovetail_generateBAM.sh \
+# sbatch --array=1-${N} /home/jmendietaes/programas/pipelines/microC/cluster/01_Dovetail_generateBAM.sh \
 #/home/jmendietaes/data/2021/microC/sequencedData/NextSeq2000.RUN137.230120 \
 #/home/jmendietaes/data/2021/microC/allProcessed \
 #/home/jmendietaes/referenceGenomes/mm10_reordered/mm10.reordered
@@ -61,7 +61,7 @@ GenomeIndex=$REFERENCE_DIR
 preseq=/home/jmendietaes/programas/preseq_v2.0/preseq-3.1.2/installation/bin/preseq
 
 ## load modules
-microCScripts="/home/jmendietaes/programas/PhD/microC/cluster"
+microCScripts="/home/jmendietaes/programas/pipelines/microC/cluster"
 # set to lowercase yes or not
 removeTemp="no"
 export PATH="/home/jmendietaes/programas/miniconda3/bin:$PATH"

@@ -13,7 +13,7 @@
 
 
 # HOW TO RUN ME
-# sbatch /home/jmendietaes/programas/PhD/ChIP/cluster/03_peaksVScoverage.sh 
+# sbatch /home/jmendietaes/programas/pipelines/ChIP/cluster/03_peaksVScoverage.sh 
 
 # load modules
 module load Sambamba/0.7.0

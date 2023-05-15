@@ -16,7 +16,7 @@
 ##SBATCH --mail-type=END
 ##SBATCH --mail-user=user@mail.es
 # HOW TO RUN ME
-# sbatch /home/jmendietaes/programas/PhD/ChIP/cluster/11a_mergeSeqRep.sh 
+# sbatch /home/jmendietaes/programas/pipelines/ChIP/cluster/11a_mergeSeqRep.sh 
 
 
 # PURPOSE

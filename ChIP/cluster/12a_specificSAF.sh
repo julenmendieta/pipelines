@@ -13,7 +13,7 @@
 
 
 # HOW TO RUN ME
-#sbatch /home/jmendietaes/programas/PhD/ChIP/cluster/12a_specificSAF.sh
+#sbatch /home/jmendietaes/programas/pipelines/ChIP/cluster/12a_specificSAF.sh
 
 # OBJECTIVE
 # Get all peak files from folder and generate consensus coordinate SAF file

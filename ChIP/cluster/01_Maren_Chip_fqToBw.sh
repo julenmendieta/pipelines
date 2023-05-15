@@ -18,7 +18,7 @@
 # HOW TO RUN ME
 # for i in *fastq.gz; do echo $i | sed 's/_R._001.fastq.gz//g' ; done | sort | uniq > samplesNames.txt  
 # N=`cat samplesNames.txt | wc -l`
-# sbatch --array=1-${N} /home/jmendietaes/programas/PhD/ChIP/cluster/01_Maren_Chip_fqToBw.sh \
+# sbatch --array=1-${N} /home/jmendietaes/programas/pipelines/ChIP/cluster/01_Maren_Chip_fqToBw.sh \
 #/home/jmendietaes/data/2021/chip/sequencedData/mnavarroa \
 #/home/jmendietaes/data/2021/chip/allProcessed \
 #/home/jmendietaes/referenceGenomes/mm10_reordered/mm10.reordered

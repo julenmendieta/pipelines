@@ -13,7 +13,7 @@
 
 
 # HOW TO RUN ME
-# sbatch /home/jmendietaes/programas/PhD/HiChIP/cluster/03a_Dovetail_loopCalling.sh \
+# sbatch /home/jmendietaes/programas/pipelines/HiChIP/cluster/03a_Dovetail_loopCalling.sh \
 #/home/jmendietaes/data/2021/HiChIP/allProcessed \
 #/home/jmendietaes/referenceGenomes/mm10_reordered/mm10.reordered
 #/home/jmendietaes/data/2021/chip/allProcessed/furtherAnalysis/08_projectRestart/peakCalling/MACS2/peaks
@@ -50,7 +50,7 @@ statsOut="${basePath}/chipIntersection"
 outpair="${basePath}/pairtools"
 
 ## load modules
-hichipScripts="/home/jmendietaes/programas/PhD/HiChIP/cluster"
+hichipScripts="/home/jmendietaes/programas/pipelines/HiChIP/cluster"
 export PATH="/home/jmendietaes/programas/miniconda3/envs/Renv/bin:$PATH"
 export PATH="/home/jmendietaes/programas/miniconda3/bin:$PATH"
 module load BWA/0.7.17-foss-2018b

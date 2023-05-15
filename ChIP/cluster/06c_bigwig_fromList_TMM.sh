@@ -13,7 +13,7 @@
 
 # HOW TO RUN ME
 # add in the list bellow the bam file names (but the .bam termination)
-#sbatch /home/jmendietaes/programas/PhD/ChIP/cluster/06c_bigwig_fromList_TMM.sh
+#sbatch /home/jmendietaes/programas/pipelines/ChIP/cluster/06c_bigwig_fromList_TMM.sh
 
 
 basePath="/home/jmendietaes/data/2021/chip/allProcessed"

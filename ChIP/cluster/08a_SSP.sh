@@ -13,7 +13,7 @@
 
 
 # HOW TO RUN ME
-#sbatch /home/jmendietaes/programas/PhD/ChIP/cluster/08a_SSP.sh \
+#sbatch /home/jmendietaes/programas/pipelines/ChIP/cluster/08a_SSP.sh \
 #/home/jmendietaes/data/2021/chip/allProcessed/bamfiles/valid \
 #/home/jmendietaes/data/2021/chip/allProcessed/SSP \
 #/home/jmendietaes/referenceGenomes/mm10_reordered/mm10.reordered.sizes.shortTab

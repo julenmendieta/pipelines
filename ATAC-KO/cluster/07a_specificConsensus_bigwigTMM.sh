@@ -13,7 +13,7 @@
 
 
 # HOW TO RUN ME
-#sbatch /home/jmendietaes/programas/PhD/ATAC-KO/cluster/07a_specificConsensus_bigwigTMM.sh \
+#sbatch /home/jmendietaes/programas/pipelines/ATAC-KO/cluster/07a_specificConsensus_bigwigTMM.sh \
 #/home/jmendietaes/data/2021/ATAC/allProcessed \
 
 # OBJECTIVE

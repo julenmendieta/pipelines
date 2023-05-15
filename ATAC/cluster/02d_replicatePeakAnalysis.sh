@@ -12,7 +12,7 @@
 #SBATCH -e /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.err 
 
 # HOW TO RUN ME
-#sbatch /home/jmendietaes/programas/PhD/ATAC/cluster/02d_replicatePeakAnalysis.sh \
+#sbatch /home/jmendietaes/programas/pipelines/ATAC/cluster/02d_replicatePeakAnalysis.sh \
 #/home/jmendietaes/data/2021/ATAC/allProcessed/bamfiles/valid/mergedReplicates/08_paperChip \
 #/home/jmendietaes/data/2021/ATAC/allProcessed/furtherAnalysis/08_paperChip 
 

@@ -13,7 +13,7 @@
 
 
 # HOW TO RUN ME
-#sbatch /home/jmendietaes/programas/PhD/ATAC-KO/cluster/04a_Coordoverlap_CPM.sh \
+#sbatch /home/jmendietaes/programas/pipelines/ATAC-KO/cluster/04a_Coordoverlap_CPM.sh \
 #/home/jmendietaes/data/2021/ATAC-KO/allProcessed \
 # OBJECTIVE
 # get cutTag CPM at location overlaping coordinate file

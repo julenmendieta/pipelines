@@ -1,7 +1,7 @@
 # Script to call peaks with Epic (ideal for very broad peaks)
 # How to run me
 # You'll have to ask for extra RAM salloc -c 1 -p short --mem=30000
-# bash /home/jmendietaes/programas/PhD/ChIP/cluster/10a_epic_specificChipPeaks.sh
+# bash /home/jmendietaes/programas/pipelines/ChIP/cluster/10a_epic_specificChipPeaks.sh
 
 chips="K9me3"
 control="IgG"

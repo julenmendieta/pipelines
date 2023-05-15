@@ -16,7 +16,7 @@
 # create file with ChIP names in bams folder
 # for filename in *bam; do mapLib=(${filename//_/ }); mapLib=${mapLib[1]}; mapLib=(${mapLib//-/ }); echo ${mapLib[0]}; done | sort | uniq > chipMarcs.txt
 # N=`cat chipMarcs.txt | wc -l`
-#sbatch --array=1-${N} /home/jmendietaes/programas/PhD/ChIP/cluster/04_correlateChIP.sh \
+#sbatch --array=1-${N} /home/jmendietaes/programas/pipelines/ChIP/cluster/04_correlateChIP.sh \
 #/home/jmendietaes/data/2021/chip/allProcessed/bamfiles/valid \
 #/home/jmendietaes/data/2021/chip/allProcessed/furtherAnalysis/chipCorrelation \
 #[PATH/TO/BED] 

@@ -13,7 +13,7 @@
 
 # HOW TO RUN ME
 # add in the list bellow the bam file names (but the .bam termination)
-#sbatch /home/jmendietaes/programas/PhD/ChIP/cluster/06e_bigwig_fromList_rcount.sh
+#sbatch /home/jmendietaes/programas/pipelines/ChIP/cluster/06e_bigwig_fromList_rcount.sh
 
 files="Mye_Setdb1_14042021_S25.sort.rmdup.rmblackls.rmchr \
 Mye_Smarcb1-merged.sort.rmdup.rmblackls.rmchr \

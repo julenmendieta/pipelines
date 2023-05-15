@@ -13,7 +13,7 @@
 
 
 # HOW TO RUN ME
-#sbatch /home/jmendietaes/programas/PhD/singleCell/changed/00_PREP_Genome.sh
+#sbatch /home/jmendietaes/programas/pipelines/singleCell/changed/00_PREP_Genome.sh
 
 # OBJECTIVE
 # merge genome files for cellRanger

@@ -17,7 +17,7 @@
 # HOW TO RUN ME
 # for i in *fastq.gz; do echo $i | sed 's/_R._001.fastq.gz//g' ; done | sort | uniq > samplesNames.txt  
 # N=`cat samplesNames.txt | wc -l`
-# sbatch --array=1-${N} /home/jmendietaes/programas/PhD/cutTag/cluster/01_cutTag_fqToBw.sh \
+# sbatch --array=1-${N} /home/jmendietaes/programas/pipelines/cutTag/cluster/01_cutTag_fqToBw.sh \
 #/home/jmendietaes/data/2021/cutTag/sequencedData/NextSeq2000.RUN108.221005 \
 #/home/jmendietaes/data/2021/cutTag/allProcessed \
 #/home/jmendietaes/referenceGenomes/mm10_reordered/mm10.reordered
@@ -78,7 +78,7 @@ BlackList=$REFERENCE_DIR".blacklist.bed"
 wigToBigWig="/home/jmendietaes/programas/binPath/wigToBigWig"
 picardPath='/home/jmendietaes/programas/picard/picard.jar'
 # Path to Qualimap
-qualimap="/home/jmendietaes/programas/PhD/qualimap/qualimap_v2.2.1/qualimap"
+qualimap="/home/jmendietaes/programas/pipelines/qualimap/qualimap_v2.2.1/qualimap"
 #picardPath='$EBROOTPICARD/picard.jar'
 ##===============================================================================
 ## Required Software

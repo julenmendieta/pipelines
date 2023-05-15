@@ -12,7 +12,7 @@
 #SBATCH -e /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.err 
 
 # HOW TO RUN ME
-#sbatch /home/jmendietaes/programas/PhD/general/02_trimFastq.sh
+#sbatch /home/jmendietaes/programas/pipelines/general/02_trimFastq.sh
 
 # length for read1 and read2
 r1Length=28

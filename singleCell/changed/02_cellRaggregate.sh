@@ -16,7 +16,7 @@
 # original ram was 258Gb, and cpu 24
 
 # HOW TO RUN ME
-#sbatch /home/jmendietaes/programas/PhD/singleCell/changed/02_cellRaggregate.sh
+#sbatch /home/jmendietaes/programas/pipelines/singleCell/changed/02_cellRaggregate.sh
 
 # OBJECTIVE
 # aggregate cellranger count experiments

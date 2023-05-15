@@ -3,7 +3,7 @@
 
 # HOW TO RUN ME
 # Change the variables to change and
-# bash /home/jmendietaes/programas/PhD/general/renameFiles.sh
+# bash /home/jmendietaes/programas/pipelines/general/renameFiles.sh
 # bash /home/julen/programas/PhD/general/renameFiles.sh
 
 # OBJECTIVE OF SCRIPT

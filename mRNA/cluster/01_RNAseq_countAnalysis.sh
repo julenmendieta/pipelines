@@ -16,7 +16,7 @@
 ##SBATCH --mail-type=END
 ##SBATCH --mail-user=user@mail.es
 # HOW TO RUN ME
-# sbatch /home/jmendietaes/programas/PhD/mRNA/cluster/01_RNAseq_countAnalysis.sh \
+# sbatch /home/jmendietaes/programas/pipelines/mRNA/cluster/01_RNAseq_countAnalysis.sh \
 #/home/jmendietaes/data/2021/mRNA/allProcessed \
 #/home/jmendietaes/referenceGenomes/mm10_reordered/STAR/mm10.reordered \
 #01_projectRestart
@@ -61,7 +61,7 @@ outpath=${basePath}"/furtherAnalysis/${projectName}"
 salmonQin=${basePath}/counts/salmon/${projectName}
 
 # Path to nextflow scripts
-subScripts="/home/jmendietaes/programas/PhD/mRNA/cluster/sub-scripts"
+subScripts="/home/jmendietaes/programas/pipelines/mRNA/cluster/sub-scripts"
 
 
 ##==============================================================================
@@ -70,7 +70,7 @@ subScripts="/home/jmendietaes/programas/PhD/mRNA/cluster/sub-scripts"
 # Path to R
 R="/home/jmendietaes/programas/miniconda3/envs/Renv/bin/Rscript"
 # Path to Qualimap
-qualimap="/home/jmendietaes/programas/PhD/qualimap/qualimap_v2.2.1/qualimap"
+qualimap="/home/jmendietaes/programas/pipelines/qualimap/qualimap_v2.2.1/qualimap"
 # Java needed for Qualimap
 module load Java/1.8.0_192
 # Path to numfmt

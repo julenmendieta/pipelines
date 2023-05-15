@@ -21,7 +21,7 @@
 # for i in *_R1_001.fastq.gz; do echo $i | sed 's/_R1_001.fastq.gz//g' ; done | \
 #sort | uniq > samplesNames.txt
 # N=`cat samplesNames.txt | wc -l`
-# sbatch --array=1-${N} /home/jmendietaes/programas/PhD/CRISPR-screen/00_MECC_sgRNA_v1.1.sh \
+# sbatch --array=1-${N} /home/jmendietaes/programas/pipelines/CRISPR-screen/00_MECC_sgRNA_v1.1.sh \
 #/home/jmendietaes/data/2021/CRISPR/sequencedData/merge4-492 \
 #/home/jmendietaes/data/2021/CRISPR/allProcessed/merge4-492 \
 #/home/jmendietaes/referenceGenomes/sgRNA_indexes/bowtie2 \

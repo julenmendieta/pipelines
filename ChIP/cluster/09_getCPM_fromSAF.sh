@@ -13,7 +13,7 @@
 
 
 # HOW TO RUN ME
-#sbatch /home/jmendietaes/programas/PhD/ChIP/cluster/09_getCPM_fromSAF.sh 
+#sbatch /home/jmendietaes/programas/pipelines/ChIP/cluster/09_getCPM_fromSAF.sh 
 
 # OBJECTIVE
 # get CPM values from bamfiles in path at consensus saf coordinta file

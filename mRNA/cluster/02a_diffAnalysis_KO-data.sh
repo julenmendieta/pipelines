@@ -15,7 +15,7 @@
 
 
 # HOW TO RUN ME
-# sbatch /home/jmendietaes/programas/PhD/mRNA/cluster/02a_diffAnalysis_KO-data.sh \
+# sbatch /home/jmendietaes/programas/pipelines/mRNA/cluster/02a_diffAnalysis_KO-data.sh \
 #/home/jmendietaes/data/2021/mRNA/allProcessed \
 #01_projectRestart
 
@@ -38,7 +38,7 @@ projectName=$2
 outpath=${basePath}"/furtherAnalysis/${projectName}"
 salmonOut=${outpath}/counts
 # Path to nextflow scripts
-subScripts="/home/jmendietaes/programas/PhD/mRNA/cluster/sub-scripts"
+subScripts="/home/jmendietaes/programas/pipelines/mRNA/cluster/sub-scripts"
 
 # Coma separated string with all posible control IDs 
 # Used for batch corrected analysis of same KOs

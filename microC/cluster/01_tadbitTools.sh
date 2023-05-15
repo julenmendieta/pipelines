@@ -18,7 +18,7 @@
 # HOW TO RUN ME
 # for i in *fastq.gz; do echo $i | sed 's/_R._001.fastq.gz//g' ; done | sort | uniq > samplesNames.txt  
 # N=`cat samplesNames.txt | wc -l`
-# sbatch --array=1-${N} /home/jmendietaes/programas/PhD/microC/cluster/01_tadbitTools.sh
+# sbatch --array=1-${N} /home/jmendietaes/programas/pipelines/microC/cluster/01_tadbitTools.sh
 
 # TADbit tools tutorial (not published)
 #https://docs.google.com/document/d/16YseE-v9NwYXZRKKevkGohtJiNdl3VX42wfBPWfkZ-M/edit

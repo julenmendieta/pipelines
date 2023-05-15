@@ -12,7 +12,7 @@
 #SBATCH -e /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.err 
 
 # HOW TO RUN ME
-#sbatch /home/jmendietaes/programas/PhD/ChIP/cluster/02d_replicatePeakAnalysis.sh \
+#sbatch /home/jmendietaes/programas/pipelines/ChIP/cluster/02d_replicatePeakAnalysis.sh \
 #/home/jmendietaes/data/2021/chip/allProcessed \
 #/home/jmendietaes/data/2021/chip/allProcessed/furtherAnalysis/08_projectRestart \
 

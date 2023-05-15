@@ -12,7 +12,7 @@
 #SBATCH -e /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.err 
 
 # HOW TO RUN ME
-#sbatch /home/jmendietaes/programas/PhD/ChIP/cluster/05_subsampleToMin.sh \
+#sbatch /home/jmendietaes/programas/pipelines/ChIP/cluster/05_subsampleToMin.sh \
 #/home/jmendietaes/data/2021/chip/allProcessed \
 
 # PURPOSE

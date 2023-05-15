@@ -13,7 +13,7 @@
 
 
 # HOW TO RUN ME
-#sbatch /home/jmendietaes/programas/PhD/ChIP/cluster/05b_countReadsIgG.sh \
+#sbatch /home/jmendietaes/programas/pipelines/ChIP/cluster/05b_countReadsIgG.sh \
 #/home/jmendietaes/data/2021/chip/allProcessed \
 
 # OBJECTIVE

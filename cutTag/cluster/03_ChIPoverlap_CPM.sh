@@ -13,7 +13,7 @@
 
 
 # HOW TO RUN ME
-#sbatch /home/jmendietaes/programas/PhD/cutTag/cluster/03_ChIPoverlap_CPM.sh \
+#sbatch /home/jmendietaes/programas/pipelines/cutTag/cluster/03_ChIPoverlap_CPM.sh \
 #/home/jmendietaes/data/2021/cutTag/allProcessed \
 # OBJECTIVE
 # get cutTag CPM at location overlaping ChIP peaks for same factor

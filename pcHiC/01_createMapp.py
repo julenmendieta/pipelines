@@ -34,7 +34,7 @@ r_enz = 'HindIII'
 nthreads = 16
 
 # Path for location of scripts
-scriptsPath = '/home/jmendietaes/programas/PhD/pcHiC/'
+scriptsPath = '/home/jmendietaes/programas/pipelines/pcHiC/'
 
 #####################################################
 

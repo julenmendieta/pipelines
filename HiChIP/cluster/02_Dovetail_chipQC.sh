@@ -13,7 +13,7 @@
 
 
 # HOW TO RUN ME
-# sbatch /home/jmendietaes/programas/PhD/HiChIP/cluster/02_Dovetail_chipQC.sh \
+# sbatch /home/jmendietaes/programas/pipelines/HiChIP/cluster/02_Dovetail_chipQC.sh \
 #/home/jmendietaes/data/2021/HiChIP/allProcessed \
 #/home/jmendietaes/referenceGenomes/mm10_reordered/mm10.reordered
 #/home/jmendietaes/data/2021/chip/allProcessed/furtherAnalysis/08_projectRestart/peakCalling/MACS2/peaks
@@ -51,7 +51,7 @@ statsOut="${basePath}/chipIntersection"
 #picardPath='/home/jmendietaes/programas/picard/picard.jar'
 
 ## load modules
-hichipScripts="/home/jmendietaes/programas/PhD/HiChIP/cluster"
+hichipScripts="/home/jmendietaes/programas/pipelines/HiChIP/cluster"
 export PATH="/home/jmendietaes/programas/miniconda3/bin:$PATH"
 module load BWA/0.7.17-foss-2018b
 module load SAMtools/1.12-GCC-10.2.0

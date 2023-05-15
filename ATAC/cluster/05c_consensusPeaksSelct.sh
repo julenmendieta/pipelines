@@ -13,7 +13,7 @@
 
 
 # HOW TO RUN ME
-#sbatch /home/jmendietaes/programas/PhD/ATAC/cluster/05c_consensusPeaksSelct.sh \
+#sbatch /home/jmendietaes/programas/pipelines/ATAC/cluster/05c_consensusPeaksSelct.sh \
 #/home/jmendietaes/data/2021/ATAC/allProcessed \
 
 # OBJECTIVE

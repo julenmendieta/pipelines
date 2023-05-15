@@ -13,7 +13,7 @@
 
 # HOW TO RUN ME
 # add in the list bellow the bam file names (but the .bam termination)
-#sbatch /home/jmendietaes/programas/PhD/cutTag/cluster/06d_bigwig_fromList.sh
+#sbatch /home/jmendietaes/programas/pipelines/cutTag/cluster/06d_bigwig_fromList.sh
 
 #files="LSK-Chd4_ATAC5-merged.sort.rmdup.rmblackls.rmchr.Tn5 \
 #LSK-Men1_ATAC5-merged.sort.rmdup.rmblackls.rmchr.Tn5"
