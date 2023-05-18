@@ -72,7 +72,7 @@ EDITED_DIR=$PARENT_DIR"/pipelineOut"
 #FASTQC_DIR=$EDITED_DIR"/fastQC"
 
 # path to the location of my git repo
-gitPath="/home/jmendietaes/programas/PhD"
+gitPath="/home/jmendietaes/programas/pipelines"
 
 # path to the python script to extract the guide sequence
 # the script will rely on the first '(.{' symbol in the pattern to get the number of nucleotides

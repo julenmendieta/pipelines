@@ -20,9 +20,9 @@
 
 # Main peak folder
 # All files ending by Peak will be used for the consensus (we expect MACS like format)
-peakPath=/home/jmendietaes/data/2021/chip/allProcessed/furtherAnalysis/08_projectRestart/peakCalling/peakSelection
+peakPath=/home/jmendietaes/data/2021/ATAC/allProcessed/bamfiles/valid/08c_inUMAP
 # path for the location of the pipeline scripts
-scriptsPath="/home/jmendietaes/programas/PhD"
+scriptsPath="/home/jmendietaes/programas/pipelines"
 
 ##===============================================================================
 

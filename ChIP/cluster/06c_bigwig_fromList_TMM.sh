@@ -26,7 +26,7 @@ allbams=$(find ${bamsPath}/*bam -printf "%f\n" | \
             tr '\n' ' ')
 
 # path for the location of the pipeline scripts
-scriptsPath="/home/jmendietaes/programas/PhD"
+scriptsPath="/home/jmendietaes/programas/pipelines"
 
 ## load modules
 export PATH="/home/jmendietaes/programas/miniconda3/envs/Renv/bin:$PATH"

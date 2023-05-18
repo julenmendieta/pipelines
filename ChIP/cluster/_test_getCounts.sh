@@ -22,7 +22,7 @@ featureCounts \
 
 prevFields=6
 lengthCol=5
-scriptsPath="/home/jmendietaes/programas/PhD"
+scriptsPath="/home/jmendietaes/programas/pipelines"
 export PATH="/home/jmendietaes/programas/miniconda3/envs/Renv/bin:$PATH"
 export PATH="/home/jmendietaes/programas/miniconda3/bin:$PATH"
 
@@ -65,7 +65,7 @@ featureCounts \
 
 prevFields=6
 lengthCol=5
-scriptsPath="/home/jmendietaes/programas/PhD"
+scriptsPath="/home/jmendietaes/programas/pipelines"
 export PATH="/home/jmendietaes/programas/miniconda3/envs/Renv/bin:$PATH"
 
 # set the output file path and copy the content of original
@@ -105,7 +105,7 @@ featureCounts \
 
 prevFields=6
 lengthCol=5
-scriptsPath="/home/jmendietaes/programas/PhD"
+scriptsPath="/home/jmendietaes/programas/pipelines"
 export PATH="/home/jmendietaes/programas/miniconda3/envs/Renv/bin:$PATH"
 
 # set the output file path and copy the content of original

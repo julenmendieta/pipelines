@@ -2,7 +2,7 @@
 # -*- ENCODING: UTF-8 -*-
 
 # HOW TO RUN ME
-#bash /home/jmendietaes/programas/PhD/ChIP/cluster/csaw/03a2_annotatePeaks.sh 
+#bash /home/jmendietaes/programas/pipelines/ChIP/cluster/csaw/03a2_annotatePeaks.sh 
 
 # OBJECTIVE
 # Annotate specific peakfile by given gtf file

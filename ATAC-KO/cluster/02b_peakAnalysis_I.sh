@@ -30,8 +30,8 @@ basePath=$1
 #extraFilePath="/home/jmendietaes/data/2021/chip/analysisFiles"
 
 # Where to look for bam files and where to store output tree
-bamsPath="${basePath}/bamfiles/valid/05_laura"
-outpath=${basePath}"/furtherAnalysis/05_laura"
+bamsPath="${basePath}/bamfiles/valid/08b_RLTR45"
+outpath=${basePath}"/furtherAnalysis/08b_RLTR45"
 
 # Important paremeter to modify
 # Set to lowercase yes to use merge of IgG from different cells allCell_IgG.sort.r..
@@ -40,7 +40,7 @@ outpath=${basePath}"/furtherAnalysis/05_laura"
 # called cellMergeIgG
 useMergeIgG="no"
 # Set to lowercase "yes" to get consensus peaks of all ChIPs and cells
-doAllMerge="yes"
+doAllMerge="no"
 
 # FILE NAMING FORMAT
 # [cellType]_[chip]_[date]_[extra?].[bamfilteringKeys].bam
@@ -68,7 +68,7 @@ gtfFile=FALSE
 repeatsPath=FALSE
 
 # path for the location of the pipeline scripts
-scriptsPath="/home/jmendietaes/programas/PhD"
+scriptsPath="/home/jmendietaes/programas/pipelines"
 # species shortcut for MACS
 species="mm"
 speciesGenome="mm10"

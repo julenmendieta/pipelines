@@ -40,7 +40,7 @@ label1="multiExperiment"
 # label1="leukAddings"
 
 # path for the location of the pipeline scripts
-scriptsPath="/home/jmendietaes/programas/PhD"
+scriptsPath="/home/jmendietaes/programas/pipelines"
 ## load modules
 export PATH="/home/jmendietaes/programas/miniconda3/envs/Renv/bin:$PATH"
 export PATH="/home/jmendietaes/programas/miniconda3/bin:$PATH"
@@ -151,5 +151,33 @@ if [[ ${analyse} == "yes" ]]; then
 fi
 
 echo -e "Consensus CPM - Finished ----------------------\n"
+
+############################################
+# Merge CPM with rcounts
+############################################
+echo -e "Starting info merge ---------------------------\n"
+
+outfile=${featureCpath}/${prefix}.rcount.CPM.txt
+
+
+cat ${featureCPM} > ${featureCpath}/tmp2.txt
+headerNames=$(head -n 1 ${featureCpath}/tmp2.txt)
+for h in ${headerNames}; do
+    if [[ $h != "interval_id" ]]; then
+        sed -i "s/${h}/${h}.cpm/g" ${featureCpath}/tmp2.txt
+    fi
+done
+
+# Both files are in the same order
+tail -n +2 ${featureCpath}/${prefix}.featureCounts.txt | \
+            sed "s/sort.rmUnM.q30.rmchr.Tn5.bam/rcount/g" | \
+            sed "s/$(echo $bamsPath/ | sed 's_/_\\/_g')//g" | \
+            paste - \
+            ${featureCpath}/tmp2.txt > ${outfile}
+
+# Remove extra path from header
+#sed -i "s/$(echo $bamsPath/ | sed 's_/__g')//g" \
+#    ${outfile}
+
 
 echo -e "END --------------------------------------------------"

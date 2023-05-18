@@ -71,7 +71,7 @@ gtfFile=FALSE
 repeatsPath=FALSE
 
 # path for the location of the pipeline scripts
-scriptsPath="/home/jmendietaes/programas/PhD"
+scriptsPath="/home/jmendietaes/programas/pipelines"
 # species shortcut for MACS
 species="mm"
 speciesGenome="mm10"

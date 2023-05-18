@@ -56,7 +56,7 @@ repeatsPath=/beegfs/easybuild/CentOS/7.5.1804/Skylake/software/Homer/4.10-foss-2
 #repeatsPath=FALSE
 
 # path for the location of the pipeline scripts
-scriptsPath="/home/jmendietaes/programas/PhD"
+scriptsPath="/home/jmendietaes/programas/pipelines"
 # species shortcut for MACS
 species="mm"
 speciesGenome="mm10"

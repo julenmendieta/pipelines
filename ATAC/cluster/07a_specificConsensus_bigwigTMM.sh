@@ -32,7 +32,7 @@ basePath=$1
 
 
 # path for the location of the pipeline scripts
-scriptsPath="/home/jmendietaes/programas/PhD"
+scriptsPath="/home/jmendietaes/programas/pipelines"
 
 # Where to look for bam files and where to store output tree
 bamsPath="${basePath}/bamfiles/valid/02_firstATAC"

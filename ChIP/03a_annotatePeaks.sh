@@ -2,7 +2,7 @@
 # -*- ENCODING: UTF-8 -*-
 
 # HOW TO RUN ME
-#bash /home/jmendietaes/programas/PhD/ChIP/cluster/csaw/02a_annotatePeaks.sh 
+#bash /home/jmendietaes/programas/pipelines/ChIP/cluster/csaw/02a_annotatePeaks.sh 
 
 # OBJECTIVE
 # Annotate peakfiles in a folder

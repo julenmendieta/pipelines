@@ -47,7 +47,7 @@ inSaf="/home/jmendietaes/data/2021/cutTag/allProcessed/furtherAnalysis/03_proper
 ID=$(basename $inSaf); ID=(${ID//\./ }); ID=${ID[0]}; 
 
 # path for the location of the pipeline scripts
-scriptsPath="/home/jmendietaes/programas/PhD"
+scriptsPath="/home/jmendietaes/programas/pipelines"
 
 # Where to look for bam files and where to store output tree
 bamsPath="${basePath}/bamfiles/valid/04_RLTR45"

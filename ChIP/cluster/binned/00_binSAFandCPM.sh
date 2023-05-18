@@ -13,7 +13,7 @@
 
 
 # HOW TO RUN ME
-#sbatch /home/jmendietaes/programas/PhD/ChIP/cluster/binned/00_binSAFandCPM.sh 
+#sbatch /home/jmendietaes/programas/pipelines/ChIP/cluster/binned/00_binSAFandCPM.sh 
 
 # OBJECTIVE
 # get overlap of SAF file with whole genome binned and SAF file with consensus
@@ -34,7 +34,7 @@ label1="allmerged"
 
 
 # path for the location of the pipeline scripts
-scriptsPath="/home/jmendietaes/programas/PhD"
+scriptsPath="/home/jmendietaes/programas/pipelines"
 ## load modules
 export PATH="/home/jmendietaes/programas/miniconda3/envs/Renv/bin:$PATH"
 export PATH="/home/jmendietaes/programas/miniconda3/bin:$PATH"

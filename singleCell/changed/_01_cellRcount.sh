@@ -39,7 +39,7 @@ outputPath="${basepath}/allProcessed"
 resourcePath="${basepath}/additionalFiles/refdata-gex-mm10-2020-A"
 rangerPath="${basepath}/allProcessed/rangerFiles"
 # path for scripts location
-scriptsPath="/home/jmendietaes/programas/PhD"
+scriptsPath="/home/jmendietaes/programas/pipelines"
 
 # id of files were feature files have _ensgs (space separated)
 featureExtraId="ECCITE7 ECCITE8"

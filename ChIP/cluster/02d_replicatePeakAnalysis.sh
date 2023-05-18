@@ -29,7 +29,7 @@ inPath=$2
 # path to the header files
 extraFilePath="/home/jmendietaes/data/2021/chip/analysisFiles"
 # path for the location of the pipeline scripts
-scriptsPath="/home/jmendietaes/programas/PhD"
+scriptsPath="/home/jmendietaes/programas/pipelines"
 
 # extend variables
 bamsPath="${basePath}/bamfiles/valid/mergedReplicates"

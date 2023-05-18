@@ -13,13 +13,13 @@
 
 # HOW TO RUN ME
 # Update the sampleSheet and path variables. Then run me
-# sbatch /home/jmendietaes/programas/PhD/demulti/bcl2fastq/00_bcl2fastq.sh
+# sbatch /home/jmendietaes/programas/pipelines/demulti/bcl2fastq/00_bcl2fastq.sh
 
 
 module load bcl2fastq2/2.20.0-foss-2018b
 
 
-sampleSheet=/home/jmendietaes/programas/PhD/demulti/samples/SampleSheet-run.csv
+sampleSheet=/home/jmendietaes/programas/pipelines/demulti/samples/SampleSheet-run.csv
 runfolderDir=/datos/intercambio/DavidL_Amaia/211021_VH00461_74_AAAJFWVHV
 outDir=/home/jmendietaes/data/2021/CRISPR/sequencedData/Run74.laura
 

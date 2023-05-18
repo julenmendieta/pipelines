@@ -29,7 +29,7 @@ extraFilePath=$2
 
 
 # path for the location of the pipeline scripts
-scriptsPath="/home/jmendietaes/programas/PhD"
+scriptsPath="/home/jmendietaes/programas/pipelines"
 
 # extend variables
 bamsPath="${basePath}/bamfiles/valid"

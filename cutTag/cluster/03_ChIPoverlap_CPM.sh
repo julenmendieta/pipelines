@@ -44,7 +44,7 @@ basePath=$1
 # Path to ChIP peaks
 peakPath="/home/jmendietaes/data/2021/chip/allProcessed/furtherAnalysis/08_projectRestart/peakCalling/MACS2/peaks"
 # path for the location of the pipeline scripts
-scriptsPath="/home/jmendietaes/programas/PhD"
+scriptsPath="/home/jmendietaes/programas/pipelines"
 
 # Where to look for bam files and where to store output tree
 bamsPath="${basePath}/bamfiles/valid/03_properAnalysis"

@@ -71,7 +71,7 @@ extraSTR="_001"
 ## FIXED USER VARIABLES
 
 # path to the location of my git repo
-gitPath="/home/jmendietaes/programas/PhD"
+gitPath="/home/jmendietaes/programas/pipelines"
 
 # these ones shouldnt need to be modified if we are using the right folder structure
 FASTQ_DIR=$PARENT_DIR"/demux_fastq"

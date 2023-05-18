@@ -56,7 +56,7 @@ outpath=${inPath}"/replicateAnalysis"
 
 
 # path for the location of the pipeline scripts
-scriptsPath="/home/jmendietaes/programas/PhD"
+scriptsPath="/home/jmendietaes/programas/pipelines"
 
 allbams=$(find ${bamsPath}/*bam -printf "${bamsPath}/%f\n" | \
             { grep -v -e "_input" -v -e "_IgG" || :; })

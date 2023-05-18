@@ -53,7 +53,7 @@ outputPath="${basepath}/allProcessed"
 genomeBase=$basepath/additionalFiles/omicstmp/
 rangerPath="${basepath}/allProcessed/rangerFiles"
 # path for scripts location
-scriptsPath="/home/jmendietaes/programas/PhD"
+scriptsPath="/home/jmendietaes/programas/pipelines"
 
 
 
