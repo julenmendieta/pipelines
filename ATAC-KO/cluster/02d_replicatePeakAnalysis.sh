@@ -40,8 +40,8 @@ byBatch=TRUE
 # Set to "no" to not do it
 posibleControls="NTC,WT,NTC0005,NtC5,V12h"
 #posibleControls="no"
-# If we want to include bamfiles with no replicates in the sae batch
-extraBamsPath="/home/jmendietaes/data/2021/ATAC/allProcessed/bamfiles/valid/05_laura"
+# If we want to include bamfiles with no replicates in the same batch
+extraBamsPath="/home/jmendietaes/data/2021/ATAC/allProcessed/bamfiles/valid/08c_inUMAP"
 
 # extend variables
 bamsPath="${replicatesPath}"
@@ -297,16 +297,16 @@ for chip in ${chipCheck}; do
 
 
         # Run merging by ko and with batch corrections
-        if [[ ${posibleControls} != "no" ]]; then
-            Rscript ${scriptsPath}/ATAC-KO/cluster/02_NR_featurecounts_deseq2_joinBatches.r \
-                    --featurecount_file ${featureOut} \
-                    --bam_suffix '.sort.rmdup.rmblackls.rmchr.Tn5.bam' \
-                    --outdir ${outpath}/DESeq2_batchCorrect/${chip}_${peaktype}/ \
-                    --outprefix $prefix \
-                    --outsuffix '' \
-                    --cores ${SLURM_CPUS_PER_TASK} \
-                    --controls ${posibleControls}
-        fi
+        # if [[ ${posibleControls} != "no" ]]; then
+        #     Rscript ${scriptsPath}/ATAC-KO/cluster/02_NR_featurecounts_deseq2_joinBatches.r \
+        #             --featurecount_file ${featureOut} \
+        #             --bam_suffix '.sort.rmdup.rmblackls.rmchr.Tn5.bam' \
+        #             --outdir ${outpath}/DESeq2_batchCorrect/${chip}_${peaktype}/ \
+        #             --outprefix $prefix \
+        #             --outsuffix '' \
+        #             --cores ${SLURM_CPUS_PER_TASK} \
+        #             --controls ${posibleControls}
+        # fi
     done
 done
 
@@ -321,13 +321,13 @@ for chip in *Peak; do
     done;
 done
 
-if [[ ${posibleControls} != "no" ]]; then
-    cd ${outpath}/DESeq2_batchCorrect/
-    mkdir -p ${outpath}/DESeq2_batchCorrect/gatheredDESeq
-    for chip in *Peak; do 
-        for compare in ${chip}/*vs*; do 
-            cells=$(basename ${compare}); 
-            cp ${compare}/${cells}.deseq2.results.txt gatheredDESeq/${chip}_${cells}.deseq2.results.txt ; 
-        done;
-    done
-fi
+# if [[ ${posibleControls} != "no" ]]; then
+#     cd ${outpath}/DESeq2_batchCorrect/
+#     mkdir -p ${outpath}/DESeq2_batchCorrect/gatheredDESeq
+#     for chip in *Peak; do 
+#         for compare in ${chip}/*vs*; do 
+#             cells=$(basename ${compare}); 
+#             cp ${compare}/${cells}.deseq2.results.txt gatheredDESeq/${chip}_${cells}.deseq2.results.txt ; 
+#         done;
+#     done
+# fi
