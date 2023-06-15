@@ -91,10 +91,17 @@ samples.vec <- sort(colnames(count.table))
 # JULEN: changed it to get as group the cell type and chip (or batch)
 #groups <- sub("_.*$", "", samples.vec)
 groups <- sub("^([^_]*_[^_]*).*", "\\1", samples.vec)
+batches <- gsub("^.*_", "", groups)
 groups <- sub("^([^-]*-[^-]*).*", "\\1", groups)
-
+labels <- gsub("_.*","",samples.vec)
+ko <- sapply(strsplit(labels,"-"), `[`, 2)
 # convert controls string to list
 controls <- strsplit(opt$controls, ',')[[1]]
+
+counts <- count.table[,samples.vec,drop=FALSE]
+coldata <- data.frame(row.names=colnames(counts),
+                condition=groups, batch=batches, labels=labels,
+                ko=ko)
 
 print(unique(groups))
 if (length(unique(groups)) == 1) {
@@ -103,8 +110,6 @@ if (length(unique(groups)) == 1) {
 
 DDSFile <- paste(opt$outprefix,".dds.rld.RData",sep="")
 if (file.exists(DDSFile) == FALSE) {
-    counts <- count.table[,samples.vec,drop=FALSE]
-    coldata <- data.frame(row.names=colnames(counts),condition=groups)
     dds <- DESeqDataSetFromMatrix(countData = round(counts), colData = coldata, design = ~ condition)
     dds <- DESeq(dds, parallel=TRUE, BPPARAM=MulticoreParam(opt$cores))
     if (!opt$vst) {
@@ -115,8 +120,6 @@ if (file.exists(DDSFile) == FALSE) {
     save(dds,rld,file=DDSFile)
 } else {
     load(DDSFile)
-    counts <- count.table[,samples.vec,drop=FALSE]
-    coldata <- data.frame(row.names=colnames(counts),condition=groups)
 }
 
 ################################################
@@ -211,7 +214,7 @@ colnames(pseudo.counts) <- paste(colnames(pseudo.counts),'pseudo',sep='.')
 
 
 if (opt$bybatch == TRUE) {
-    batches <- unique(unlist(lapply(groups, function (x) {unlist(strsplit(x, '_'))[2]})))
+    batches <- unique(coldata[,'batch'])
 } else {
     batches <- unlist(strsplit(outprefix, '_')[1])[1]
 }
@@ -221,7 +224,7 @@ for (batch in batches) {
     if (file.exists(ResultsFile) == FALSE) {
 
         deseq2_results_list <- list()
-        comparisons <- combn(unique(grep(paste0('_', batch, '$'), groups, value=TRUE)),2)
+        comparisons <- combn(unique(coldata[coldata['batch'] == batch, 'condition']),2)
         idx_ <- 1
         for (idx in 1:ncol(comparisons)) {
 
