@@ -21,13 +21,13 @@
 # (inside we have ${replicatesPath}/bamfiles/valid/)
 replicatesPath=$1
 #replicatesPath="/home/jmendietaes/data/2021/ATAC/allProcessed/bamfiles/valid/mergedReplicates/02_firstATAC"
-# Path to the outpath folder where we run 02b_peakAnalysis_I.sh
+# Path to the outpath folder where we run 04b_peakAnalysis_I.sh
 # and where we have the folder tree with the consensus peaks
 inPath=$2
 #inPath="/home/jmendietaes/data/2021/ATAC/allProcessed/furtherAnalysis/08b_RLTR45"
 
 # Path to coordinate saf file
-inSaf="/home/jmendietaes/data/2021/cutTag/allProcessed/furtherAnalysis/03_properAnalysis/extraFiles/RLTR45_LTR_ERVK.ann.saf"
+inSaf="/home/jmendietaes/data/2021/ATAC/allProcessed/furtherAnalysis/08c_inUMAP/peakCalling/MACS2/consensus/allmerged_broadPeak_consensusPeaks.saf"
 ID=$(basename $inSaf); ID=(${ID//\./ }); ID=${ID[0]}; 
 
 # State how to merge chip files (appart from whole merge)
@@ -44,8 +44,6 @@ byBatch=TRUE
 # Set to "no" to not do it
 posibleControls="NTC"
 #posibleControls="no"
-# If we want to include bamfiles with no replicates in the sae batch
-extraBamsPath="/home/jmendietaes/data/2021/ATAC/allProcessed/bamfiles/valid/08b_RLTR45"
 
 # extend variables
 bamsPath="${replicatesPath}"
@@ -179,7 +177,7 @@ for chip in ${mergeGroups}; do
     fi
 done)
 
-chipCheck="${chipCheck} allmerged"
+#chipCheck="${chipCheck} allmerged"
 for chip in ${chipCheck}; do
     for peaktype in broadPeak; do
         prefix="${chip}_${peaktype}_consensusPeaks"
