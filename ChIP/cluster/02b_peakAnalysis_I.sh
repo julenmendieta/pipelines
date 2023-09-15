@@ -5,7 +5,7 @@
 ## SLURM VARIABLES
 #SBATCH --job-name=peakAnalysis
 #SBATCH --cpus-per-task=8
-#SBATCH --mem=10G
+#SBATCH --mem=20G
 #SBATCH --time=24:00:00
 #SBATCH -p short
 #SBATCH -o /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.out  
@@ -63,8 +63,8 @@ species="mm"
 speciesGenome="mm10"
 
 # Where to look for bam files and where to store output tree
-bamsPath="${basePath}/bamfiles/valid/08_projectRestart"
-outpath=${basePath}"/furtherAnalysis/08_projectRestart"
+bamsPath="${basePath}/bamfiles/valid/14_hexadienol"
+outpath=${basePath}"/furtherAnalysis/14_hexadienol"
 
 # GTF file for annotation (top be consistent with scRNA data)
 # Set to FALSE if you wnat HOMER's default UCSC refGene annotation
@@ -73,8 +73,8 @@ gtfFile=FALSE
 
 # If we want a column focussed on repeated elements only
 # Path to Homer file with repeat element locations
-#repeatsPath=/beegfs/easybuild/CentOS/7.5.1804/Skylake/software/Homer/4.10-foss-2018b/data/genomes/mm10/mm10.repeats
-repeatsPath=FALSE
+repeatsPath=/beegfs/easybuild/CentOS/7.5.1804/Skylake/software/Homer/4.10-foss-2018b/data/genomes/mm10/mm10.repeats
+#repeatsPath=FALSE
 
 # never filter out _IgG in here
 allbams=$(find ${bamsPath}/*bam -printf "${bamsPath}/%f\n" | \

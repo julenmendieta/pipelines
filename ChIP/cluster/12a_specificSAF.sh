@@ -20,9 +20,14 @@
 
 # Main peak folder
 # All files ending by Peak will be used for the consensus (we expect MACS like format)
-peakPath=/home/jmendietaes/data/2021/ATAC/allProcessed/bamfiles/valid/08c_inUMAP
+peakPath=/home/jmendietaes/data/2021/ATAC/allProcessed/furtherAnalysis/08c_inUMAP/peakCalling/MACS2
 # path for the location of the pipeline scripts
 scriptsPath="/home/jmendietaes/programas/pipelines"
+
+# By default we get merged consensus coordinates, but you can also get them by
+# cell uf stated in extraChip. I.E.: extraChip="DMd4 DMd7 DM Mye"
+# Cell IDs need to be followed by '_' or '-'
+extraChip="DMd4 DMd7 DM Mye"
 
 ##===============================================================================
 
@@ -98,3 +103,33 @@ if [[ ${analyse} == "yes" ]]; then
     
 fi
     
+
+
+for chip in ${extraChip}; do
+    echo $chip
+    peakFiles_=$(echo $peakFiles | tr ' ' '\n' | grep "${chip}_\|${chip}-")
+    fileLabels_=$(for f in $peakFiles_; do echo ${f##*/} |sed "s/_peaks.${peaktype}//g"; done | tr '\n' ',')
+
+    # check if the file exists or it was created with a previous peaks version 
+    prefix="${chip}_${peaktype}_consensusPeaks"
+    fileNotExistOrOlder "${peakPath}/consensus/${prefix}.saf" "${peakFiles_}"
+    # this outputs analyse as yes or no in lowercase
+    if [[ ${analyse} == "yes" ]]; then
+
+        sort -T '.' -k1,1 -k2,2n ${peakFiles_} \
+            | mergeBed -c $mergecols -o collapse > ${peakPath}/consensus/${prefix}.txt
+
+        python ${scriptsPath}/ChIP/cluster/02_NR_macs2_merged_expand.py ${peakPath}/consensus/${prefix}.txt \
+            ${fileLabels_} \
+            ${peakPath}/consensus/${prefix}.boolean.txt \
+            $expandparam
+
+        consensusPeakBed=${peakPath}/consensus/${prefix}.bed
+        awk -v FS='\t' -v OFS='\t' 'FNR > 1 { print $1, $2, $3, $4, "0", "+" }' \
+            ${peakPath}/consensus/${prefix}.boolean.txt > ${consensusPeakBed}
+        echo -e "GeneID\tChr\tStart\tEnd\tStrand" > ${peakPath}/consensus/${prefix}.saf
+        awk -v FS='\t' -v OFS='\t' 'FNR > 1 { print $4, $1, $2, $3,  "+" }' \
+            ${peakPath}/consensus/${prefix}.boolean.txt >> ${peakPath}/consensus/${prefix}.saf
+        
+    fi
+done

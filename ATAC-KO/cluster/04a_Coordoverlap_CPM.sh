@@ -14,7 +14,7 @@
 
 # HOW TO RUN ME
 #sbatch /home/jmendietaes/programas/pipelines/ATAC-KO/cluster/04a_Coordoverlap_CPM.sh \
-#/home/jmendietaes/data/2021/ATAC-KO/allProcessed \
+#/home/jmendietaes/data/2021/ATAC/allProcessed \
 # OBJECTIVE
 # get cutTag CPM at location overlaping coordinate file
 
@@ -42,15 +42,15 @@ basePath=$1
 
 # Path to ChIP peaks
 # Path to coordinate saf file
-inSaf="/home/jmendietaes/data/2021/cutTag/allProcessed/furtherAnalysis/03_properAnalysis/extraFiles/RLTR45_LTR_ERVK.ann.saf"
+inSaf="/home/jmendietaes/data/2021/ATAC/allProcessed/furtherAnalysis/08d_chipOnATAC/peakCalling/MACS2/consensusPeaks/DM_allpeaks.saf"
 ID=$(basename $inSaf); ID=(${ID//\./ }); ID=${ID[0]}; 
 
 # path for the location of the pipeline scripts
 scriptsPath="/home/jmendietaes/programas/pipelines"
 
 # Where to look for bam files and where to store output tree
-bamsPath="${basePath}/bamfiles/valid/08b_RLTR45"
-outpath=${basePath}"/furtherAnalysis/08b_RLTR45"
+bamsPath="${basePath}/bamfiles/valid/08d_chipOnATAC"
+outpath=${basePath}"/furtherAnalysis/08d_chipOnATAC"
 
 
 # Get list of focus bam files

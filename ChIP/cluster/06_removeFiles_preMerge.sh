@@ -2,7 +2,8 @@
 # Add here unique IDs of each sample separated by a space
 #bash /home/jmendietaes/programas/pipelines/ChIP/cluster/06_removeFiles_preMerge.sh
 
-removeChip="DM_Jun"
+removeChip="DM_Hoxa9 DM_Kmt2b DM_Rpb1 Mye_Arid2 Mye_Kmt2b Mye_MPP8 Mye_RING1B \
+Mye_Rpb1 Mye_Znhit1"
 
 delete='yes'
 

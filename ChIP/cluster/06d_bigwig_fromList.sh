@@ -15,14 +15,7 @@
 # add in the list bellow the bam file names (but the .bam termination)
 #sbatch /home/jmendietaes/programas/pipelines/ChIP/cluster/06d_bigwig_fromList.sh
 
-files="DM_Nfil3-merged.sort.rmdup.rmblackls.rmchr \
-DM_Prmt1-merged.sort.rmdup.rmblackls.rmchr \
-DM_Prmt5-merged.sort.rmdup.rmblackls.rmchr \
-DM_RBBP4-merged.sort.rmdup.rmblackls.rmchr \
-DM_Rest-merged.sort.rmdup.rmblackls.rmchr \
-DM_Smarcb1-merged.sort.rmdup.rmblackls.rmchr \
-Mye_Jun_ChIP13_S3.sort.rmdup.rmblackls.rmchr \
-Mye_Junb_ChIP13_S5.sort.rmdup.rmblackls.rmchr"
+files="DM_P300-merged.sort.rmdup.rmblackls.rmchr"
 
 basePath="/home/jmendietaes/data/2021/chip/allProcessed"
 REFERENCE_DIR="/home/jmendietaes/referenceGenomes/mm10_reordered/mm10.reordered"

@@ -6,8 +6,8 @@
 #SBATCH --job-name=cellRrun
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=40Gb
-#SBATCH --time=10:00:00
-#SBATCH -p short
+#SBATCH --time=2-10:00:00
+#SBATCH -p long
 #SBATCH -o /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.out  
 #SBATCH -e /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.err 
 ##SBATCH --dependency=afterany:802716
@@ -43,7 +43,7 @@ genomeId="refdata-gex-mm10-2020-A"
 
 # base name of the files to check (separated by space)
 # avoid adding _Library.csv, it will be added later
-filesCheck="exVivo_OP2_TGFb_1"
+filesCheck="exVivo_OP2_IL1b_1"
 
 
 # Path where we will store output data

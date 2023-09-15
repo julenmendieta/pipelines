@@ -41,7 +41,7 @@ byBatch=TRUE
 posibleControls="NTC,WT,NTC0005,NtC5,V12h"
 #posibleControls="no"
 # If we want to include bamfiles with no replicates in the same batch
-extraBamsPath="/home/jmendietaes/data/2021/ATAC/allProcessed/bamfiles/valid/08c_inUMAP"
+#extraBamsPath="/home/jmendietaes/data/2021/ATAC/allProcessed/bamfiles/valid/08c_inUMAP"
 
 # extend variables
 bamsPath="${replicatesPath}"
@@ -331,3 +331,12 @@ done
 #         done;
 #     done
 # fi
+
+
+echo -e "Differential analysis with DESeq2 - Finished ----------------------\n"
+
+echo -e "END --------------------------------------------------"
+
+seff $SLURM_JOBID
+
+exit 0

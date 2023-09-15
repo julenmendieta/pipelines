@@ -74,9 +74,12 @@ salmonIndexP=$(dirname ${transcriptFasta})/Salmon
 # Define GTF to make STAR index (at $REFERENCE_DIR path in genes folder)
 indexOutP=$(dirname ${GenomeIndex})
 useGTF=$(realpath ${indexOutP}/genes/*gtf)
+# use singleCell GTF for test
+#useGTF=/home/jmendietaes/data/2021/singleCell/additionalFiles/refdata-gex-mm10-2020-A/genes/genes_mainGenes.gtf
+# to be used with transcriptFasta=/home/jmendietaes/referenceGenomes/mm10_reordered/transcriptome/singleCell_mm10.transcripts.fa.gz
 
 # Path to nextflow scripts
-nfScripts="/home/jmendietaes/programas/pipelines/mRNA/cluster/nf-scripts"
+nfScripts="/home/jmendietaes/programas/pipelines/mRNA/cluster/sub-scripts"
 # Path to rRNA fasta files (to filter them)
 # Names must end with .fasta
 rRNAp="/home/jmendietaes/programas/sortmerna/sortmerna-4.3.6-Linux/database"
@@ -282,9 +285,11 @@ adjustedMem=$(echo "print(int(round($SLURM_MEM_PER_NODE*0.96,0)/1000))" | python
 if [ "$adjustedMem" -lt "5" ]; then
     adjustedMem=$(echo "print(int(round($SLURM_MEM_PER_NODE*0.96,0)))" | python3)
 fi  
-# Convert to bytes
-adjustedMem_bytes=$(printf ${adjustedMem} | numfmt --from-unit=Mi)
+# Convert to bytes. Each node returns memory in different units :( 
+adjustedMem_bytes=$((1024*1024*1024*${adjustedMem}))
 adjustedMem_Gb=$((${adjustedMem}-1))
+echo "Memory as returned by Job:"
+echo ${SLURM_MEM_PER_NODE}
 echo  "Memory in Gb:"
 echo ${adjustedMem}
 echo  "Memory in bytes:"
@@ -375,12 +380,12 @@ trimedRead2="${EDITED_DIR}/trimming/${filename}_R2_001_val_2.fq.gz"
 
 # Salmon temp out
 Salmon_tmp=$PROJECT_DIR"/pipelineOut/Salmon"
-mkdir -p ${Salmon_tmp}/strandness
-cd ${Salmon_tmp}/strandness
+mkdir -p ${Salmon_tmp}/strandness/${filename}
+cd ${Salmon_tmp}/strandness/${filename}
 
 echo -e "Starting Strandness with Salmon ----------------------------------- \n"
 # Check if we have already a log for this check
-fileNotExistOrOlder "${Salmon_tmp}/strandness/logs/salmon_quant.log" \
+fileNotExistOrOlder "${Salmon_tmp}/strandness/${filename}/logs/salmon_quant.log" \
                     "${trimedRead1} ${trimedRead2}"
 if [[ ${analyse} == "yes" ]]; then
     ${Salmon} quant --geneMap ${useGTF} --threads ${nCPU} \
@@ -388,13 +393,13 @@ if [[ ${analyse} == "yes" ]]; then
             -1 <(gunzip -c ${trimedRead1} | head -n 4000000) \
             -2 <(gunzip -c ${trimedRead2}| head -n 4000000) \
             -i ${salmonIndexP} \
-            -o ${Salmon_tmp}/strandness
+            -o ${Salmon_tmp}/strandness/${filename}
     
 fi
 
 
 # get libtype from Salmon
-libType=$(grep "library type" ${Salmon_tmp}/strandness/logs/salmon_quant.log)
+libType=$(grep "library type" ${Salmon_tmp}/strandness/${filename}/logs/salmon_quant.log)
 libType=(${libType// / }) ; libType=${libType[-1]}
 echo -e "Library type: ${libType}"
 
@@ -727,7 +732,7 @@ echo -e "DATE CHECK \n $(date) \n"
 # Remove uninformative regions from BAM
 #################################
 
-# Remove chrM, chrUn, _random ... (remove sort.rmdup.rmblackls.bam)
+# Remove chrM, chrUn, _random ...
 echo -e "Starting remove chrM and useless chromosomes -----------------------\n"
 
 bamSortMarkDupChr="${bamsPath}/wholeGenome/${filename}.STAR.sort.markdup.rmchr.bam"

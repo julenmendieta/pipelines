@@ -26,7 +26,7 @@
 
 # WHAT DO I DO
 # I analyze micro-C data, and my parameters are defined only for that
-# For example dangling-ends filter is removed in comparison with micro-C
+# For example dangling-ends filter is removed in comparison with Hi-C
 # "In the context of Hi-C protocol without restriction enzyme, this filtering 
 # step is skipped. The aligned pairs are therefore directly used to generate 
 # the contact maps. A filter of the short range contact (typically <1kb) is 
@@ -34,7 +34,7 @@
 
 ######################  TO CHANGE #####################
 # path to file with read1 and read 2 of each experiment
-filesPath='/home/jmendietaes/data/2021/microC/sequencedData/NextSeq2000.RUN158.20230315/demux_fastq'
+filesPath='/home/jmendietaes/data/2021/microC/sequencedData/NextSeq2000.RUN208.20230919/demux_fastq'
 #realpath *fastq.gz > toMapp.txt
 
 # load genome path
@@ -116,16 +116,14 @@ tadbit filter -w ${finalOut} -C ${nthreads} --noX  --apply 1 3 4 7 9 10 \
             --clean --valid --compress_input
 echo
 echo "normalize"
+# You shoul aim for a % of bad columns < 10 to kind of trust you have enough coverage
 tadbit normalize -w ${finalOut} --resolution 50000 -C ${nthreads} --noX --valid
 tadbit normalize -w ${finalOut} --resolution 100000 -C ${nthreads} --noX --valid
 tadbit normalize -w ${finalOut} --resolution 10000 -C ${nthreads} --noX --valid
 
 # Call TADs at 50kb. Use TADbit alg to call TADs, combine all the borders in all
 # conditions, and then look at the Insulation Score (SC) there
-# calculas el insulation score sobre todo el genoma,luego haces un par 
-#de piruetas y predices borders... pero los borders de tadbit son mejores. 
-#por eso lo que yo hago es usar los borders de tadbit, y luego si necesito 
-#ver valores de insulacion continuos, uso el insulation score
+
 # Get insulation score in pytadbit
 #http://3dgenomes.github.io/TADbit/tutorial/tutorial_8-Compartments_and_TADs_detection.html#insulation-score
 # echo
@@ -150,7 +148,7 @@ done
 
 # Take a look
 #tadbit describe -w PATH -t job
-#tadbit bin -w ${finalOut} -r 10_000 -c chr1:79_600_000-80_600_000 --interactive --triangular --only_plot --tad_def 54 --norm 'norm'
+#tadbit bin -w ${finalOut} -r 50_000 -c chr6:51_306_531-52_493_953 --interactive --triangular --only_plot --tad_def 54 --norm 'norm'
 # Copy output 
 cat /home/jmendietaes/jobsSlurm/outErr/tadbitTools_${SLURM_JOB_ID}_${SLURM_ARRAY_TASK_ID}.out >> ${finalOut}/${filename}_TADbit_output.txt
 

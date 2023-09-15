@@ -24,7 +24,7 @@
 # path where we have the folder structure for chip analysis 
 # (inside we have ${basePath}/bamfiles/valid/)
 basePath=$1
-#basePath="/home/jmendietaes/data/2021/chip/allProcessed"
+#basePath="/home/jmendietaes/data/2021/ATAC/allProcessed"
 # Location of the analysis header files downloaded from 
 # https://github.com/nf-core/chipseq/tree/master/assets/multiqc
 #extraFilePath=$2
@@ -42,19 +42,14 @@ outpath=${basePath}"/furtherAnalysis/02_firstATAC"
 # Add all the id but the .sort.rmdup.rmblackls.rmchr.Tn5.bam ending
 # and if there are more than 3 sections separated by '_' only add 3
 # I.e. LSK-Rbbp4_ATAC6_1 instead of LSK-Rbbp4_ATAC6_1_S16
-focusFiles="LSK-Brd9_ATAC2-merged \
-LSK-Chd4_ATAC6-merged \
-LSK-Hdac3_ATAC3-merged \
-LSK-Kmt2a_ATAC2-merged \
-LSK-Kmt2d_ATAC2-merged \
-LSK-NTC_ATAC4-merged \
-LSK-Rbbp4_ATAC6_1 \
-LSK-Rcor1_ATAC6-merged \
-LSK-Setdb1_ATAC6-merged \
-LSK-Smarcd1_ATAC4-merged \
-LSK-Smarcd2_ATAC2-merged \
-LSK-WDR82_ATAC-merged"
-
+focusFiles="Mye-Brd9_ATAC6-merged \
+Mye-Kmt2d_ATAC6_1 \
+Mye-Rcor1_ATAC5-merged \
+Mye-Smarcd2_ATAC6-merged \
+Mye-WDR82_ATAC-merged \
+Mye-NTC_ATAC-merged \
+Mye-NTC_ATAC6-merged \
+Mye-NTC0005_ATAC5-merged"
 
 
 # Get list of focus bam files

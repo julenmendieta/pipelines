@@ -5,12 +5,12 @@
 ## SLURM VARIABLES
 #SBATCH --job-name=Chip_fqToBw
 #SBATCH --cpus-per-task=12
-#SBATCH --mem=30G
+#SBATCH --mem=40G
 #SBATCH --time=00-05:00:00
 #SBATCH -p short
 #SBATCH -o /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.out  
 #SBATCH -e /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.err 
-#SBATCH --dependency=afterany:930030
+##SBATCH --dependency=afterany:793158
 
 
 ##SBATCH --mail-type=END
@@ -18,10 +18,10 @@
 # HOW TO RUN ME
 # for i in *fastq.gz; do echo $i | sed 's/_R._001.fastq.gz//g' ; done | sort | uniq > samplesNames.txt  
 # N=`cat samplesNames.txt | wc -l`
-# sbatch --array=1-${N} /home/jmendietaes/programas/pipelines/ChIP/cluster/01_Maren_Chip_fqToBw.sh \
+# sbatch --array=1-${N} /home/jmendietaes/programas/pipelines/ChIP/cluster/singleEnd/01_Maren_Chip_fqToBw_singleEnd.sh \
 #/home/jmendietaes/data/2021/chip/sequencedData/mnavarroa \
 #/home/jmendietaes/data/2021/chip/allProcessed \
-#/home/jmendietaes/referenceGenomes/mm10_reordered/mm10.reordered
+#/home/jmendietaes/referenceGenomes/GRCh38/GCA_000001405.15_GRCh38_no_alt_analysis_set
 
 
 # UPDATES
@@ -133,7 +133,6 @@ echo $filename
 
 # get some paths
 read1_path="${RAW_FASTQ_DIR}/${filename}_R1_001.fastq.gz"
-read2_path="${RAW_FASTQ_DIR}/${filename}_R2_001.fastq.gz"
 stepControl="${EDITED_DIR}/QC/pipelineStep_${filename}.txt"
 summaryFile="${basePath}/QC/summary_${filename}.txt"
 
@@ -164,7 +163,6 @@ if [[ ${linec} != "Summary" ]]; then
     # QC: read counts if file is gziped or not
     if file --mime-type ${read1_path} | grep -q gzip$; then
         Counts1="$(zcat ${read1_path} | echo $((`wc -l`/4)))"
-        Counts2="$(zcat ${read2_path} | echo $((`wc -l`/4)))" 
     else
         echo "Not gzipped files"
         echo $read1_path
@@ -176,9 +174,7 @@ if [[ ${linec} != "Summary" ]]; then
     echo -e "READ COUNTS \n" >> ${summaryFile}
     rc=$((Counts1/1000000))
     echo -e "${filename} \t ${filename}_R1 \t ${Counts1} \t ${rc}" >> ${summaryFile}
-    rc=$((Counts2/1000000))
-    echo -e "${filename} \t ${filename}_R2 \t ${Counts2} \t ${rc} \n" >> ${summaryFile}
-
+    
     echo -e "Summary file - done -------------------------------------- \n"
     # store stage control info
     echo "Summary" > ${stepControl}
@@ -204,9 +200,9 @@ if [[ ${linec} != "Trim" ]]; then
     fi
 
     if [ ! -e ${EDITED_DIR}/fastQC/${filename}_R2_001.fastq_fastqc.html ]; then
-        trim_galore --cores $trimCPU --paired --fastqc --gzip \
+        trim_galore --cores $trimCPU --fastqc --gzip \
         --output_dir ${EDITED_DIR}/trimming/ --fastqc_args "--outdir ${EDITED_DIR}/fastQC/" \
-        ${read1_path} ${read2_path}
+        ${read1_path}
     fi
     echo -e "Trimming - done -------------------------------------- \n"
 
@@ -218,8 +214,7 @@ else
 fi
 
 # define new path variables
-trimedRead1="${EDITED_DIR}/trimming/${filename}_R1_001_val_1.fq.gz"
-trimedRead2="${EDITED_DIR}/trimming/${filename}_R2_001_val_2.fq.gz"
+trimedRead1="${EDITED_DIR}/trimming/${filename}_R1_001_trimmed.fq.gz"
 
 #############
 #Aling # Mapping
@@ -237,9 +232,9 @@ samFile="${EDITED_DIR}/BAM/${filename}.sam"
 extr_unmap="${EDITED_DIR}/unMapped/${filename}_R%_001_unmap.fastq.gz"
 linec=`sed "3q;d" ${stepControl}`
 if [[ ${linec} != "Align" ]]; then 
-    bowtie2 -p $SLURM_CPUS_PER_TASK -X 1000 --no-discordant --no-mixed \
-    --very-sensitive -x $GenomeIndex -1 ${trimedRead1} -2 ${trimedRead2} \
-    -S ${samFile} --un-conc-gz ${extr_unmap}
+    bowtie2 -p $SLURM_CPUS_PER_TASK \
+    --very-sensitive -x $GenomeIndex -U ${trimedRead1} \
+    -S ${samFile}
         
     echo -e "Alignment - done -------------------------------------- \n"
     # store stage control info
@@ -248,7 +243,6 @@ if [[ ${linec} != "Align" ]]; then
     # remove temporal trimmed fastq files
     if [[ $removeTemp == 'yes' ]] ; then
         rm ${trimedRead1}
-        rm ${trimedRead2}
     fi
 else
     echo -e "Alignment - already done before ------------------------------ \n"
@@ -387,7 +381,7 @@ if [ ! -e ${bamsPath} ]; then
     mkdir -p ${bamsPath}
 fi
 
-bamSortMarkDupBlackChr="${bamsPath}/${filename}.sort.rmdup.rmblackls.rmchr.bam"
+bamSortMarkDupBlackChr="${bamsPath}/${filename}.sort.rmdup.rmblackls.rmchr.singleEnd.bam"
 
 # check content of eigth line of step control file
 linec=`sed "8q;d" ${stepControl}`
@@ -449,7 +443,7 @@ if [ ! -e ${EDITED_DIR}/BigWig/ ]; then
 	mkdir ${EDITED_DIR}/BigWig/
 fi
 
-bigWigOut="${basePath}/BigWig/${filename}.sort.rmdup.rmblackls.rmchr.norm.bw"
+bigWigOut="${basePath}/BigWig/${filename}.sort.rmdup.rmblackls.rmchr.norm.singleEnd.bw"
 
 # check content of tenth line of step control file
 linec=`sed "10q;d" ${stepControl}`

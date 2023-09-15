@@ -3,35 +3,22 @@
 
 ##===============================================================================
 ## SLURM VARIABLES
-#SBATCH --job-name=ATACanalysis
-#SBATCH --cpus-per-task=32
-#SBATCH --mem=32G
-#SBATCH --time=05:00:00
+#SBATCH --job-name=peakAnalysis
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=20G
+#SBATCH --time=24:00:00
 #SBATCH -p short
 #SBATCH -o /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.out  
 #SBATCH -e /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.err 
 
 
 # HOW TO RUN ME
-#sbatch /home/jmendietaes/programas/pipelines/ATAC-KO/cluster/02b_peakAnalysis_I.sh \
-#/home/jmendietaes/data/2021/ATAC/allProcessed \
+#sbatch /home/jmendietaes/programas/pipelines/ChIP/cluster/singleEnd/02b_peakAnalysis_I_singleEnd.sh \
+#/home/jmendietaes/data/2021/chip/allProcessed \
 
 # OBJECTIVE
 # call peaks, annotate, make consensus peaks, get reads in peaks, CPM and merge
 # all in same table
-
-# path where we have the folder structure for chip analysis 
-# (inside we have ${basePath}/bamfiles/valid/)
-basePath=$1
-#basePath="/home/jmendietaes/data/2021/ATAC/allProcessed"
-# Location of the analysis header files downloaded from 
-# https://github.com/nf-core/chipseq/tree/master/assets/multiqc
-#extraFilePath=$2
-#extraFilePath="/home/jmendietaes/data/2021/chip/analysisFiles"
-
-# Where to look for bam files and where to store output tree
-bamsPath="${basePath}/bamfiles/valid/08e_koATAC"
-outpath=${basePath}"/furtherAnalysis/08e_koATAC"
 
 # Important paremeter to modify
 # Set to lowercase yes to use merge of IgG from different cells allCell_IgG.sort.r..
@@ -40,7 +27,7 @@ outpath=${basePath}"/furtherAnalysis/08e_koATAC"
 # called cellMergeIgG
 useMergeIgG="no"
 # Set to lowercase "yes" to get consensus peaks of all ChIPs and cells
-doAllMerge="yes"
+doAllMerge="no"
 
 # FILE NAMING FORMAT
 # [cellType]_[chip]_[date]_[extra?].[bamfilteringKeys].bam
@@ -51,11 +38,35 @@ doAllMerge="yes"
 # extra sections wont be used in final naming
 # bamfilteringKeys are supposed to be separated by dots
 
-# State how to merge chip files (appart from whole merge)
-# Options are: chip, cellfirst, and cell. That state for
-# second name slot in between "_", first name slot in between "_"
-# and removing all after "-", and whole first name slot in between "_"
-mergeBy="cellfirst"
+# NOTES
+# Peak caling of merges
+# CREO QUE A PARTIR DE AQUI VOY A HACER OTRO SCRIPT, PARA ELLO TENDRE QUE GUARDAR EL BAMFILE 
+# EN ALGUN SITIO EN CONCRETO DONDE COINCIDAN LAS REPLICAS DE LA MISMA MUESTRA
+# pero tambien voy a sacar los picos de las muestras por separado
+# a MACS2 se le puede pasar los BAM en separado y el los junta
+
+
+# path where we have the folder structure for chip analysis 
+# (inside we have ${basePath}/bamfiles/valid/)
+basePath=$1
+#basePath="/home/jmendietaes/data/2021/chip/allProcessed"
+# Location of the analysis header files downloaded from 
+# https://github.com/nf-core/chipseq/tree/master/assets/multiqc
+#extraFilePath=$2
+#extraFilePath="/home/jmendietaes/data/2021/chip/analysisFiles"
+
+
+# path for the location of the pipeline scripts
+scriptsPath="/home/jmendietaes/programas/pipelines"
+# species shortcut for MACS
+#species="mm"
+species='hs'
+#speciesGenome="mm10"
+speciesGenome="hg38"
+
+# Where to look for bam files and where to store output tree
+bamsPath="${basePath}/bamfiles/valid/12_human_aml-single"
+outpath=${basePath}"/furtherAnalysis/12_human_aml-single"
 
 # GTF file for annotation (top be consistent with scRNA data)
 # Set to FALSE if you wnat HOMER's default UCSC refGene annotation
@@ -66,18 +77,6 @@ gtfFile=FALSE
 # Path to Homer file with repeat element locations
 #repeatsPath=/beegfs/easybuild/CentOS/7.5.1804/Skylake/software/Homer/4.10-foss-2018b/data/genomes/mm10/mm10.repeats
 repeatsPath=FALSE
-
-# path for the location of the pipeline scripts
-scriptsPath="/home/jmendietaes/programas/pipelines"
-# species shortcut for MACS
-species="mm"
-speciesGenome="mm10"
-# Path to used genomic reference
-REFERENCE_DIR="/home/jmendietaes/referenceGenomes/mm10_reordered/mm10.reordered"
-chr_genome_size=$REFERENCE_DIR".sizes"
-
-# Path to bedgraphToBigwig script
-bedGraphToBigWig="/home/jmendietaes/programas/pipelines/general/bedGraphToBigWig"
 
 # never filter out _IgG in here
 allbams=$(find ${bamsPath}/*bam -printf "${bamsPath}/%f\n" | \
@@ -121,6 +120,7 @@ fileNotExistOrOlder () {
     # will be repeated
     else
         for tfile in $2; do
+            # If $1 is older than any $2
             if [[ $1 -ot ${tfile} ]] ; then
                 analyse="yes"
                 echo $1" older than "${tfile}
@@ -194,6 +194,7 @@ else
     extraAnnot="-gtf ${gtfFile}"
 fi
 
+
 #############################
 #PEAK CALLING: MACS2
 #############################
@@ -205,9 +206,7 @@ echo -e "Starting Peak calling -----------------------------------------------\n
 # Create output dir
 if [ ! -e ${outpath}/peakCalling/MACS2/logs ]; then
     mkdir -p ${outpath}/peakCalling/MACS2/logs
-    mkdir -p ${outpath}/peakCalling/MACS2/bigwig
     mkdir -p ${outpath}/peakCalling/MACS2/peaks/summary
-    mkdir -p ${outpath}/peakCalling/MACS2/beds
 fi
 
 cd ${outpath}/peakCalling/MACS2/peaks
@@ -242,67 +241,43 @@ for bam in ${allbams}; do
 
         total_reads="empty"
 
-        # echo file and control
-        echo "Bams used for peak calling:"
-        echo $bam
-        echo $controlbam
-        echo
+        # narrow peaks
+        peaktype='narrowPeak'
 
-        outbed=$(basename $bam)
-        outbed="${outpath}/peakCalling/MACS2/beds/${outbed::-4}.bed"
-        bambe="FALSE"
+        # check if the file exists of it was created with a previous bam version 
+        fileNotExistOrOlder "${outpath}/peakCalling/MACS2/peaks/${label}_peaks_${peaktype}.xls" "${bam} ${controlbam}"
+        # this outputs analyse as yes or no in lowercase
 
-        # # narrow peaks
-        # peaktype='narrowPeak'
+        if [[ ${analyse} == "yes" ]]; then
+            # echo file and control
+            echo "Bams used for peak calling:"
+            echo $bam
+            echo $controlbam
+            echo
 
-        # # check if the file exists of it was created with a previous bam version 
-        # fileNotExistOrOlder "${outpath}/peakCalling/MACS2/peaks/${label}_peaks_${peaktype}.xls" "${bam} ${controlbam}"
-        # # this outputs analyse as yes or no in lowercase
+            total_reads=$(samtools view -c ${bam})
 
-        # if [[ ${analyse} == "yes" ]]; then
-        #     total_reads=$(samtools view -c ${bam})
+            macs2 callpeak \
+                    -t ${bam} \
+                    -c ${controlbam} \
+                    -f BAM \
+                    -g $species \
+                    -n $label \
+                    --keep-dup all \
+                    --outdir ${outpath}/peakCalling/MACS2/peaks 2> ${outpath}/peakCalling/MACS2/logs/${label}_macs2_${peaktype}.log
 
-        #     # We convert the BAM file to BED format because when we set the 
-        #     #extension size in MACS2, it will only consider one read of the 
-        #     #pair while here we would like to use the information from both
-        #     # # Convert bam to bed
-        #     bamToBed -i ${bam} > ${outbed}
-        #     bambe="TRUE"
+            mv ${outpath}/peakCalling/MACS2/peaks/${label}_peaks.xls ${outpath}/peakCalling/MACS2/peaks/${label}_peaks_${peaktype}.xls
 
-        #     # We want to focuss in the cut sites of Tn5, butIf we only assess 
-        #     #the coverage of the 5’ extremity of the reads, 
-        #     #the data would be too sparse and it would be impossible to call 
-        #     #peaks. Thus, we will extend the start sites of the reads by 150bp 
-        #     #(75bp in each direction) to assess coverage.
-        #     macs2 callpeak \
-        #             -t ${outbed} \
-        #             -f BED \
-        #             -g $species \
-        #             -n $label \
-        #             --keep-dup all \
-        #             --nomodel --shift -75 --extsize 150 \
-        #             --outdir ${outpath}/peakCalling/MACS2/peaks 2> \
-        #                 ${outpath}/peakCalling/MACS2/logs/${label}_macs2_${peaktype}.log
-
-        #     mv ${outpath}/peakCalling/MACS2/peaks/${label}_peaks.xls ${outpath}/peakCalling/MACS2/peaks/${label}_peaks_${peaktype}.xls
-        #     #mv ${outpath}/peakCalling/MACS2/peaks/${label}_treat_pileup.bdg \
-        #     #   ${outpath}/peakCalling/MACS2/peaks/${label}_treat_pileup_${peaktype}.bdg
-
-        #     npeaks=$(cat ${outpath}/peakCalling/MACS2/peaks/${label}_peaks.${peaktype} | wc -l)
-        #     reads_in_peaks=$(bedtools sort -i ${outpath}/peakCalling/MACS2/peaks/${label}_peaks.${peaktype} \
-        #         | bedtools merge -i stdin | bedtools intersect -u -nonamecheck \
-        #         -a ${bam} -b stdin -ubam | samtools view -c)
-        #     FRiP=$(awk "BEGIN {print "${reads_in_peaks}"/"${total_reads}"}")
-        #     # report
-        #     echo -e "NUMBER OF NARROW PEAKS \t ${npeaks} \n" >> ${summaryFile}
-        #     echo -e "total_reads \t reads_in_peaks \t FRIP \n" >> ${summaryFile}
-        #     echo -e "${total_reads} \t ${reads_in_peaks} \t ${FRiP}" >> ${summaryFile}
-
-        #     # get bigwig
-        #     #${bedGraphToBigWig} ${outpath}/peakCalling/MACS2/peaks/${label}_treat_pileup_${peaktype}.bdg $chr_genome_size \
-        #     #                        ${outpath}/peakCalling/MACS2/bigwig/${label}_treat_pileup_${peaktype}.bw
-            
-        # fi
+            npeaks=$(cat ${outpath}/peakCalling/MACS2/peaks/${label}_peaks.${peaktype} | wc -l)
+            reads_in_peaks=$(bedtools sort -i ${outpath}/peakCalling/MACS2/peaks/${label}_peaks.${peaktype} \
+                | bedtools merge -i stdin | bedtools intersect -u -nonamecheck \
+                -a ${bam} -b stdin -ubam | samtools view -c)
+            FRiP=$(awk "BEGIN {print "${reads_in_peaks}"/"${total_reads}"}")
+            # report
+            echo -e "NUMBER OF NARROW PEAKS \t ${npeaks} \n" >> ${summaryFile}
+            echo -e "total_reads \t reads_in_peaks \t FRIP \n" >> ${summaryFile}
+            echo -e "${total_reads} \t ${reads_in_peaks} \t ${FRiP}" >> ${summaryFile}
+        fi
 
         # broad peaks
         peaktype="broadPeak"
@@ -316,34 +291,20 @@ for bam in ${allbams}; do
                 total_reads=$(samtools view -c ${bam})
             fi
 
-            if [[ $bambe == "FALSE" ]]; then
-                bamToBed -i ${bam} > ${outbed}
-                bambe="TRUE"
-            fi
-
-            # If we only assess the coverage of the 5’ extremity of the reads, 
-            #the data would be too sparse and it would be impossible to call 
-            #peaks. Thus, we will extend the start sites of the reads by 150bp 
-            #(75bp in each direction) to assess coverage.
             macs2 callpeak \
-                    -t ${outbed} \
+                    -t ${bam} \
+                    -c ${controlbam} \
                     --broad \
-                    -f BED \
+                    -f BAM \
                     -g $species \
                     -n $label \
                     --keep-dup all \
-                    --nomodel --shift -75 --extsize 150 \
-                    --outdir ${outpath}/peakCalling/MACS2/peaks \
-                    2> ${outpath}/peakCalling/MACS2/logs/${label}_macs2_${peaktype}.log
+                    --outdir ${outpath}/peakCalling/MACS2/peaks 2> ${outpath}/peakCalling/MACS2/logs/${label}_macs2_${peaktype}.log
             
             # -q 0.05 as default (at least for broad)
-            mv ${outpath}/peakCalling/MACS2/peaks/${label}_peaks.xls \
-                ${outpath}/peakCalling/MACS2/peaks/${label}_peaks_${peaktype}.xls
-            #mv ${outpath}/peakCalling/MACS2/peaks/${label}_treat_pileup.bdg \
-            #    ${outpath}/peakCalling/MACS2/peaks/${label}_treat_pileup_${peaktype}.bdg
+            mv ${outpath}/peakCalling/MACS2/peaks/${label}_peaks.xls ${outpath}/peakCalling/MACS2/peaks/${label}_peaks_${peaktype}.xls
 
-            npeaks=$(cat ${outpath}/peakCalling/MACS2/peaks/${label}_peaks.${peaktype} | \
-                    wc -l)
+            npeaks=$(cat ${outpath}/peakCalling/MACS2/peaks/${label}_peaks.${peaktype} | wc -l)
             reads_in_peaks=$(bedtools sort -i ${outpath}/peakCalling/MACS2/peaks/${label}_peaks.${peaktype} \
                 | bedtools merge -i stdin | bedtools intersect -u -nonamecheck \
                 -a ${bam} -b stdin -ubam | samtools view -c)
@@ -352,11 +313,6 @@ for bam in ${allbams}; do
             echo -e "NUMBER OF BROAD PEAKS \t ${npeaks} \n" >> ${summaryFile}
             echo -e "total_reads \t reads_in_peaks \t FRIP \n" >> ${summaryFile}
             echo -e "${total_reads} \t ${reads_in_peaks} \t ${FRiP}" >> ${summaryFile}
-
-            # get bigwig
-            #${bedGraphToBigWig} ${outpath}/peakCalling/MACS2/peaks/${label}_treat_pileup_${peaktype}.bdg $chr_genome_size \
-            #                        ${outpath}/peakCalling/MACS2/bigwig/${label}_treat_pileup_${peaktype}.bw
-
         fi
         # wget https://raw.githubusercontent.com/nf-core/chipseq/master/assets/multiqc/peak_count_header.txt
         # wget https://raw.githubusercontent.com/nf-core/chipseq/master/assets/multiqc/frip_score_header.txt
@@ -391,7 +347,7 @@ echo -e "Starting HOMER annotation ---------------------------------------------
 
 
 for bam in ${allbams}; do
-    for peaktype in 'broadPeak'; do
+    for peaktype in 'narrowPeak' 'broadPeak'; do
 
         label=$(basename $bam | cut -d '.' -f 1 | cut -d '_' -f 1,2,3)
         annotationOut=${outpath}/HOMER/peakAnnotation/${label}_${peaktype}.annotatePeaks.txt
@@ -431,7 +387,7 @@ allCell=`for filename in ${allLabels}; do
             echo ${mapLib[0]}; done | sort | uniq`
 
 for cell in ${allCell}; do
-    for peaktype in 'broadPeak'; do
+    for peaktype in 'narrowPeak' 'broadPeak'; do
         echo "${cell}_${peaktype}_macs2"
         peaksPath=${outpath}/peakCalling/MACS2/peaks
         # get comma separated string with all the peak files to compare
@@ -495,7 +451,7 @@ if [[ ${doAllMerge} == "yes" ]]; then
 
 
     chip="allmerged"
-    for peaktype in broadPeak; do
+    for peaktype in narrowPeak broadPeak; do
         # select the columns to peak in each peak calling case
         if [ ${peaktype} == "narrowPeak" ]; then
             mergecols=`seq 2 10 | tr '\n' ','`
@@ -550,7 +506,7 @@ if [ ! -e ${sameChipCons} ]; then
 	mkdir -p ${sameChipCons}
 fi
 
-for peaktype in broadPeak; do
+for peaktype in narrowPeak broadPeak; do
     # select the columns to peak in each peak calling case
     if [ ${peaktype} == "narrowPeak" ]; then
         mergecols=`seq 2 10 | tr '\n' ','`
@@ -564,40 +520,23 @@ for peaktype in broadPeak; do
     # first bam base names
     allFiles=$( for filename in ${bamsPath}/*bam; do \
                     basename ${filename}; done)
-    # then extract chip or cell from them
-    if [[ ${mergeBy} == "chip" ]]; then
-        echo "Merging by first element in second slot"
-        allChip=$(\
-        for filename in ${allFiles}; do 
-            mapLib=(${filename//_/ }); 
-            mapLib=${mapLib[1]}; 
-            mapLib=(${mapLib//-/ }); 
-            echo ${mapLib[0]}; done | \
-            grep -v "_input" | grep -v "_IgG" | sort | uniq)
+    # then extract chip from them
+    allChip=$(\
+    for filename in ${allFiles}; do 
+        mapLib=(${filename//\./ }); 
+        mapLib=${mapLib[0]};
+        mapLib=(${mapLib//_/ }); 
+        mapLib=${mapLib[1]}; 
+        mapLib=(${mapLib//-/ }); 
+        echo ${mapLib[0]}; done | \
+        grep -v "_input" | grep -v "_IgG" | sort | uniq)
 
-        mergeGroups=${allChip}
-    elif [[ ${mergeBy} == "cellfirst" ]]; then
-        echo "Merging by first element in cell slot"
-        allfirstCells=$(\
-        for filename in ${allFiles}; do 
-            mapLib=(${filename//_/ }); 
-            mapLib=${mapLib[0]}; 
-            mapLib=(${mapLib//-/ }); 
-            echo ${mapLib[0]}; done | sort | uniq)
-        mergeGroups=${allfirstCells}
-    elif [[ ${mergeBy} == "cell" ]]; then
-        echo "Merging by whole cell slot"
-        mergeGroups=${allCell}
-    else
-        echo "ERROR: Merge-by method not recognised"
-        exit 1
-    fi
     
     # compare the ones for which we either have replicates or other conditions
-    for chip in ${mergeGroups}; do
+    for chip in ${allChip}; do
         # here we check if we have more than one file for that chip
         peakFiles=$(find -L ${outpath}/peakCalling/MACS2/peaks/*.${peaktype} -maxdepth 1  -type f ! -size 0 | \
-                { grep -e "${chip}-\|${chip}_" || :; } )
+                { grep -e ${chip} || :; } )
         fileLabels=$(for f in $peakFiles; do echo ${f##*/} |sed "s/_peaks.${peaktype}//g"; done | tr '\n' ',')
         prefix="${chip}_${peaktype}_consensusPeaks"
 
@@ -656,7 +595,7 @@ if [[ ${doAllMerge} == "yes" ]]; then
 
 
     chip="allmerged"
-    for peaktype in broadPeak; do
+    for peaktype in narrowPeak broadPeak; do
 
         prefix="${chip}_${peaktype}_consensusPeaks"
         consensusPeakBed=${outpath}/peakCalling/MACS2/consensusPeaks/${prefix}.bed
@@ -702,6 +641,7 @@ if [[ ${doAllMerge} == "yes" ]]; then
                     ${outpath}/HOMER/consensusPeaks/tmp.txt > ${outpath}/HOMER/consensusPeaks/tmp2.txt
                 mv ${outpath}/HOMER/consensusPeaks/tmp2.txt ${boolAnotMatr}
             fi
+
         fi
     done
 
@@ -727,7 +667,7 @@ more1Chip=$(\
         sort | uniq)
 
 for chip in ${more1Chip}; do
-    for peaktype in broadPeak; do
+    for peaktype in narrowPeak broadPeak; do
 
         prefix="${chip}_${peaktype}_consensusPeaks"
         consensusPeakBed=${sameChipCons}/${prefix}.bed
@@ -737,12 +677,12 @@ for chip in ${more1Chip}; do
         fileNotExistOrOlder "${boolAnotMatr}" "${consensusPeakBed}"
         # this outputs analyse as yes or no in lowercase
         if [[ ${analyse} == "yes" ]]; then
-
+            echo ${prefix}
+            
             annotatePeaks.pl \
                     ${consensusPeakBed} \
                     ${speciesGenome} \
                     -gid \
-                    ${extraAnnot} \
                     -cpu ${SLURM_CPUS_PER_TASK} \
                     -annStats ${sameChipHomer}/${prefix}.annotateStats.txt \
                     > ${sameChipHomer}/${prefix}.annotatePeaks.txt
@@ -795,7 +735,7 @@ if [[ ${doAllMerge} == "yes" ]]; then
     echo -e "Starting consensus featureCounts -----------------------\n"
 
     chip="allmerged"
-    for peaktype in broadPeak; do
+    for peaktype in narrowPeak broadPeak; do
         prefix="${chip}_${peaktype}_consensusPeaks"
         peakFiles=$(find -L ${outpath}/peakCalling/MACS2/peaks/*.${peaktype} -maxdepth 1  -type f ! -size 0 | \
                     { grep -v -e "_input" -v -e "_IgG" || :; } )
@@ -838,7 +778,7 @@ cd ${featureCPairpath}
 echo -e "Starting consensus same-chip featureCounts -----------------------\n"
 
 for chip in ${more1Chip}; do
-    for peaktype in broadPeak; do
+    for peaktype in narrowPeak broadPeak; do
         prefix="${chip}_${peaktype}_consensusPeaks"
         peakFiles=$(find -L ${outpath}/peakCalling/MACS2/peaks/*.${peaktype} -maxdepth 1  -type f ! -size 0 | \
                     { grep "${chip}" || :; } )
@@ -878,7 +818,7 @@ echo -e "Consensus same-chip featureCounts - Finished ----------------------\n"
 if [[ ${doAllMerge} == "yes" ]]; then
     echo -e "Starting consensus CPM -----------------------\n"
     chip="allmerged"
-    for peaktype in broadPeak; do
+    for peaktype in narrowPeak broadPeak; do
         prefix="${chip}_${peaktype}_consensusPeaks"
         
         bamfiles=$(head -n 2 ${featureCpath}/${prefix}.featureCounts.txt | tail -n 1 |\
@@ -923,7 +863,7 @@ fi
 echo -e "Starting same-chip CPM -----------------------\n"
 
 for chip in ${more1Chip}; do
-    for peaktype in broadPeak; do
+    for peaktype in narrowPeak broadPeak; do
         prefix="${chip}_${peaktype}_consensusPeaks"
         
         bamfiles=$(head -n 2 ${featureCPairpath}/${prefix}.featureCounts.txt | tail -n 1 |\

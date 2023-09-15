@@ -21,16 +21,25 @@
 # For my paper with ATAC
 peaktype="broadPeak"
 # Path to coordinate file
-#safIn="/home/jmendietaes/data/2021/chip/allProcessed/furtherAnalysis/08_projectRestart/csaw/MACSconsensus_DM-Mye_WS-200_SPC-200_IgG-flt.saf"
-safIn="/home/jmendietaes/data/2021/retroChecks/01_expreInPeaksAround/pui1Trim28Overlap_10000bp.saf"
+safIn="/home/jmendietaes/data/2021/chip/allProcessed/furtherAnalysis/08_projectRestart/csaw/MACSconsensus_DM-Mye_WS-200_SPC-200_IgG-flt.saf"
+#safIn="/home/jmendietaes/data/2021/ATAC/allProcessed/furtherAnalysis/08c_inUMAP/peakCalling/MACS2/consensus/allmerged_broadPeak_consensusPeaks.saf"
+#safIn="/home/jmendietaes/data/2021/ATAC/allProcessed/furtherAnalysis/08d_chipOnATAC/peakCalling/MACS2/consensusPeaks/DM_allpeaks.saf"
+#safIn="/home/jmendietaes/data/2021/ATAC/allProcessed/furtherAnalysis/08d_chipOnATAC/peakCalling/MACS2/consensusPeaks/DM_allpeaks_4kbext.saf"
 # Path where the bams of interest are stored
-#bamsIn="/home/jmendietaes/data/2021/ATAC/allProcessed/bamfiles/valid/08_paperChip"
-bamsIn="/home/jmendietaes/data/2021/retroChecks/01_expreInPeaksAround/bams"
+bamsIn="/home/jmendietaes/data/2021/ATAC/allProcessed/bamfiles/valid/08_paperChip"
+#bamsIn="/home/jmendietaes/data/2021/ATAC/allProcessed/bamfiles/valid/08c_inUMAP"
+#bamsIn="/home/jmendietaes/data/2021/chip/allProcessed/bamfiles/valid/08d_chipOnATAC"
 # Path where to output files
-#outPath="/home/jmendietaes/data/2021/chip/allProcessed/furtherAnalysis/08_projectRestart/csaw/ATACcounts"
-outPath="/home/jmendietaes/data/2021/retroChecks/01_expreInPeaksAround/counts"
+outPath="/home/jmendietaes/data/2021/chip/allProcessed/furtherAnalysis/08_projectRestart/csaw/ATACcounts"
+#outPath="/home/jmendietaes/data/2021/ATAC/allProcessed/furtherAnalysis/08c_inUMAP/counts"
+#outPath="/home/jmendietaes/data/2021/chip/allProcessed/furtherAnalysis/08d_chipOnATAC/counts"
 # Files first label
-label1="multiExperiment"
+label1="ATAC"
+#label1="chipOnATAC"
+#label1="chipOnATAC_4kbext"
+# Bam file end string to be removed from name
+bamEnd=".sort.rmdup.rmblackls.rmchr.Tn5.bam"
+#bamEnd=".sort.rmdup.rmblackls.rmchr.bam"
 
 # For Ainhoa paper
 # safIn="/home/jmendietaes/data/2021/chip/allProcessed/furtherAnalysis/07_leukPaper/peakCalling/MACS2/consensusPeaks/allmerged_narrowPeak_consensusPeaks.saf"
@@ -88,7 +97,7 @@ echo -e "Starting consensus featureCounts -----------------------\n"
 
 prefix="${label1}_${peaktype}_consensusPeaks"
 bamfiles=$(find -L ${bamsIn}/*.bam -maxdepth 1  -type f ! -size 0)
-fileLabels=$(for f in $bamfiles; do echo ${f##*/} |sed "s/.sort.rmdup.rmblackls.rmchr.Tn5.bam//g"; done)
+fileLabels=$(for f in $bamfiles; do echo ${f##*/} |sed "s/${bamEnd}//g"; done)
 
 
 # check if the file exists or it was created with a previous peaks version 
@@ -128,7 +137,7 @@ featureCPM=${outPath}/${prefix}.featureCounts.CPM.txt
 
 echo -e "FileName\tSampleName\tCellType\tStatus" > ${outPath}/sampleInfo.txt
 for bam in ${bamfiles}; do
-    sname=`basename $bam  | sed 's/.sort.rmdup.rmblackls.rmchr.bam//g'`
+    sname=`basename $bam  | sed "s/${bamEnd}//g"`
     #sname=$bam
     cell=(${sname//_/ }) ; cell=${cell[0]}
     status=(${sname//_/ }) ; status=${status[1]}; status=(${status//-/ }); status=${status[0]}
@@ -157,23 +166,23 @@ echo -e "Consensus CPM - Finished ----------------------\n"
 ############################################
 echo -e "Starting info merge ---------------------------\n"
 
-outfile=${featureCpath}/${prefix}.rcount.CPM.txt
+outfile=${outPath}/${prefix}.rcount.CPM.txt
 
 
-cat ${featureCPM} > ${featureCpath}/tmp2.txt
-headerNames=$(head -n 1 ${featureCpath}/tmp2.txt)
+cat ${featureCPM} > ${outPath}/tmp2.txt
+headerNames=$(head -n 1 ${outPath}/tmp2.txt)
 for h in ${headerNames}; do
     if [[ $h != "interval_id" ]]; then
-        sed -i "s/${h}/${h}.cpm/g" ${featureCpath}/tmp2.txt
+        sed -i "s/${h}/${h}.cpm/g" ${outPath}/tmp2.txt
     fi
 done
 
 # Both files are in the same order
-tail -n +2 ${featureCpath}/${prefix}.featureCounts.txt | \
-            sed "s/sort.rmUnM.q30.rmchr.Tn5.bam/rcount/g" | \
-            sed "s/$(echo $bamsPath/ | sed 's_/_\\/_g')//g" | \
+tail -n +2 ${outPath}/${prefix}.featureCounts.txt | \
+            sed "s/${bamEnd}/.rcount/g" | \
+            sed "s/$(echo $bamsIn/ | sed 's_/_\\/_g')//g" | \
             paste - \
-            ${featureCpath}/tmp2.txt > ${outfile}
+            ${outPath}/tmp2.txt > ${outfile}
 
 # Remove extra path from header
 #sed -i "s/$(echo $bamsPath/ | sed 's_/__g')//g" \

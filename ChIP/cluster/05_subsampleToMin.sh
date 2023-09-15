@@ -142,6 +142,12 @@ done
 
 
 
+
+# # cells to be counted at the time to subsample (separated by \|)
+# subsampleCells="DM_\|Mye_"
+# basePath="/home/jmendietaes/data/2021/chip/allProcessed"
+# bamsPath="${basePath}/bamfiles/valid"
+# bamCounts="${bamsPath}/bamCounts.txt"
 # # To copy only subsampled and not subsampled files that are not common
 # chips=$(for fi in `cat ${bamCounts} | grep "${subsampleCells}" | \
 #         grep -v mergedReplicates/ | cut -f 2  | tail -n +2`; do 
@@ -155,7 +161,7 @@ done
 #     done | sort| uniq)
 
 # chips=$(for chip in $chips; do
-#     chipFiles=$(grep "${chip}_\|${chip}-" ${bamCounts}| cut -f 2 | \
+#     chipFiles=$(grep "${chip}_\|${chip}-\|${chip}\." ${bamCounts}| cut -f 2 | \
 #                     grep -v mergedReplicates | grep "${subsampleCells}")
 
 #     if [[ $(echo $chipFiles | wc -w) == 2 ]]; then
@@ -164,8 +170,8 @@ done
 # done)
 # cd /home/jmendietaes/data/2021/chip/allProcessed/bamfiles/valid/08_projectRestart_subsampled
 # for chip in ${chips}; do 
-#     ln -s /home/jmendietaes/data/2021/chip/allProcessed/bamfiles/valid/subsampled/DM_${chip}* .
-#     ln -s /home/jmendietaes/data/2021/chip/allProcessed/bamfiles/valid/subsampled/Mye_${chip}* .
+#     ln -s /home/jmendietaes/data/2021/chip/allProcessed/bamfiles/valid/subsampled/DM_${chip}-* .
+#     ln -s /home/jmendietaes/data/2021/chip/allProcessed/bamfiles/valid/subsampled/Mye_${chip}-* .
 # done
 
 # vgrep=$(for chip in $chips; do echo "${chip}\|"; done | tr '\n' ' ')

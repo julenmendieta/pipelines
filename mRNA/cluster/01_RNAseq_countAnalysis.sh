@@ -41,8 +41,11 @@ basePath=$1
 REFERENCE_DIR=$2
 #REFERENCE_DIR="/home/jmendietaes/referenceGenomes/mm10_reordered/STAR/mm10.reordered"
 indexOutP=$(dirname ${REFERENCE_DIR})
-geneBed=$(realpath ${indexOutP}/genes/*bed)
+#geneBed=$(realpath ${indexOutP}/genes/*bed)
 geneGTF=$(realpath ${indexOutP}/genes/*gtf)
+# use singleCell GTF for test
+#geneGTF=/home/jmendietaes/data/2021/singleCell/additionalFiles/refdata-gex-mm10-2020-A/genes/genes_mainGenes.gtf
+
 
 ## Project name
 # We will find salmon output and STAR BAM files in there using our defined

@@ -4,7 +4,6 @@
 # HOW TO RUN ME
 # Change the variables to change and
 # bash /home/jmendietaes/programas/pipelines/general/renameFiles.sh
-# bash /home/julen/programas/PhD/general/renameFiles.sh
 
 # OBJECTIVE OF SCRIPT
 # To read a file with two columns, and convert the file names 
@@ -14,10 +13,10 @@
 ########## TO CHANGE ###########
 # Path to the table with 2 columns (string\tsubstitute)
 # DO NOT USE home relative paths (~/)
-#inTable="/home/jmendietaes/prueba/rename.txt"
-inTable="/scratch/julen/pruebas/renameScripts/rename_220906_iChIP_18_19_20.txt"
+inTable="/home/jmendietaes/prueba/rename.txt"
+#inTable="/scratch/julen/pruebas/renameScripts/rename_220906_iChIP_18_19_20.txt"
 # path in which we will do the search and name changing
-focusPath="/home/jmendietaes/data/2021/ATAC/allProcessed/furtherAnalysis/05_laura/replicateAnalysis/DESeq2_batchCorrect/gatheredDESeq/"
+focusPath="/home/jmendietaes/data/2021/chip/sequencedData/NextSeq2000.RUN193.20230630/demux_fastq/"
 # If we want to do a test printing the change but not doing anything
 # posible answers are lowercase "yes" (ony print) or "no" (print and change)
 onlyTest="no"
@@ -38,8 +37,8 @@ for ni in "${!strings[@]}"; do
     string_=${strings[${ni}]}
     substitute_=${substitutes[${ni}]}
     # removing -maxdepth 1 to do the change recursively 
-    #file=$(find ${focusPath} -name "*${string_}*" | grep .)
     file=$(find ${focusPath} -name "*${string_}*" | grep .)
+    #file=$(find ${focusPath} -maxdepth 1 -name "*${string_}*" | grep .)
 
     # if we found a match
     if [ ! -z "$file" ]; then 

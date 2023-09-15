@@ -27,7 +27,7 @@ inPath=$2
 #inPath="/home/jmendietaes/data/2021/ATAC/allProcessed/furtherAnalysis/08b_RLTR45"
 
 # Path to coordinate saf file
-inSaf="/home/jmendietaes/data/2021/ATAC/allProcessed/furtherAnalysis/08c_inUMAP/peakCalling/MACS2/consensus/allmerged_broadPeak_consensusPeaks.saf"
+inSaf="/home/jmendietaes/data/2021/ATAC/allProcessed/furtherAnalysis/08d_chipOnATAC/peakCalling/MACS2/consensusPeaks/DM_allpeaks.saf"
 ID=$(basename $inSaf); ID=(${ID//\./ }); ID=${ID[0]}; 
 
 # State how to merge chip files (appart from whole merge)

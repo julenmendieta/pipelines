@@ -92,7 +92,7 @@ samples.vec <- sort(colnames(count.table))
 #groups <- sub("_.*$", "", samples.vec)
 groups <- sub("^([^_]*_[^_]*).*", "\\1", samples.vec)
 batches <- gsub("^.*_", "", groups)
-groups <- sub("^([^-]*-[^-]*).*", "\\1", groups)
+#groups <- sub("^([^-]*-[^-]*).*", "\\1", groups)
 labels <- gsub("_.*","",samples.vec)
 ko <- sapply(strsplit(labels,"-"), `[`, 2)
 # convert controls string to list

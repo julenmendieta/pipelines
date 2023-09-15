@@ -19,7 +19,7 @@ for chip in ${chips}; do
             infile1=$(find ${bamsPath}/${cell}_${chip}*bam)
             epic2 --treatment ${infile1} --control ${control1} --keep-duplicates \
                   --genome ${species} --output ${outpath}/${cell}_${chip}_epic.out \
-                  --guess-bampe
+                  --guess-bampe -fdr 0.05
             sleep 5
             cat ${outpath}/${cell}_${chip}_epic.out | \
                   cut -f 1,2,3 > ${outpath}/${cell}_${chip}_epic.bed
