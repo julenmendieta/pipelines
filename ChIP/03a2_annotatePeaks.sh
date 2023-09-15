@@ -29,7 +29,7 @@ gtfFile=$5
 #repeatsPath=/home/julen/programas/HOMER/data/genomes/mm10/mm10.repeats
 repeatsPath=$6
 # path for the location of the pipeline scripts
-scriptsPath="/home/julen/programas/PhD"
+scriptsPath="/home/julen/programas/pipelines"
 # Path were homer genome files are stored
 homerGenome="/home/julen/programas/HOMER/.//data/genomes"
 
