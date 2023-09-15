@@ -17,10 +17,15 @@ inpath="${basePath}/binnedPeaks"
 outpath="${basePath}/finalTables/01_Annot"
 
 
-# GTF file for annotation (top be consistent with scRNA data)
+
 # Set to FALSE if you wnat HOMER's default UCSC refGene annotation
-gtfFile=/scratch/julen/singleCell/cellRanger/mm10-2020-A_genes.gtf
+# mRNAseq analysis GTF file
+gtfFile=/home/julen/genomes/mm10_reordered/genes/gencode.vM10.annotation.gtf
+# Perturb-seq GTF file for annotation
+gtfFile2=/scratch/julen/singleCell/cellRanger/mm10-2020-A_genes.gtf
+gtf2Id="scGTF"
 #gtfFile=FALSE
+#gtfFile2=FALSE
 
 # If we want a column focussed on repeated elements only
 # Path to Homer file with repeat element locations
@@ -141,6 +146,31 @@ if [[ ${analyse} == "yes" ]]; then
             ${outpath}/tmp.txt > ${outpath}/tmp2.txt
         mv ${outpath}/tmp2.txt ${boolAnotMatr}
     fi
+
+    # external GTF file2 closest gene
+    if [[ $gtfFile2 != "FALSE" ]]; then
+        annotatePeaks.pl \
+            ${binnedPeaks} \
+            ${speciesGenome} \
+            -gid \
+            -gtf ${gtfFile2} \
+            -cpu ${nCPU} \
+            -annStats ${outpath}/${prefix}.annotateStats.txt \
+            > ${outpath}/${prefix}.annotatePeaks.txt
+
+        cut -f2- ${outpath}/${prefix}.annotatePeaks.txt | \
+            awk 'NR==1; NR > 1 {print $0 | "sort -T '.' -k1,1 -k2,2n"}' | \
+            cut -f 9,10,15 > ${outpath}/tmp.txt
+        rm ${outpath}/${prefix}.annotatePeaks.txt
+        # rename header and paste to consensus table
+        sed -i "s/Distance to TSS/${gtf2Id} Distance to TSS/g" ${outpath}/tmp.txt
+        sed -i "s/Nearest PromoterID/${gtf2Id} Nearest PromoterID/g" ${outpath}/tmp.txt
+        sed -i "s/Gene Name/${gtf2Id} Gene Name/g" ${outpath}/tmp.txt
+        paste ${boolAnotMatr} \
+            ${outpath}/tmp.txt > ${outpath}/tmp2.txt
+        mv ${outpath}/tmp2.txt ${boolAnotMatr}
+    fi
+
 
     # We add a column for annotations regarding repeat elements
     if [[ $repeatsPath != "FALSE" ]]; then
