@@ -6,23 +6,25 @@
 #SBATCH --job-name=specificBigwig
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=8G
-#SBATCH --time=04:00:00
+#SBATCH --time=20:00:00
 #SBATCH -p short
 #SBATCH -o /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.out  
 #SBATCH -e /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.err 
 
 # HOW TO RUN ME
-# add in the list bellow the bam file names (but the .bam termination)
+# add in the list bellow the bam file names (but the  \ termination)
 #sbatch /home/jmendietaes/programas/pipelines/ATAC-KO/cluster/06d_bigwig_fromList.sh
 
 #files="LSK-Chd4_ATAC5-merged.sort.rmdup.rmblackls.rmchr.Tn5 \
 #LSK-Men1_ATAC5-merged.sort.rmdup.rmblackls.rmchr.Tn5"
 
-files="LSK-Chd4_ATAC5-merged.sort.rmdup.rmblackls.rmchr.Tn5" # \
+files="DMd4-Ehmt1-1_ATAC11-merged.sort.rmdup.rmblackls.rmchr.Tn5 \
+DMd4-NTC-2_ATAC11-merged.sort.rmdup.rmblackls.rmchr.Tn5"
+ # \
 #GMP-Brd9_ATACTraspl-merged.sort.rmdup.rmblackls.rmchr.Tn5"
 
 basePath="/home/jmendietaes/data/2021/ATAC/allProcessed"
-bamBase="${basePath}/bamfiles/valid/02_firstATAC"
+bamBase="${basePath}/bamfiles/valid/allBams/DM"
 
 
 REFERENCE_DIR="/home/jmendietaes/referenceGenomes/mm10_reordered/mm10.reordered"

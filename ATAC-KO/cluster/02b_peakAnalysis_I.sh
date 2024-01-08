@@ -6,7 +6,7 @@
 #SBATCH --job-name=ATACanalysis
 #SBATCH --cpus-per-task=32
 #SBATCH --mem=32G
-#SBATCH --time=05:00:00
+#SBATCH --time=24:00:00
 #SBATCH -p short
 #SBATCH -o /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.out  
 #SBATCH -e /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.err 
@@ -14,7 +14,7 @@
 
 # HOW TO RUN ME
 #sbatch /home/jmendietaes/programas/pipelines/ATAC-KO/cluster/02b_peakAnalysis_I.sh \
-#/home/jmendietaes/data/2021/ATAC/allProcessed \
+#/home/jmendietaes/data/2021/ATAC/allProcessed 
 
 # OBJECTIVE
 # call peaks, annotate, make consensus peaks, get reads in peaks, CPM and merge
@@ -30,8 +30,8 @@ basePath=$1
 #extraFilePath="/home/jmendietaes/data/2021/chip/analysisFiles"
 
 # Where to look for bam files and where to store output tree
-bamsPath="${basePath}/bamfiles/valid/08e_koATAC"
-outpath=${basePath}"/furtherAnalysis/08e_koATAC"
+bamsPath="${basePath}/bamfiles/valid/08e_koATAC_subsampled"
+outpath=${basePath}"/furtherAnalysis/08e_koATAC_subsampled"
 
 # Important paremeter to modify
 # Set to lowercase yes to use merge of IgG from different cells allCell_IgG.sort.r..
@@ -40,7 +40,7 @@ outpath=${basePath}"/furtherAnalysis/08e_koATAC"
 # called cellMergeIgG
 useMergeIgG="no"
 # Set to lowercase "yes" to get consensus peaks of all ChIPs and cells
-doAllMerge="yes"
+doAllMerge="no"
 
 # FILE NAMING FORMAT
 # [cellType]_[chip]_[date]_[extra?].[bamfilteringKeys].bam

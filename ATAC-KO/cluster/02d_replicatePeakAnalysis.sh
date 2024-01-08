@@ -13,8 +13,8 @@
 
 # HOW TO RUN ME
 #sbatch /home/jmendietaes/programas/pipelines/ATAC-KO/cluster/02d_replicatePeakAnalysis.sh \
-#/home/jmendietaes/data/2021/ATAC/allProcessed/bamfiles/valid/mergedReplicates/05_laura \
-#/home/jmendietaes/data/2021/ATAC/allProcessed/furtherAnalysis/05_laura 
+#/home/jmendietaes/data/2021/ATAC/allProcessed/bamfiles/valid/mergedReplicates/08e_koATAC \
+#/home/jmendietaes/data/2021/ATAC/allProcessed/furtherAnalysis/08e_koATAC 
 
 
 # path where we have the replicate files
@@ -24,7 +24,7 @@ replicatesPath=$1
 # Path to the outpath folder where we run 02b_peakAnalysis_I.sh
 # and where we have the folder tree with the consensus peaks
 inPath=$2
-#inPath="/home/jmendietaes/data/2021/ATAC/allProcessed/furtherAnalysis/02_firstATAC"
+#inPath="/home/jmendietaes/data/2021/ATAC/allProcessed/furtherAnalysis/08e_koATAC"
 
 # State how to merge chip files (appart from whole merge)
 # Options are: chip, cellfirst, and cell. That state for
