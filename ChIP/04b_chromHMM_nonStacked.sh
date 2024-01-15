@@ -2,7 +2,7 @@
 # -*- ENCODING: UTF-8 -*-
 
 # HOW TO RUN ME
-# bash /home/julen/programas/PhD/ChIP/04b_chromHMM_nonStacked.sh
+# bash /home/julen/programas/pipelines/ChIP/04b_chromHMM_nonStacked.sh
 
 # OBJECTIVE
 # Run ChromHMM BinarizeBam on a set of bam files
@@ -22,27 +22,34 @@ assembly="mm10"
 runID="nonStacked"
 
 # Path to directory containing input bam files
-inputbamdir="/scratch/julen/ChIP/allData/08_restartProject/bamFiles/all"
+#inputbamdir="/scratch/julen/ChIP/bamFiles/subsampled/all"
+inputbamdir="/scratch/julen/ChIP/bamFiles/subsampled/chromHMM"
 
 # File indicating cell type, tag, and control
 # A tab delimited file where each row contains the cell type, then the 
-#associated mark, then the name of a bam file, and optionally a corresponding 
-#control bam file
+#  associated mark, then the name of a bam file, and optionally a corresponding 
+#  control bam file
 cellmarkfiletable="/scratch/julen/ChIP/allData/08_restartProject/ChromHMM/metadata/metada.tsv"
 
 # If you want chromHMM to merge cell and chip id set to "-stacked", otherwise ""
 #  stacked models may help differentiate regions with constitutive chromatin 
-#activities from those with cell-type-specific activities.
-# while the stacked model state definitions are more complex, the resulting 
-#genome annotations are simpler and non-overlapping. With the stacked modeling, 
-#each location is simply assigned to one of N universal states, whereas in 
-#the concatenated model, each location is assigned to one of M states in 
-#K cell types
+#  activities from those with cell-type-specific activities.
+#  while the stacked model state definitions are more complex, the resulting 
+#  genome annotations are simpler and non-overlapping. With the stacked modeling, 
+#  each location is simply assigned to one of N universal states, whereas in 
+#  the concatenated model, each location is assigned to one of M states in 
+#  K cell types
 stacked=""
 #stacked="-stacked"
 
+# This indicates a threshold for the fold enrichment over expected that must 
+#  be met or exceeded by the observed count in a bin for a present call. This 
+#  parameter can be useful when dealing with very deeply and/or unevenly 
+#  sequenced data. By default this parameter value is 0
+foldthresh=8
+
 # Path to main output dir
-outpath="/scratch/julen/ChIP/allData/08_restartProject/ChromHMM/output/nonStacked"
+outpath="/scratch/julen/ChIP/allData/08_restartProject/ChromHMM/output/fc_${foldthresh}/nonStacked"
 
 # The output directory to which the binarized data files should be written. 
 # These files will be named CELL_CHROM_binary.txt or 
@@ -56,13 +63,7 @@ binsize=200
 
 # define number of states to check (array format)
 #numstatesAll=( 16 17 18 )
-numstatesAll=( 16 17 18 19 20 )
-
-# This indicates a threshold for the fold enrichment over expected that must 
-# be met or exceeded by the observed count in a bin for a present call. This 
-#parameter can be useful when dealing with very deeply and/or unevenly 
-#sequenced data. By default this parameter value is 0
-foldthresh=1.5
+numstatesAll=( 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 )
 
 # Path to ChromHMM jar file
 chromJar="/home/julen/programas/ChromHMM_1.23/ChromHMM/ChromHMM.jar"

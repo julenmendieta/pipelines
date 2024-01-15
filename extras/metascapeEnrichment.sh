@@ -12,8 +12,10 @@ msPath="/home/julen/programas/MSBio"
 # Set to "-u" if input format follows the single-gene-list standard (else to "")
 geneListStyle=""
 # Proyect name (input and output folders are inside ${msPath}/data/${pName})
-pName=perCell_expreUniq
+pName=KOtogether_overlapOnly
+# Place your input txt files in ${msPath}/data/${pName}/input
 
+nCPU=8
 # For -S and -T you can use either taxonomy ID or common names. 
 # The supported IDs are: 9606, 10090, 10116, 4932, 5833, 6239, 7227, 7955, 
 #   3702, and 4896. 
@@ -31,6 +33,7 @@ sudo ${msPath}/bin/up.sh
 # If we want to run all input files
 inputDir="${msPath}/data/${pName}/input"
 optionJson="/data/${pName}/option.json"
+#optionJson="/data/option.json"
 files=$(ls $inputDir)
 for input_list_name in $files; do
     echo $input_list_name
@@ -45,7 +48,7 @@ for input_list_name in $files; do
     # You must specify -u if your input format follows the single-gene-list standard
     sudo ${msPath}/bin/ms.sh ${singleGeneList} -o ${output_folder} \
                             -S ${taxId} -T ${targetId} ${input_list_file} \
-                            --option ${optionJson}
+                            --option ${optionJson} -c ${nCPU} ${geneListStyle}
 
 done
 

@@ -13,7 +13,6 @@ basePath=$1
 binnedPeaks=$2
 #nCPU=16
 nCPU=$3
-inpath="${basePath}/binnedPeaks"
 outpath="${basePath}/finalTables/01_Annot"
 
 
