@@ -625,7 +625,8 @@ if [[ ${linec} != "methylExtract" ]]; then
             --CHH --CHG -o ${basePath}/methylDackel/${filename} ${GenomeIndex}.fa ${bamSortRmDupBlackChr}
     ${MethylDackel} extract -@ ${nCPU} \
             --CHH --CHG -o ${basePath}/methylDackel/${filename} ${GenomeIndex}.fa ${bamSortRmDupBlackChr}
-    #pigz -p ${nCPU} *.methylKit
+    pigz -p ${nCPU} ${filename}*.methylKit
+    pigz -p ${nCPU} ${filename}*.bedGraph
 
     echo -e "MethylDackel extract - done ---------------------------------------------\n"
     # store stage control info

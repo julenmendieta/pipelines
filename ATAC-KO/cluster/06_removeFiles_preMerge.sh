@@ -1,13 +1,11 @@
 # Script to delete all files from analysis that will be done again
 # Add here unique IDs of each sample separated by a space
-removeChip="Activated-Brd9_ATAC2 Activated-Egr2_ATAC2 \
-Activated-NtC5_ATAC2 Quiescent-Brd9_ATAC2 Quiescent-Egr2_ATAC2 \
-Quiescent-NtC5_ATAC2"
+removeChip="DMd4-*_ATAC11 "
 
 delete='yes'
 
 basePath=/home/jmendietaes/data/2021/ATAC/allProcessed
-outpath=${basePath}"/furtherAnalysis/05_laura"
+outpath=${basePath}"/furtherAnalysis/08e_koATAC_subsampled"
 if [ ! -e ${outpath}/peakCalling/MACS2/peaks/mergedReplicates ]; then
     mkdir -p ${outpath}/peakCalling/MACS2/peaks/mergedReplicates
     mkdir -p ${outpath}/HOMER/peakAnnotation/mergedReplicates

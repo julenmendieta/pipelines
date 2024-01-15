@@ -63,8 +63,8 @@ species="mm"
 speciesGenome="mm10"
 
 # Where to look for bam files and where to store output tree
-bamsPath="${basePath}/bamfiles/valid/14_hexadienol"
-outpath=${basePath}"/furtherAnalysis/14_hexadienol"
+bamsPath="${basePath}/bamfiles/valid/08_projectRestart"
+outpath=${basePath}"/furtherAnalysis/08_projectRestart"
 
 # GTF file for annotation (top be consistent with scRNA data)
 # Set to FALSE if you wnat HOMER's default UCSC refGene annotation
@@ -779,7 +779,7 @@ for chip in ${more1Chip}; do
     for peaktype in narrowPeak broadPeak; do
         prefix="${chip}_${peaktype}_consensusPeaks"
         peakFiles=$(find -L ${outpath}/peakCalling/MACS2/peaks/*.${peaktype} -maxdepth 1  -type f ! -size 0 | \
-                    { grep "${chip}" || :; } )
+                    { grep -E "_${chip}-|_${chip}_" || :; } )
         fileLabels=$(for f in $peakFiles; do echo ${f##*/} |sed "s/_peaks.${peaktype}//g"; done)
         # get a list with the bam files in the same order as peak files
         bamfiles=$(for f in ${fileLabels}; do find -L ${bamsPath}/${f}*bam -printf "${bamsPath}/%f "; 

@@ -6,7 +6,7 @@
 #SBATCH --job-name=Chip_fqToBw
 #SBATCH --cpus-per-task=12
 #SBATCH --mem=30G
-#SBATCH --time=00-05:00:00
+#SBATCH --time=00-10:00:00
 #SBATCH -p short
 #SBATCH -o /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.out  
 #SBATCH -e /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.err 
@@ -28,7 +28,7 @@
 # Array must be index 1 in my scenario
 # it works with gziped fastq files
 # not valid for atac seq, dosnt take into account the 9bp mapping sift (Tn5, hichikers paper)
-# i can use nextflow or prepare time points in a file in case the code breaks
+
 ##===============================================================================
 ## GLOBAL VARIABLES
 PROJECT_DIR=$1

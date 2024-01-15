@@ -168,7 +168,7 @@ echo ${adjustedMem_bytes}
 salmonOut=${outpath}/counts
 cd ${salmonOut}
 
-# Check if we already have obtained gene cunts
+# Check if we already have obtained gene counts
 fileNotExistOrOlder "${salmonOut}/tximportMerge.transcript_counts.rds" \
             "${salmonQin}/*/quant.sf"
 if [[ ${analyse} == "yes" ]]; then

@@ -34,7 +34,7 @@
 
 ######################  TO CHANGE #####################
 # path to file with read1 and read 2 of each experiment
-filesPath='/home/jmendietaes/data/2021/microC/sequencedData/NextSeq2000.RUN208.20230919/demux_fastq'
+filesPath='/home/jmendietaes/data/2021/microC/sequencedData/merge_RUN208-RUN212/demux_fastq'
 #realpath *fastq.gz > toMapp.txt
 
 # load genome path

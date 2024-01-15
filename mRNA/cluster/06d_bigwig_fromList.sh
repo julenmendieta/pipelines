@@ -13,19 +13,21 @@
 
 # HOW TO RUN ME
 # add in the list bellow the bam file names (but the .bam termination)
-#sbatch /home/jmendietaes/programas/pipelines/ATAC/cluster/06d_bigwig_fromList.sh
+#sbatch /home/jmendietaes/programas/pipelines/mRNA/cluster/06d_bigwig_fromList.sh
 
 #files="LSK-Chd4_ATAC5-merged.sort.rmdup.rmblackls.rmchr.Tn5 \
 #LSK-Men1_ATAC5-merged.sort.rmdup.rmblackls.rmchr.Tn5"
 
-files="DMd4-Pu1-1_ATAC11-merged.sort.rmdup.rmblackls.rmchr.Tn5 \
-DMd7-Pu1-1_ATAC12-merged.sort.rmdup.rmblackls.rmchr.Tn5 \
-DMd7-Pu1-2_ATAC12-merged.sort.rmdup.rmblackls.rmchr.Tn5 \
-DMd7-NTC-2_ATAC12-merged.sort.rmdup.rmblackls.rmchr.Tn5" # \
+files="DMd4-NTC-1_RNAtot1-merged.sort.rmdup.rmblackls.rmchr \
+DMd4-Pu1-1_RNAtot1-merged.sort.rmdup.rmblackls.rmchr \
+DMd4-Trim28-1_RNAtot1-merged.sort.rmdup.rmblackls.rmchr \
+DMd7-NTC-1_RNAtot1-merged.sort.rmdup.rmblackls.rmchr \
+DMd7-Pu1-1_RNAtot1-merged.sort.rmdup.rmblackls.rmchr \
+DMd7-Trim28-1_RNAtot1-merged.sort.rmdup.rmblackls.rmchr" # \
 #GMP-Brd9_ATACTraspl-merged.sort.rmdup.rmblackls.rmchr.Tn5"
 
-basePath="/home/jmendietaes/data/2021/ATAC/allProcessed"
-bamBase="${basePath}/bamfiles/valid/08e_koATAC"
+basePath="/home/jmendietaes/data/2021/mRNA/allProcessed"
+bamBase="${basePath}/bamfiles/wholeGenome/valid/01b_RNAtot"
 
 
 REFERENCE_DIR="/home/jmendietaes/referenceGenomes/mm10_reordered/mm10.reordered"

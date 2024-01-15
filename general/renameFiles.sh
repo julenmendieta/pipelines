@@ -16,7 +16,7 @@
 inTable="/home/jmendietaes/prueba/rename.txt"
 #inTable="/scratch/julen/pruebas/renameScripts/rename_220906_iChIP_18_19_20.txt"
 # path in which we will do the search and name changing
-focusPath="/home/jmendietaes/data/2021/chip/sequencedData/NextSeq2000.RUN193.20230630/demux_fastq/"
+focusPath="/home/jmendietaes/data/2021/ATAC/allProcessed/bamfiles/valid/mergedReplicates/08e_koATAC_subsampled"
 # If we want to do a test printing the change but not doing anything
 # posible answers are lowercase "yes" (ony print) or "no" (print and change)
 onlyTest="no"

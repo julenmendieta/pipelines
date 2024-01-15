@@ -78,7 +78,8 @@ def createMergedTable(inpath, CPMpath, tableOut):
                     cellNchange[cell] = f'{cell}.cpm'
                 # if I added controls, update also their names
                 for cell in df2.columns: 
-                    if ('_IgG' in cell) or ('input_' in cell):
+                    if (('_IgG' in cell) or ('input_' in cell)
+                        or ('_H3_' in cell) or ('_H3-' in cell)):
                         cellNchange[cell] = f'{cell}.cpm'
                 df2 = df2.rename(columns=cellNchange)
 
