@@ -35,33 +35,16 @@ basePath=$1
 scriptsPath="/home/jmendietaes/programas/pipelines"
 
 # Where to look for bam files and where to store output tree
-bamsPath="${basePath}/bamfiles/valid/subsampled_noIgG"
-outpath=${basePath}"/furtherAnalysis/subsampled_noIgG"
+bamsPath="${basePath}/bamfiles/valid/17_chio-KO"
+outpath=${basePath}"/furtherAnalysis/17_chio-KO"
 
 # Space separated list of files for the consensus and future analysis
 # With unique begining of ID is fine (2-3 first sections in between _)
 # E.j.: "MEP_Brd9-merged-sub105350855 GMP_Smarcb1_ChIP11"
-# Actually if fails if 4 sections are used. Ej Bcell_Brd9_ChIP9_S11
+# Actually it fails if 4 sections are used. Ej Bcell_Brd9_ChIP9_S11
 # instead of Bcell_Brd9_ChIP9
-focusFiles="Bcell_Brd9_ChIP9 \
-Bcell_Kmt2a_ChIP12 \
-Bcell_Kmt2d_ChIP12 \
-Ery_Brd9-merged \
-Ery_Kmt2a_ChIP11 \
-Ery_Kmt2d-merged \
-Ery_Smarcb1_ChIP9 \
-GMP_Brd9-merged \
-GMP_Kmt2a_ChIP11 \
-GMP_Kmt2d_ChIP11 \
-GMP_Smarcb1_ChIP11 \
-MEP_Brd9-merged \
-MEP_Kmt2a_ChIP11 \
-MEP_Kmt2d_ChIP11 \
-MEP_Smarcb1_ChIP12 \
-Mono_Brd9-merged \
-Mono_Kmt2a-merged \
-Mono_Kmt2d-merged \
-Mono_Smarcb1-merged"
+focusFiles="DM-NTC_Pu1_ChIPKO1 \
+DM-TRIM28_Pu1_ChIPKO1"
 
 
 

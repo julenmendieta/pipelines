@@ -6,7 +6,7 @@
 #SBATCH --job-name=ATACanalysis
 #SBATCH --cpus-per-task=32
 #SBATCH --mem=32G
-#SBATCH --time=24:00:00
+#SBATCH --time=08:00:00
 #SBATCH -p short
 #SBATCH -o /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.out  
 #SBATCH -e /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.err 
@@ -64,8 +64,8 @@ gtfFile=FALSE
 
 # If we want a column focussed on repeated elements only
 # Path to Homer file with repeat element locations
-#repeatsPath=/beegfs/easybuild/CentOS/7.5.1804/Skylake/software/Homer/4.10-foss-2018b/data/genomes/mm10/mm10.repeats
-repeatsPath=FALSE
+repeatsPath=/beegfs/easybuild/CentOS/7.5.1804/Skylake/software/Homer/4.10-foss-2018b/data/genomes/mm10/mm10.repeats
+#repeatsPath=FALSE
 
 # path for the location of the pipeline scripts
 scriptsPath="/home/jmendietaes/programas/pipelines"

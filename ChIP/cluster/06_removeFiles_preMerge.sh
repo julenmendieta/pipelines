@@ -2,14 +2,13 @@
 # Add here unique IDs of each sample separated by a space
 #bash /home/jmendietaes/programas/pipelines/ChIP/cluster/06_removeFiles_preMerge.sh
 
-removeChip="Mye-HD5_Brd9_ChIP19 Mye-HD5_H3K4me3_ChIP19 Mye-HD5_Kmt2d_ChIP19 \
-Mye_Brd9_ChIP19 Mye_H3K4me3_ChIP19 Mye_Kmt2d_ChIP19"
+removeChip="Mye_Smarcd2"
 
 delete='yes'
 
 
 basePath=/home/jmendietaes/data/2021/chip/allProcessed
-outpath=${basePath}"/furtherAnalysis/14_hexadienol"
+outpath=${basePath}"/furtherAnalysis/08_projectRestart"
 if [ ! -e ${outpath}/peakCalling/MACS2/peaks/mergedReplicates ]; then
     mkdir -p ${outpath}/peakCalling/MACS2/peaks/mergedReplicates
     mkdir -p ${outpath}/HOMER/peakAnnotation/mergedReplicates

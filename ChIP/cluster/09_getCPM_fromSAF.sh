@@ -19,31 +19,32 @@
 # get CPM values from bamfiles in path at consensus saf coordinta file
 
 # For my paper with ATAC
-#peaktype="broadPeak"
-peaktype="narrowPeak"
+peaktype="broadPeak"
+#peaktype="narrowPeak"
 # Path to coordinate file
-#safIn="/home/jmendietaes/data/2021/chip/allProcessed/furtherAnalysis/08_projectRestart/csaw/MACSconsensus_DM-Mye_WS-200_SPC-200_IgG-flt.saf"
-safIn="/home/jmendietaes/data/2021/chip/allProcessed/furtherAnalysis/15_ATACinTF/specificConsensus/DM_TFcentred.saf"
+safIn="/home/jmendietaes/data/2021/chip/allProcessed/furtherAnalysis/08_projectRestart/csaw/MACSconsensus_DM-Mye_WS-200_SPC-200_IgG-flt.saf"
+#safIn="/home/jmendietaes/data/2021/chip/allProcessed/furtherAnalysis/15_ATACinTF/specificConsensus/DM_TFcentred.saf"
 #safIn="/home/jmendietaes/data/2021/chip/allProcessed/furtherAnalysis/15_ATACinTF/specificConsensus/CFaroundATAC.saf"
 #safIn="/home/jmendietaes/data/2021/ATAC/allProcessed/furtherAnalysis/08c_inUMAP/peakCalling/MACS2/consensus/allmerged_broadPeak_consensusPeaks.saf"
 #safIn="/home/jmendietaes/data/2021/ATAC/allProcessed/furtherAnalysis/08d_chipOnATAC/peakCalling/MACS2/consensusPeaks/DM_allpeaks.saf"
 #safIn="/home/jmendietaes/data/2021/ATAC/allProcessed/furtherAnalysis/08d_chipOnATAC/peakCalling/MACS2/consensusPeaks/DM_allpeaks_4kbext.saf"
 # Path where the bams of interest are stored
-#bamsIn="/home/jmendietaes/data/2021/ATAC/allProcessed/bamfiles/valid/08_paperChip"
+bamsIn="/home/jmendietaes/data/2021/ATAC/allProcessed/bamfiles/valid/08_paperChip"
 #bamsIn="/home/jmendietaes/data/2021/chip/allProcessed/bamfiles/valid/15_CFinTF/"
 #bamsIn="/home/jmendietaes/data/2021/chip/allProcessed/bamfiles/valid/16_TFcentred"
-bamsIn="/home/jmendietaes/data/2021/chip/allProcessed/bamfiles/valid/16b_TFcentred_merged"
+#bamsIn="/home/jmendietaes/data/2021/chip/allProcessed/bamfiles/valid/16b_TFcentred_merged"
 #bamsIn="/home/jmendietaes/data/2021/ATAC/allProcessed/bamfiles/valid/08c_inUMAP"
 #bamsIn="/home/jmendietaes/data/2021/chip/allProcessed/bamfiles/valid/08d_chipOnATAC"
 # Path where to output files
-#outPath="/home/jmendietaes/data/2021/chip/allProcessed/furtherAnalysis/08_projectRestart/csaw/ATACcounts"
-outPath="/home/jmendietaes/data/2021/chip/allProcessed/furtherAnalysis/15_ATACinTF/specificConsensus"
+outPath="/home/jmendietaes/data/2021/chip/allProcessed/furtherAnalysis/08_projectRestart/csaw/ATACcounts"
+#outPath="/home/jmendietaes/data/2021/chip/allProcessed/furtherAnalysis/15_ATACinTF/specificConsensus"
 #outPath="/home/jmendietaes/data/2021/ATAC/allProcessed/furtherAnalysis/08c_inUMAP/counts"
 #outPath="/home/jmendietaes/data/2021/chip/allProcessed/furtherAnalysis/08d_chipOnATAC/counts"
 # Files first label
+label1="ATAC"
 #label1="CFaroundATAC"
 #label1="DM_TFcentred"
-label1="DM_TFcentred_merged"
+#label1="DM_TFcentred_merged"
 #label1="chipOnATAC"
 #label1="chipOnATAC_4kbext"
 # Bam file end string to be removed from name

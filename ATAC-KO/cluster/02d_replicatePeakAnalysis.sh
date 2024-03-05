@@ -5,7 +5,7 @@
 ## SLURM VARIABLES
 #SBATCH --job-name=replyATAC
 #SBATCH --cpus-per-task=8
-#SBATCH --mem=25G
+#SBATCH --mem=45G
 #SBATCH --time=10:00:00
 #SBATCH -p short
 #SBATCH -o /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.out  
@@ -13,8 +13,8 @@
 
 # HOW TO RUN ME
 #sbatch /home/jmendietaes/programas/pipelines/ATAC-KO/cluster/02d_replicatePeakAnalysis.sh \
-#/home/jmendietaes/data/2021/ATAC/allProcessed/bamfiles/valid/mergedReplicates/08e_koATAC \
-#/home/jmendietaes/data/2021/ATAC/allProcessed/furtherAnalysis/08e_koATAC 
+#/home/jmendietaes/data/2021/ATAC/allProcessed/bamfiles/valid/mergedReplicates/05-3_lauraEnd \
+#/home/jmendietaes/data/2021/ATAC/allProcessed/furtherAnalysis/05-3_lauraEnd 
 
 
 # path where we have the replicate files

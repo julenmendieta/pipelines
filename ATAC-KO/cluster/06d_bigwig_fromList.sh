@@ -6,7 +6,7 @@
 #SBATCH --job-name=specificBigwig
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=8G
-#SBATCH --time=20:00:00
+#SBATCH --time=10:00:00
 #SBATCH -p short
 #SBATCH -o /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.out  
 #SBATCH -e /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.err 
@@ -18,8 +18,9 @@
 #files="LSK-Chd4_ATAC5-merged.sort.rmdup.rmblackls.rmchr.Tn5 \
 #LSK-Men1_ATAC5-merged.sort.rmdup.rmblackls.rmchr.Tn5"
 
-files="DMd4-Ehmt1-1_ATAC11-merged.sort.rmdup.rmblackls.rmchr.Tn5 \
-DMd4-NTC-2_ATAC11-merged.sort.rmdup.rmblackls.rmchr.Tn5"
+files="DMd4-Kmt2d_ATAC21-merged.sort.rmdup.rmblackls.rmchr.Tn5 \
+DMd4-NTC_ATAC21-merged.sort.rmdup.rmblackls.rmchr.Tn5 \
+DMd4-Smarcb1_ATAC21-merged.sort.rmdup.rmblackls.rmchr.Tn5"
  # \
 #GMP-Brd9_ATACTraspl-merged.sort.rmdup.rmblackls.rmchr.Tn5"
 

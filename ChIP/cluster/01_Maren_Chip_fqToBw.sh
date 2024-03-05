@@ -10,7 +10,7 @@
 #SBATCH -p short
 #SBATCH -o /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.out  
 #SBATCH -e /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.err 
-#SBATCH --dependency=afterany:930030
+##SBATCH --dependency=afterany:930030
 
 
 ##SBATCH --mail-type=END
@@ -159,7 +159,7 @@ linec=`sed "1q;d" ${stepControl}`
 if [[ ${linec} != "Summary" ]]; then 
     echo -e "STARTING \n $(date) \n" 
     echo "SAMPLE: ${filename}" 
-    echo -e "sample name\tfastq name\tread count\tmillions" >> ${summaryFile}
+    echo -e "sample name\tfastq name\tread count\tmillions" > ${summaryFile}
 
     # QC: read counts if file is gziped or not
     if file --mime-type ${read1_path} | grep -q gzip$; then
