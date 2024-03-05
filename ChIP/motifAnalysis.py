@@ -19,7 +19,7 @@ from matplotlib.cbook import get_sample_data
 
 ### set of functions to get motifs with HOMER
 def getPeakCommand(species, coordsFile, outMotif, size, background, mtfLens,
-                  threads=4, mknown=False):
+                  threads=4, mknown=False, checkDeNovo=True):
     
     '''
     if background file defined you might need to check number of regions
@@ -37,15 +37,17 @@ def getPeakCommand(species, coordsFile, outMotif, size, background, mtfLens,
         background_ = ''
     if not mtfLens:
         mtfLens = '8,10,12'
+
+    extra = ''
     if mknown != False:
-        mknown = f' -mknown {mknown}'
-    else:
-        mknown = ''
+        extra += f' -mknown {mknown}'
+    if checkDeNovo == False:
+        extra += ' -nomotif'
 
     motifCheck_cmd = 'findMotifsGenome.pl %s %s %s -size %s %s -len %s -p %s%s &> %s'
     motifCheck_cmd = motifCheck_cmd %(coordsFile, species,
                                      outMotif, size, background_,
-                                     mtfLens, threads, mknown,
+                                     mtfLens, threads, extra,
                                      f'{outMotif}/Homer.log')
     return motifCheck_cmd
 
