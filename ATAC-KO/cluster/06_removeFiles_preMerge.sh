@@ -1,11 +1,12 @@
 # Script to delete all files from analysis that will be done again
 # Add here unique IDs of each sample separated by a space
-removeChip="DMd4-*_ATAC11 "
+# bash /home/jmendietaes/programas/pipelines/ATAC-KO/cluster/06_removeFiles_preMerge.sh
+removeChip="DMd4-*_ATAC22_"
 
 delete='yes'
 
 basePath=/home/jmendietaes/data/2021/ATAC/allProcessed
-outpath=${basePath}"/furtherAnalysis/08e_koATAC_subsampled"
+outpath=${basePath}"/furtherAnalysis/08e_koATAC"
 if [ ! -e ${outpath}/peakCalling/MACS2/peaks/mergedReplicates ]; then
     mkdir -p ${outpath}/peakCalling/MACS2/peaks/mergedReplicates
     mkdir -p ${outpath}/HOMER/peakAnnotation/mergedReplicates

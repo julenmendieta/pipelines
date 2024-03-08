@@ -18,16 +18,12 @@
 #files="LSK-Chd4_ATAC5-merged.sort.rmdup.rmblackls.rmchr.Tn5 \
 #LSK-Men1_ATAC5-merged.sort.rmdup.rmblackls.rmchr.Tn5"
 
-files="DMd4-NTC-1_RNAtot1-merged.sort.rmdup.rmblackls.rmchr \
-DMd4-Pu1-1_RNAtot1-merged.sort.rmdup.rmblackls.rmchr \
-DMd4-Trim28-1_RNAtot1-merged.sort.rmdup.rmblackls.rmchr \
-DMd7-NTC-1_RNAtot1-merged.sort.rmdup.rmblackls.rmchr \
-DMd7-Pu1-1_RNAtot1-merged.sort.rmdup.rmblackls.rmchr \
-DMd7-Trim28-1_RNAtot1-merged.sort.rmdup.rmblackls.rmchr" # \
+files="DM_RNASeq-merged.sort.rmdup.rmblackls.rmchr \
+Mye_RNASeq1_3_S18.STAR.sort.markdup.rmchr" # \
 #GMP-Brd9_ATACTraspl-merged.sort.rmdup.rmblackls.rmchr.Tn5"
 
 basePath="/home/jmendietaes/data/2021/mRNA/allProcessed"
-bamBase="${basePath}/bamfiles/wholeGenome/valid/01b_RNAtot"
+bamBase="${basePath}/bamfiles/wholeGenome/valid/01_projectRestart"
 
 
 REFERENCE_DIR="/home/jmendietaes/referenceGenomes/mm10_reordered/mm10.reordered"

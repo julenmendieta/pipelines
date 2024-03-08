@@ -25,10 +25,10 @@ basePath=$1
 # cells to be counted at the time to subsample (separated by \|)
 subsampleCells="DM_\|Mye_"
 
-bamsPath="${basePath}/bamfiles/valid"
-subOut="${bamsPath}/subsampled"
+bamsPath="${basePath}/bamfiles/valid/08_projectRestart"
+subOut="${basePath}/bamfiles/valid/subsampled"
 bamCounts="${bamsPath}/bamCounts.txt"
-
+margeBams=/home/jmendietaes/data/2021/chip/allProcessed/bamfiles/valid/mergedReplicates
 # modules
 module load Sambamba/0.7.0
 
@@ -61,7 +61,7 @@ for i in ${checkBams}; do
         fileLen=$(samtools idxstats ${i} | cut -f 3 | awk '{sum+=$1;} END{print sum;}');
         echo -e "${fileSize}\t${i}\t${fileLen}" >> bamCounts.txt ; 
     fi;
-done ; for i in mergedReplicates/*bam; do 
+done ; for i in ${margeBams}/*bam; do 
     fileSize=$(du -k ${i} | cut -f1); 
     fileSize_prev=$({ grep $i ${bamCounts} | cut -f 1 || :; });
     # if first time we check it
@@ -96,7 +96,7 @@ chips=$(for fi in `cut -f 2 ${bamCounts} | tail -n +2`; do
 for chip in $chips; do
     echo $chip
     chipFiles=$(grep "${chip}_\|${chip}-\|${chip}\." ${bamCounts}| cut -f 2 | \
-                    grep -v mergedReplicates | grep "${subsampleCells}")
+                    grep -v ${margeBams} | grep "${subsampleCells}")
 
     if [[ $(echo $chipFiles | wc -w) == 2 ]]; then
         # get minimum number of reads
@@ -146,11 +146,11 @@ done
 # # cells to be counted at the time to subsample (separated by \|)
 # subsampleCells="DM_\|Mye_"
 # basePath="/home/jmendietaes/data/2021/chip/allProcessed"
-# bamsPath="${basePath}/bamfiles/valid"
+# bamsPath="${basePath}/bamfiles/valid/08_projectRestart"
 # bamCounts="${bamsPath}/bamCounts.txt"
 # # To copy only subsampled and not subsampled files that are not common
 # chips=$(for fi in `cat ${bamCounts} | grep "${subsampleCells}" | \
-#         grep -v mergedReplicates/ | cut -f 2  | tail -n +2`; do 
+#         grep -v ${margeBams}/ | cut -f 2  | tail -n +2`; do 
 #         filename=$(basename ${fi}); 
 #         mapLib=(${filename//\./ }); 
 #         mapLib=${mapLib[0]};
@@ -162,7 +162,7 @@ done
 
 # chips=$(for chip in $chips; do
 #     chipFiles=$(grep "${chip}_\|${chip}-\|${chip}\." ${bamCounts}| cut -f 2 | \
-#                     grep -v mergedReplicates | grep "${subsampleCells}")
+#                     grep -v ${margeBams} | grep "${subsampleCells}")
 
 #     if [[ $(echo $chipFiles | wc -w) == 2 ]]; then
 #         echo "$chip"
@@ -174,12 +174,12 @@ done
 #     ln -s /home/jmendietaes/data/2021/chip/allProcessed/bamfiles/valid/subsampled/Mye_${chip}-* .
 # done
 
-# vgrep=$(for chip in $chips; do echo "${chip}\|"; done | tr '\n' ' ')
+# vgrep=$(for chip in $chips; do echo "_${chip}\|"; done | tr '\n' ' ')
 # vgrep=$(echo $vgrep | sed 's/ //g')
 # vgrep=${vgrep::-2}
-# for i in `ls /home/jmendietaes/data/2021/chip/allProcessed/bamfiles/valid/DM_* | grep -v "${vgrep}"`; do
+# for i in `ls /home/jmendietaes/data/2021/chip/allProcessed/bamfiles/valid/08_projectRestart/DM_* | grep -v "${vgrep}"`; do
 #     ln -s ${i} .
 # done
-# for i in `ls /home/jmendietaes/data/2021/chip/allProcessed/bamfiles/valid/Mye_* | grep -v "${vgrep}"`; do
+# for i in `ls /home/jmendietaes/data/2021/chip/allProcessed/bamfiles/valid/08_projectRestart/Mye_* | grep -v "${vgrep}"`; do
 #     ln -s ${i} .
 # done

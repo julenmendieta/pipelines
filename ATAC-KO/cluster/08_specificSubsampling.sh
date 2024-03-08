@@ -26,13 +26,15 @@ function join_by { local IFS="$1"; shift; echo "$*"; }
 
 ## INPUT PARAMETERS
 # bam input and output paths
+#inpath=/home/jmendietaes/data/2021/ATAC/allProcessed/bamfiles/valid/08e_koATAC
+#outpath=/home/jmendietaes/data/2021/ATAC/allProcessed/bamfiles/valid/08e_koATAC_subsampled
 inpath=/home/jmendietaes/data/2021/ATAC/allProcessed/bamfiles/valid/mergedReplicates/08e_koATAC
 outpath=/home/jmendietaes/data/2021/ATAC/allProcessed/bamfiles/valid/mergedReplicates/08e_koATAC_subsampled
 # Cell name and batch to subsample
-batch=ATAC7
-cell=DM
+batch=ATAC22
+cell=DMd4
 # Counted as R1 + R2
-minRead=28369833
+minRead=68312161
 # Number of CPU to use
 #SLURM_CPUS_PER_TASK=8
 
