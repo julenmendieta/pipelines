@@ -10,7 +10,7 @@
 #SBATCH -p long
 #SBATCH -o /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.out  
 #SBATCH -e /home/jmendietaes/jobsSlurm/outErr/%x_%A_%a.err 
-##SBATCH --dependency=afterany:802716
+##SBATCH --dependency=afterany:1075661
 
 
 # original ram was 258Gb, and cpu 24
@@ -29,21 +29,21 @@ basepath="/home/jmendietaes/data/2021/singleCell"
 
 # Features file path
 # Caixa feture files
-#featurePath="/home/jmendietaes/data/2021/singleCell/allProcessed/rangerFiles/allGuide_features_2022-11-17.csv"
+featurePath="/home/jmendietaes/data/2021/singleCell/allProcessed/rangerFiles/allGuide_features_2022-11-17.csv"
 # Startup feature file
 #featurePath="/home/jmendietaes/data/2021/singleCell/allProcessed/rangerFiles/Startup_feature_2022-07-15.csv"
 # Laura feature file
-featurePath="/home/jmendietaes/data/2021/singleCell/allProcessed/rangerFiles/Feature_File_Laura_28-11-2022.csv"
+#featurePath="/home/jmendietaes/data/2021/singleCell/allProcessed/rangerFiles/Feature_File_Laura_28-11-2022.csv"
 
 
 # Genome ID
-genomeId="refdata-gex-mm10-2020-A"
+genomeId="refdata-gex-mm10-2020-A-Extended"
 #genomeId="refdata-gex-GRCh38-2020-A"
 
 
 # base name of the files to check (separated by space)
 # avoid adding _Library.csv, it will be added later
-filesCheck="exVivo_OP2_IL1b_1"
+filesCheck="Perturb-Seq_LSK-exp_d14 Perturb-Seq_LSK_d7 Perturb-Seq_DM_d7 In-vivo_LSK-exp_Linneg In-vivo_LSK-exp_Spleen In-vivo_LSK-fresh_Linpos In-vivo_LSK-exp_Linpos In-vivo_LSK-fresh_Linneg In-vivo_LSK-fresh_Spleen"
 
 
 # Path where we will store output data
@@ -73,7 +73,7 @@ fi
 
 genomePath="${genomeBase}/${genomeId}"
 # If genome doesn't exist, then create it
-if [ ! -f "${genomePath}/genome.fa" ]; then
+if [ ! -f "${genomePath}/fasta/genome.fa" ]; then
     echo "You have to prepare the reference genome"
     exit 0
     bash ${scriptsPath}/singleCell/changed/00_PREP_Genome.sh
@@ -106,7 +106,7 @@ for id in ${filesCheck}; do
     cellranger count --id=$id \
      --no-bam \
      --libraries=$rangerPath/${id}_Library.csv \
-     --transcriptome=${genomePath}-Extended/ \
+     --transcriptome=${genomePath}/ \
      --feature-ref=${featurePath} \
      --localcores=${SLURM_CPUS_PER_TASK} \
      --localmem=${adjustedMem} \

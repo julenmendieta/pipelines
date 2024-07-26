@@ -24,7 +24,7 @@
 basepath=/home/jmendietaes/data/2021/singleCell/additionalFiles
 # Path where we have the resoruce files from cellRAnger
 #resourcePath="/home/jmendietaes/data/2021/singleCell/additionalFiles/refdata-gex-GRCh38-2020-A"
-resourcePath="/home/jmendietaes/data/2021/singleCell/additionalFiles/refdata-gex-mm10-2020-A"
+resourcePath="/home/jmendietaes/data/2021/singleCell/additionalFiles/omicstmp/refdata-gex-mm10-2020-A"
 genomeId=$(basename ${resourcePath})
 
 
@@ -39,15 +39,18 @@ if [ ! -e $basepath/omicstmp ]; then
 fi
 cd $basepath/omicstmp
 
-outPath="$basepath/omicstmp/${genomeId}"
-if [ ! -e $outPath ]; then
-	mkdir -p $outPath
-fi
+outPath="$basepath/omicstmp/${genomeId}-Extended"
+#if [ ! -e $outPath ]; then
+#	mkdir -p $outPath
+#fi
 
+mkdir -p $resourcePath/extended
 
-cp $resourcePath/fasta/genome.fa $outPath/genome.fa
-cp $resourcePath/genes/genes.gtf $outPath/genes.gtf
+# Copy original reference genome and gtf files
+cp $resourcePath/fasta/genome.fa $resourcePath/extended/genome.fa
+cp $resourcePath/genes/genes.gtf $resourcePath/extended/genes.gtf
 
+# Add GFP and BFP to reference genome and gtf
 #x="GFP"
 for x in GFP BFP; do
 	pathFA=$basepath/refFasta/${x}.fa
@@ -58,17 +61,18 @@ for x in GFP BFP; do
 
 	echo -e $gtf > ${x}.gtf
 
-	cat ${x}.gtf >> $outPath/genes.gtf
-	fold -w 60 $pathFA >> $outPath/genome.fa
+	cat ${x}.gtf >> $resourcePath/extended/genes.gtf
+	fold -w 60 $pathFA >> $resourcePath/extended/genome.fa
 
-	echo -e "" >> $outPath/genome.fa
+	echo -e "" >> $resourcePath/extended/genome.fa
 
 	rm ${x}.gtf
 done
 
-grep ">" $outPath/genome.fa
-tail -5 $outPath/genes.gtf
-tail -200 $outPath/genome.fa
+grep ">" $resourcePath/extended/genome.fa
+tail -5 $resourcePath/extended/genes.gtf
+tail -20 $resourcePath/extended/genome.fa
 
+# Create new reference for celRanger
 cd $basepath/omicstmp
-cellranger mkref --genome="${genomeId}-Extended"  --fasta=$outPath/genome.fa --genes=$outPath/genes.gtf
+cellranger mkref --genome="${genomeId}-Extended"  --fasta=$resourcePath/extended/genome.fa --genes=$resourcePath/extended/genes.gtf
