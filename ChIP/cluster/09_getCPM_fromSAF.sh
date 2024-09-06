@@ -22,7 +22,8 @@
 peaktype="broadPeak"
 #peaktype="narrowPeak"
 # Path to coordinate file
-safIn="/home/jmendietaes/data/2021/chip/allProcessed/furtherAnalysis/08_projectRestart/csaw/MACSconsensus_DM-Mye_WS-200_SPC-200_IgG-flt.saf"
+safIn="/home/jmendietaes/data/2021/chip/allProcessed/furtherAnalysis/08_projectRestart/csaw/DM_RPKM.saf"
+#safIn="/home/jmendietaes/data/2021/chip/allProcessed/furtherAnalysis/08_projectRestart/csaw/MACSconsensus_DM-Mye_WS-200_SPC-200_IgG-flt.saf"
 #safIn="/home/jmendietaes/data/2021/chip/allProcessed/furtherAnalysis/15_ATACinTF/specificConsensus/DM_TFcentred.saf"
 #safIn="/home/jmendietaes/data/2021/chip/allProcessed/furtherAnalysis/15_ATACinTF/specificConsensus/CFaroundATAC.saf"
 #safIn="/home/jmendietaes/data/2021/ATAC/allProcessed/furtherAnalysis/08c_inUMAP/peakCalling/MACS2/consensus/allmerged_broadPeak_consensusPeaks.saf"
@@ -36,12 +37,14 @@ bamsIn="/home/jmendietaes/data/2021/ATAC/allProcessed/bamfiles/valid/08_paperChi
 #bamsIn="/home/jmendietaes/data/2021/ATAC/allProcessed/bamfiles/valid/08c_inUMAP"
 #bamsIn="/home/jmendietaes/data/2021/chip/allProcessed/bamfiles/valid/08d_chipOnATAC"
 # Path where to output files
-outPath="/home/jmendietaes/data/2021/chip/allProcessed/furtherAnalysis/08_projectRestart/csaw/ATACcounts"
+#outPath="/home/jmendietaes/data/2021/chip/allProcessed/furtherAnalysis/08_projectRestart/csaw/ATACcounts"
+outPath="/home/jmendietaes/data/2021/chip/allProcessed/furtherAnalysis/08_projectRestart/csaw/ATACcountsChunk"
 #outPath="/home/jmendietaes/data/2021/chip/allProcessed/furtherAnalysis/15_ATACinTF/specificConsensus"
 #outPath="/home/jmendietaes/data/2021/ATAC/allProcessed/furtherAnalysis/08c_inUMAP/counts"
 #outPath="/home/jmendietaes/data/2021/chip/allProcessed/furtherAnalysis/08d_chipOnATAC/counts"
 # Files first label
-label1="ATAC"
+#label1="ATAC"
+label1="DM_ATAC"
 #label1="CFaroundATAC"
 #label1="DM_TFcentred"
 #label1="DM_TFcentred_merged"
