@@ -15,7 +15,7 @@
 # add in the list bellow the bam file names (but the .bam termination)
 #sbatch /home/jmendietaes/programas/pipelines/ChIP/cluster/06d_bigwig_fromList.sh
 
-files="DM_P300-merged.sort.rmdup.rmblackls.rmchr"
+files="Mye_Smarca5-merged.sort.rmdup.rmblackls.rmchr"
 
 basePath="/home/jmendietaes/data/2021/chip/allProcessed"
 REFERENCE_DIR="/home/jmendietaes/referenceGenomes/mm10_reordered/mm10.reordered"
@@ -28,7 +28,7 @@ echo -e "Starting BigWigs normalization---------------------------\n"
 # check content of eleventh line of step control file
 for fi in ${files}; do
     echo ${fi}
-    bamPath="${basePath}/bamfiles/valid/${fi}.bam"
+    bamPath="${basePath}/bamfiles/valid/08_projectRestart/${fi}.bam"
     bigWigOut2="${basePath}/BigWig/valid/${fi}.norm.bw"
     bamCoverage --binSize 5 --normalizeUsing CPM --exactScaling \
     -b ${bamPath} -of bigwig \

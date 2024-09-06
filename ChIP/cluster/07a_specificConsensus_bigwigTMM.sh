@@ -43,8 +43,10 @@ outpath=${basePath}"/furtherAnalysis/17_chio-KO"
 # E.j.: "MEP_Brd9-merged-sub105350855 GMP_Smarcb1_ChIP11"
 # Actually it fails if 4 sections are used. Ej Bcell_Brd9_ChIP9_S11
 # instead of Bcell_Brd9_ChIP9
-focusFiles="DM-NTC_Pu1_ChIPKO1 \
-DM-TRIM28_Pu1_ChIPKO1"
+focusFiles="DM-NTC_Pu1_ChIPKO2 \
+DM-TRIM28_Pu1_ChIPKO2 \
+DM-NTC_H3K4me1_ChIPKO2 \
+DM-TRIM28_H3K4me1_ChIPKO2"
 
 
 
@@ -357,6 +359,7 @@ for peaktype in narrowPeak; do
         id1=(${id1//-/ }); id1=${id1[0]}
         id1=(${id1//_/ }); id1="${id1[0]}_${id1[1]}"
         
+	echo "Looking for ${id1} in ${scalingVals}..."
         scalingFactor=$(grep ${id1} ${scalingVals} | cut -f 2)
 
         bamPath="${bamsPath}/${fi}.bam"
