@@ -2,9 +2,9 @@
 # -*- ENCODING: UTF-8 -*-
 
 # HOW TO RUN ME
-# bash /home/julen/programas/PhD/ATAC-KO/00b_TOBIAS.sh
+# bash /home/julen/programas/pipelines/ATAC-KO/00b_TOBIAS.sh
 
-# This scripts runs TOBIAS comparing datasets with a specific
+# This script runs TOBIAS comparing datasets with a specific
 # string with others. It also discerns comparison by batches
 # specified in the name after the first _
 # cell-condition_batch-[extra]_...
@@ -16,11 +16,15 @@ R=/home/julen/miniconda3/envs/onlyR/bin/R
 # Path to Uropa
 uropa="/home/julen/miniconda3/envs/TOBIAS/bin/uropa"
 # best factors script
-bestFactors="/home/julen/programas/PhD/ATAC-KO/get_best_bingfactors.py"
+bestFactors="/home/julen/programas/pipelines/ATAC-KO/get_best_bingfactors.py"
 # base bams path
 bambase=/scratch/julen/ATAC/allData/05_laura/bams/merged
 # base peaks path
 peakbase=/scratch/julen/ATAC/allData/05_laura/peaks
+# If search coordinates are no peak coordinates merge to be done here, provide 
+# bed file path
+# Else set to ""
+consensusPeakBed=""
 # base output dir
 outdirbase=/scratch/julen/ATAC/allData/05_laura/TOBIAS
 # Path to motifs to be check (In format suited for TOBIAS)
@@ -28,13 +32,13 @@ motifsCheck=/scratch/julen/ATAC/allData/02_firstATAC/TOBIAS/motifs/known_jaspar_
 # Path to reference genome
 refGenome=/home/julen/genomes/mm10_reordered/mm10.reordered.fa
 # Cell type of interest
-cell=Quiescent
+cell=LD
 # Specify control conditions string in name
-controlCondition=NtC5
+controlCondition=Mock
 # define peak type
 peaktype=broadPeak
 # path for the location of the pipeline scripts
-scriptsPath="/home/julen/programas/PhD"
+scriptsPath="/home/julen/programas/pipelines"
 # Number of CPU to use
 nCPU=16
 # Annotation file
@@ -122,7 +126,14 @@ for batch in ${batches}; do
             #########################
 
             # get all file names to use
-            consensusPeakBed=${outdir}/${cell}/${prefix_ko}/${cell}.bed
+            if [[ ${consensusPeakBed} == "" ]]; then
+                consensusPeakBed=${outdir}/${cell}/${prefix_ko}/${cell}.bed
+                consensusType="peakCoord"
+            else
+                cp ${consensusPeakBed} ${outdir}/${cell}/${prefix_ko}/
+                consensusPeakBed="${outdir}/${cell}/${prefix_ko}/$(basename ${consensusPeakBed})"
+                consensusType="givenBed"
+            fi
             annotPeaks=${consensusPeakBed::-4}  
             consensusPeakBed_annot=${annotPeaks}_annotated.bed
 
@@ -136,29 +147,31 @@ for batch in ${batches}; do
                     echo "Processing consensus peaks for ${cell}-${controlCondition}_${batch}_${prefix_ko}"
                 
                 #if [[ ${analyse} == "yes" ]]; then
-                    # Lets create a consensus peak coordinates file for all the conditions of same cell
-                    allPeaks=$(find -L ${peakbase}/${cell}*${peaktype})
-                    if [ ${peaktype} == "narrowPeak" ]; then
-                        mergecols=`seq 2 10 | tr '\n' ','`
-                        expandparam='--is_narrow_peak'
-                    elif [ ${peaktype} == "broadPeak" ]; then
-                        mergecols=`seq 2 9 | tr '\n' ','`
-                        expandparam=''
+                    if [[ ${consensusType} == "peakCoord" ]]; then
+                        # Lets create a consensus peak coordinates file for all the conditions of same cell
+                        allPeaks=$(find -L ${peakbase}/${cell}*${peaktype})
+                        if [ ${peaktype} == "narrowPeak" ]; then
+                            mergecols=`seq 2 10 | tr '\n' ','`
+                            expandparam='--is_narrow_peak'
+                        elif [ ${peaktype} == "broadPeak" ]; then
+                            mergecols=`seq 2 9 | tr '\n' ','`
+                            expandparam=''
+                        fi
+                        fileLabels=$(for f in $allPeaks; do echo ${f##*/} |sed "s/_peaks.${peaktype}//g"; done | tr '\n' ',')
+
+                        sort -T '.' -k1,1 -k2,2n ${allPeaks} \
+                                        | mergeBed -c $mergecols -o collapse > ${outdir}/${cell}/${prefix_ko}/${cell}_consenus.txt
+                        python ${scriptsPath}/ChIP/cluster/02_NR_macs2_merged_expand.py ${outdir}/${cell}/${prefix_ko}/${cell}_consenus.txt \
+                                            ${fileLabels} \
+                                            ${outdir}/${cell}/${prefix_ko}/${cell}_consenus.boolean.txt \
+                                            $expandparam
+
+                        
+                        awk -v FS='\t' -v OFS='\t' 'FNR > 1 { print $1, $2, $3, $4, "0", "+" }' \
+                            ${outdir}/${cell}/${prefix_ko}/${cell}_consenus.boolean.txt > ${consensusPeakBed}
+                        rm ${outdir}/${cell}/${prefix_ko}/${cell}_consenus.txt
+                        rm ${outdir}/${cell}/${prefix_ko}/${cell}_consenus.boolean.txt
                     fi
-                    fileLabels=$(for f in $allPeaks; do echo ${f##*/} |sed "s/_peaks.${peaktype}//g"; done | tr '\n' ',')
-
-                    sort -T '.' -k1,1 -k2,2n ${allPeaks} \
-                                    | mergeBed -c $mergecols -o collapse > ${outdir}/${cell}/${prefix_ko}/${cell}_consenus.txt
-                    python ${scriptsPath}/ChIP/cluster/02_NR_macs2_merged_expand.py ${outdir}/${cell}/${prefix_ko}/${cell}_consenus.txt \
-                                        ${fileLabels} \
-                                        ${outdir}/${cell}/${prefix_ko}/${cell}_consenus.boolean.txt \
-                                        $expandparam
-
-                    
-                    awk -v FS='\t' -v OFS='\t' 'FNR > 1 { print $1, $2, $3, $4, "0", "+" }' \
-                        ${outdir}/${cell}/${prefix_ko}/${cell}_consenus.boolean.txt > ${consensusPeakBed}
-                    rm ${outdir}/${cell}/${prefix_ko}/${cell}_consenus.txt
-                    rm ${outdir}/${cell}/${prefix_ko}/${cell}_consenus.boolean.txt
 
                     # Annotate the peaks
                     $uropa --bed ${consensusPeakBed} --gtf ${gtfFile} \

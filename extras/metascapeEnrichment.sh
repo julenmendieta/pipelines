@@ -12,7 +12,7 @@ msPath="/home/julen/programas/MSBio"
 # Set to "-u" if input format follows the single-gene-list standard (else to "")
 geneListStyle=""
 # Proyect name (input and output folders are inside ${msPath}/data/${pName})
-pName=KOtogether_overlapOnly
+pName=allCell2Long_subPromPerCellOverlaps-chunks
 # Place your input txt files in ${msPath}/data/${pName}/input
 
 nCPU=8
@@ -28,7 +28,7 @@ targetId=9606
 
 cd ${msPath}
 # Start MSBio
-sudo ${msPath}/bin/up.sh
+${msPath}/bin/up.sh
 
 # If we want to run all input files
 inputDir="${msPath}/data/${pName}/input"
@@ -46,14 +46,14 @@ for input_list_name in $files; do
 
     # Analyse gene list
     # You must specify -u if your input format follows the single-gene-list standard
-    sudo ${msPath}/bin/ms.sh ${singleGeneList} -o ${output_folder} \
+    ${msPath}/bin/ms.sh ${singleGeneList} -o ${output_folder} \
                             -S ${taxId} -T ${targetId} ${input_list_file} \
                             --option ${optionJson} -c ${nCPU} ${geneListStyle}
 
 done
 
 # End MSBio
-sudo ${msPath}/bin/down.sh
+${msPath}/bin/down.sh
 
 
 # # Version for a specific file

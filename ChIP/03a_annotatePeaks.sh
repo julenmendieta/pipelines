@@ -14,7 +14,7 @@ binnedPeaks=$2
 #nCPU=16
 nCPU=$3
 outpath="${basePath}/finalTables/01_Annot"
-
+#outpath=$1
 
 
 # Set to FALSE if you wnat HOMER's default UCSC refGene annotation
